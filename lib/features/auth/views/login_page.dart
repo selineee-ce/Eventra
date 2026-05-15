@@ -1,6 +1,8 @@
 import 'package:eventra/features/auth/views/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:eventra/features/home/views/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -40,19 +42,24 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
+                        Text(
                           "EVENTRA",
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             color: Color(0xFFD0BCFF),
-                            fontSize: 35,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
+                            fontSize: 38,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -2,
                           ),
                         ),
-                        const Text(
+                        Text(
                           "Unlock the night's best experiences!",
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Color(0xFFD0BCFF), fontSize: 15),
+                          style: GoogleFonts.poppins(
+                            color: Color(0xFFFFFFFF),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w200,
+                            letterSpacing: 0,
+                          ),
                         ),
                         const SizedBox(height: 40),
                         
@@ -128,7 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const RegisterPage(),
+                                    builder: (context) => const EventraHomePage(),
                                   ),
                                 );
                               },
