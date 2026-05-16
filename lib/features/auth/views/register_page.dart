@@ -1,4 +1,5 @@
 import 'package:eventra/features/auth/views/login_page.dart';
+import 'package:eventra/features/home/views/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:eventra/features/auth/controller/input_validator.dart';
@@ -143,7 +144,14 @@ class _RegisterPageState extends State<RegisterPage> {
                           child: ElevatedButton(
                             onPressed: () {
                               if (_formKey.currentState!.validate()) {
-                                // Logic submit
+                                // Navigasi langsung ke HomePage dan hapus semua halaman di belakangnya
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const EventraHomePage(),
+                                  ),
+                                  (route) => false,
+                                );
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -221,7 +229,7 @@ class _RegisterPageState extends State<RegisterPage> {
         prefixIcon: Icon(icon, color: Colors.white54, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.black.withOpacity(0.2),
+        fillColor: Color(0x33000000),
         contentPadding: const EdgeInsets.symmetric(vertical: 18),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.white12)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Color(0xFFD0BCFF), width: 1.5)),

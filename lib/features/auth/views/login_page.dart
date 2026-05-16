@@ -1,3 +1,4 @@
+import 'package:eventra/features/auth/controller/input_validator.dart';
 import 'package:eventra/features/auth/views/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
@@ -90,6 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                               onPressed: () => setState(() => _isObscure = !_isObscure),
                             ),
                           ),
+                          validator: InputValidator.validatePassword,
                         ),
                         const SizedBox(height: 35),
                         
@@ -100,7 +102,14 @@ class _LoginPageState extends State<LoginPage> {
                           child: ElevatedButton(
                             onPressed: () {
                               if (_formKey.currentState!.validate()) {
-                                // Logic Login
+                                // Navigasi langsung ke HomePage dan hapus semua halaman di belakangnya
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const EventraHomePage(),
+                                  ),
+                                  (route) => false,
+                                );
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -135,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const EventraHomePage(),
+                                    builder: (context) => const RegisterPage(),
                                   ),
                                 );
                               },
