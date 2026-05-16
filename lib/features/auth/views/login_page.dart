@@ -3,7 +3,7 @@ import 'package:eventra/features/auth/views/register_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:eventra/features/home/views/home_page.dart';
+import 'package:eventra/features/home/views/main_screen.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,6 +14,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
+
   bool _isObscure = true;
 
   @override
@@ -22,104 +23,149 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+
         decoration: const BoxDecoration(
-          gradient: AppColors.mainAppBackground, //Background memakai gradient
+          gradient: AppColors.mainAppBackground,
         ),
+
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 30),
+
             child: Column(
               children: [
-                // Container Box Login
+                /// LOGIN BOX
                 Container(
                   padding: const EdgeInsets.all(25),
+
                   decoration: BoxDecoration(
-                    color: Color(0x4D1E1E2E), 
+                    color: const Color(0x4D1E1E2E),
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: Colors.white10),
                   ),
+
                   child: Form(
                     key: _formKey,
+
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+
                       children: [
+                        /// LOGO
                         Text(
                           "EVENTRA",
+
                           style: GoogleFonts.poppins(
-                            color: Color(0xFFD0BCFF),
+                            color: const Color(0xFFD0BCFF),
                             fontSize: 38,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -2,
                           ),
                         ),
+
+                        /// SUBTITLE
                         Text(
                           "Unlock the night's best experiences!",
+
                           textAlign: TextAlign.center,
+
                           style: GoogleFonts.poppins(
-                            color: Color(0xFFFFFFFF),
+                            color: const Color(0xFFFFFFFF),
                             fontSize: 15,
                             fontWeight: FontWeight.w200,
-                            letterSpacing: 0,
                           ),
                         ),
+
                         const SizedBox(height: 40),
-                        
-                        // Email/Phone Input
+
+                        /// EMAIL INPUT
                         TextFormField(
-                          style: const TextStyle(color: Colors.white),
+                          style:
+                              const TextStyle(color: Colors.white),
+
                           decoration: _buildInputDecoration(
                             "Email or Phone",
                             Icons.email_outlined,
                           ),
-                          validator: (val) => val!.isEmpty ? "Required field" : null,
+
+                          validator: (val) {
+                            if (val == null || val.isEmpty) {
+                              return "Required field";
+                            }
+                            return null;
+                          },
                         ),
+
                         const SizedBox(height: 20),
-                        
-                        // Password Input
+
+                        /// PASSWORD INPUT
                         TextFormField(
                           obscureText: _isObscure,
-                          style: const TextStyle(color: Colors.white),
+
+                          style:
+                              const TextStyle(color: Colors.white),
+
                           decoration: _buildInputDecoration(
                             "Password",
                             Icons.lock_outline,
                           ).copyWith(
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _isObscure ? Icons.visibility_off : Icons.visibility,
+                                _isObscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+
                                 color: Colors.white54,
                               ),
-                              onPressed: () => setState(() => _isObscure = !_isObscure),
+
+                              onPressed: () {
+                                setState(() {
+                                  _isObscure = !_isObscure;
+                                });
+                              },
                             ),
                           ),
-                          validator: InputValidator.validatePassword,
+
+                          validator:
+                              InputValidator.validatePassword,
                         ),
+
                         const SizedBox(height: 35),
-                        
-                        // Login Button
+
+                        /// LOGIN BUTTON
                         SizedBox(
                           width: double.infinity,
                           height: 55,
+
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                // Navigasi langsung ke HomePage dan hapus semua halaman di belakangnya
+                              if (_formKey.currentState!
+                                  .validate()) {
                                 Navigator.pushAndRemoveUntil(
                                   context,
+
                                   MaterialPageRoute(
-                                    builder: (context) => const EventraHomePage(),
+                                    builder: (context) => MainScreen(),
                                   ),
+
                                   (route) => false,
                                 );
                               }
                             },
+
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD0BCFF),
+                              backgroundColor:
+                                  const Color(0xFFD0BCFF),
+
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
+                                borderRadius:
+                                    BorderRadius.circular(15),
                               ),
                             ),
+
                             child: const Text(
                               "Log in",
+
                               style: TextStyle(
                                 color: Color(0xFF4D2B6C),
                                 fontWeight: FontWeight.bold,
@@ -128,28 +174,39 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ),
+
                         const SizedBox(height: 20),
-                        
-                        // "Don't have an account? Sign up"
+
+                        /// SIGN UP
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment:
+                              MainAxisAlignment.center,
+
                           children: [
                             const Text(
                               "Don't have an account? ",
-                              style: TextStyle(color: Colors.white70, fontSize: 15),
+
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 15,
+                              ),
                             ),
+
                             GestureDetector(
                               onTap: () {
-                                // Navigasi ke RegisterPage
                                 Navigator.push(
                                   context,
+
                                   MaterialPageRoute(
-                                    builder: (context) => const RegisterPage(),
+                                    builder: (context) =>
+                                        const RegisterPage(),
                                   ),
                                 );
                               },
+
                               child: const Text(
                                 "Sign up",
+
                                 style: TextStyle(
                                   color: Color(0xFFD0BCFF),
                                   fontWeight: FontWeight.bold,
@@ -171,22 +228,61 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Helper untuk styling input agar rapi dan konsisten
-  InputDecoration _buildInputDecoration(String hint, IconData icon) {
+  /// INPUT DECORATION
+  InputDecoration _buildInputDecoration(
+    String hint,
+    IconData icon,
+  ) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
-      prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+
+      hintStyle: const TextStyle(
+        color: Colors.white38,
+        fontSize: 14,
+      ),
+
+      prefixIcon: Icon(
+        icon,
+        color: Colors.white54,
+        size: 20,
+      ),
+
       filled: true,
       fillColor: Colors.black26,
-      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+
+      contentPadding:
+          const EdgeInsets.symmetric(vertical: 18),
+
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: Colors.white10),
+
+        borderSide: const BorderSide(
+          color: Colors.white10,
+        ),
       ),
+
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),
-        borderSide: const BorderSide(color: AppColors.primaryPurple),
+
+        borderSide: const BorderSide(
+          color: AppColors.primaryPurple,
+        ),
+      ),
+
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+        ),
+      ),
+
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+        ),
       ),
     );
   }
