@@ -36,50 +36,43 @@ class MainNavBar extends StatelessWidget {
           currentIndex: currentIndex,
           onTap: onTap,
           type: BottomNavigationBarType.fixed,
-          
-          // Memakai warna dari AppColors
           backgroundColor: AppColors.navBackground, 
           selectedItemColor: AppColors.primaryPurple, 
           unselectedItemColor: AppColors.inactiveGrey, 
-          
           selectedLabelStyle: const TextStyle(
             fontSize: 10, 
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryPurple, 
           ),
           unselectedLabelStyle: const TextStyle(
             fontSize: 10,
-            color: AppColors.inactiveGrey,
           ),
-          
           showSelectedLabels: true,
           showUnselectedLabels: true,
-          
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home),
-              label: 'HOME',
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.explore_outlined),
               activeIcon: Icon(Icons.explore),
-              label: 'EXPLORE',
+              label: 'Explore',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.confirmation_number_outlined),
               activeIcon: Icon(Icons.confirmation_number),
-              label: 'TICKETS',
+              label: 'Tickets',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite_outline),
               activeIcon: Icon(Icons.favorite),
-              label: 'FAVORITES',
+              label: 'Favorites',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person),
-              label: 'PROFILE',
+              label: 'Profile',
             ),
           ],
         ),

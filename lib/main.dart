@@ -1,3 +1,5 @@
+import 'package:eventra/features/home/views/home_page.dart';
+import 'package:eventra/features/home/views/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
 
@@ -19,7 +21,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.purple,
       ),
 
-      home: const LoginPage(),
+      home: const MainScreen(),
     );
   }
 }
