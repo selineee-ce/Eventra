@@ -1,4 +1,5 @@
 import 'package:eventra/features/home/views/home_page.dart';
+import 'package:eventra/features/profile/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -53,15 +54,7 @@ class _MainScreenState extends State<MainScreen> {
     ),
 
     /// PROFILE PAGE
-    const Center(
-      child: Text(
-        "Profile Page",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-        ),
-      ),
-    ),
+    const ProfilePage(),
   ];
 
   @override
