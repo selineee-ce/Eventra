@@ -605,107 +605,100 @@ class _EventraHomePageState extends State<EventraHomePage> {
   }
 
   Widget buildNearbyCard(Map<String, dynamic> item) {
-    return Container(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 175,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.network(
-                      item['image'],
-                      fit: BoxFit.cover,
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 175,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.network(
+                    item['image'],
+                    fit: BoxFit.cover,
                   ),
-
-                  Positioned(
-                    top: 12,
-                    left: 12,
-
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-
-                      child: Text(
-                        item['date'],
-
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 13,
-                        ),
+                ),
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    
+                    child: Text(
+                      item['date'],
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        Text(
+          item['title'],
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
+        Text(
+          item['place'],
+          style: GoogleFonts.poppins(
+            color: Colors.white54,
+            fontSize: 12,
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              item['price'],
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 24,
               ),
             ),
-          ),
 
-          const SizedBox(height: 10),
-
-          Text(
-            item['title'],
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          Text(
-            item['place'],
-            style: GoogleFonts.poppins(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                item['price'],
-
-                style: GoogleFonts.poppins(
+            GestureDetector(
+              onTap: () {},
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7C4DFF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                  
+                child: const Icon(
+                  Icons.add,
                   color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 24,
                 ),
               ),
-
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C4DFF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

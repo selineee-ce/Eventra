@@ -4,7 +4,7 @@ import 'package:eventra/core/constants/colors.dart';
 //Import Page
 import 'package:eventra/features/home/views/home_page.dart';
 import 'package:eventra/features/home/views/notification_page.dart';
-
+import 'package:eventra/features/ticket/my_tickets.dart';
 
 import 'package:eventra/features/profile/profile_page.dart';
 
@@ -28,10 +28,9 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _pages = [
     const EventraHomePage(),
     const Center(child: Text("Explore Page", style: TextStyle(color: Colors.white, fontSize: 20))),
-    const Center(child: Text("Ticket Page", style: TextStyle(color: Colors.white, fontSize: 20))),
+    const EventraTicketsPage(),
     const Center(child: Text("Favorites Page", style: TextStyle(color: Colors.white, fontSize: 20))),
     // const EventraExplorePage(),  
-    // const EventraTicketPage(),
     // const EventraFavoritesPage(),
     const EventraProfilePage(),  
   ];
