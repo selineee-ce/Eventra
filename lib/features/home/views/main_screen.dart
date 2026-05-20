@@ -1,3 +1,4 @@
+import 'package:eventra/features/explore/artists/trending_artists.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 
@@ -27,7 +28,8 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _pages = [
     const EventraHomePage(),
-    const Center(child: Text("Explore Page", style: TextStyle(color: Colors.white, fontSize: 20))),
+    const TrendingArtistsPage(),
+    //const Center(child: Text("Explore Page", style: TextStyle(color: Colors.white, fontSize: 20))),
     const EventraTicketsPage(),
     const Center(child: Text("Favorites Page", style: TextStyle(color: Colors.white, fontSize: 20))),
     // const EventraExplorePage(),  
