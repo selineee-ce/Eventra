@@ -143,6 +143,38 @@ class _MyTicketsPageState extends State<EventraTicketsPage> {
               }).toList(),
 
               const SizedBox(height: 20),
+
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    // Navigator.push(
+                    //   context, MaterialPageRoute(
+                    //     builder: (context) =>const EventraExplorePage(),
+                    //   ),
+                    // );
+                  },
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.add_circle_outline,
+                        color: Color(0xFF8A51F2),
+                        size: 40,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Buy More Tickets',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),  
+
+              const SizedBox(height: 40),
             ],
           ),
         ),

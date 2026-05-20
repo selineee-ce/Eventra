@@ -31,7 +31,7 @@ class TicketDetailPage extends StatelessWidget {
       backgroundColor: const Color(0xFF0E0717),
       appBar: AppBar(
         title: Text(
-          'Ticket View',
+          'Ticket Detail',
           style: GoogleFonts.poppins(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w600),
         ),
         backgroundColor: const Color(0xFF0E0717),

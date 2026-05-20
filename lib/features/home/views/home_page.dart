@@ -686,13 +686,13 @@ class _EventraHomePageState extends State<EventraHomePage> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7C4DFF),
+                  color: const Color(0xFF3B3157),
                   borderRadius: BorderRadius.circular(12),
                 ),
                   
                 child: const Icon(
-                  Icons.add,
-                  color: Colors.white,
+                  Icons.favorite_outline,
+                  color: Color(0xFFD0BCFF),
                 ),
               ),
             ),

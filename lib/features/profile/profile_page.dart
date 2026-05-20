@@ -70,8 +70,6 @@ class EventraProfilePage extends StatelessWidget {
                 Row(
                   children: [
                     _buildStatCard("24", "UPCOMING EVENTS"),
-                    const SizedBox(width: 14),
-                    _buildStatCard("158", "POINTS EARNED"),
                   ],
                 ),
                 const SizedBox(height: 25),
