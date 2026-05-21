@@ -1,21 +1,53 @@
+import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class EventraProfilePage extends StatelessWidget {
+class EventraProfilePage extends StatefulWidget {
   const EventraProfilePage({super.key});
+
+  @override
+  State<EventraProfilePage> createState() => _EventraProfilePageState();
+}
+
+class _EventraProfilePageState extends State<EventraProfilePage> {
+  Map<String, dynamic> profile = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final loadedProfile = await EventraDatabase.instance.fetchProfile();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      profile = loadedProfile;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
+              )
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
                 const SizedBox(height: 30),
 
                 //PROFILE HEADER
@@ -26,7 +58,7 @@ class EventraProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
                 Text(
-                  "Sabrina Aryan",
+                  profile['name'] as String? ?? '',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 28,
@@ -35,7 +67,7 @@ class EventraProfilePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "DIAMOND MEMBER | NYC",
+                  profile['membership_title'] as String? ?? '',
                   style: GoogleFonts.poppins(
                     color: Colors.white60,
                     fontSize: 16,
@@ -69,7 +101,10 @@ class EventraProfilePage extends StatelessWidget {
                 //STATS CARDS
                 Row(
                   children: [
-                    _buildStatCard("24", "UPCOMING EVENTS"),
+                    _buildStatCard(
+                      profile['upcoming_events_count']?.toString() ?? '0',
+                      "UPCOMING EVENTS",
+                    ),
                   ],
                 ),
                 const SizedBox(height: 25),
@@ -172,10 +207,10 @@ class EventraProfilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }

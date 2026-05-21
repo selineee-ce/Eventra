@@ -1,8 +1,36 @@
+import 'package:eventra/data/eventra_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  List<Map<String, dynamic>> notifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    final loadedNotifications = await EventraDatabase.instance.fetchNotifications();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      notifications = loadedNotifications;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,14 +44,21 @@ class NotificationPage extends StatelessWidget {
           style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          _notificationCard('New VIP Access Released', 'Exclusive backstage passes are now available.'),
-          _notificationCard('Event Reminder', 'Neon Dreams starts in 5 hours.'),
-          _notificationCard('Preorder Open', 'Preorder tickets for World Tour Tokyo.'),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(18),
+              children: notifications
+                  .map(
+                    (notification) => _notificationCard(
+                      notification['title'] as String,
+                      notification['subtitle'] as String,
+                    ),
+                  )
+                  .toList(),
+            ),
     );
   }
 

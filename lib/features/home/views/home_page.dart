@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:eventra/data/eventra_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -21,144 +22,17 @@ class _EventraHomePageState extends State<EventraHomePage> {
 
   late Timer timer;
 
-  final List<Map<String, dynamic>> featuredEvents = [
-    {
-      'title': 'NEON DREAMS:\n2026',
-      'subtitle':
-        'Experience the pinnacle of immersive audio-visual performance with the season\'s most anticipated lineup.',
-      'image': 'assets/images/image2.jpeg',
-      'tag1': 'FEATURED',
-      'tag2': 'WORLD TOUR',
-      'button': 'GET TICKETS',
-    },
-    {
-      'title': 'SONIC\nHORIZON',
-      'subtitle':
-        'Journey beyond the edge of sound with an avant-garde showcase of world-class electronic producers and light-bending stage craft.',
-      'image': 'assets/images/image1.jpeg',
-      'tag1': 'FAVOURITES',
-      'tag2': 'EUROPE TOUR',
-      'button': 'PREORDER NOW',
-    },
-    {
-      'title': 'STARDUST\nECHOES',
-      'subtitle':
-        'Join thousands for an emotional journey through the year’s most iconic anthems.',
-      'image': 'assets/images/image3.jpeg',
-      'tag1': 'FAVOURITES',
-      'button': 'GET TICKETS',
-    },
-  ];
-
-  final List<Map<String, dynamic>> passes = [
-    {
-      'title': 'VIP Backstage Pass',
-      'desc':
-        'An all-access journey behind the curtain of the global tour.',
-      'price': '\$4,999',
-    },
-    {
-      'title': 'Gold VIP Package',
-      'desc':
-        'Experience the show from the very front row with premium service.',
-      'price': '\$1,200',
-    },
-    {
-      'title': 'Infinity Station Access',
-      'desc':
-        'Elevate your viewing experience from our infinity stations.',
-      'price': '\$850',
-    },
-  ];
-
-  final List<Map<String, dynamic>> nearbyEvents = [
-    {
-    'title': 'Astra Project',
-    'date': 'MAY 20',
-    'place': 'THE HIVE',
-    'price': '\$50',
-    'image':
-      'https://images.unsplash.com/photo-1503095396549-807759245b35?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Echoes of Solace',
-    'date': 'MAY 29',
-    'place': 'SKY ARENA',
-    'price': '\$80',
-    'image':
-      'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Nova Pulse',
-    'date': 'JUN 02',
-    'place': 'LUNA DOME',
-    'price': '\$65',
-    'image':
-      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Midnight Mirage',
-    'date': 'JUN 10',
-    'place': 'NEON CLUB',
-    'price': '\$90',
-    'image':
-      'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Velvet Frequency',
-    'date': 'JUN 18',
-    'place': 'ORBIT HALL',
-    'price': '\$70',
-    'image':
-      'https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Lunar Echo',
-    'date': 'JUN 22',
-    'place': 'AETHER STAGE',
-    'price': '\$75',
-    'image':
-      'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Digital Bloom',
-    'date': 'JUL 01',
-    'place': 'NOVA HALL',
-    'price': '\$60',
-    'image':
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Afterlight',
-    'date': 'JUL 08',
-    'place': 'SPECTRA ARENA',
-    'price': '\$95',
-    'image':
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Electric Aura',
-    'date': 'JUL 15',
-    'place': 'VOID CLUB',
-    'price': '\$55',
-    'image':
-      'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=1200&auto=format&fit=crop',
-    },
-    {
-    'title': 'Celestial Noise',
-    'date': 'JUL 21',
-    'place': 'COSMOS DOME',
-    'price': '\$110',
-    'image':
-      'https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?q=80&w=1200&auto=format&fit=crop',
-    }
-  ];
-
+  List<Map<String, dynamic>> featuredEvents = [];
+  List<Map<String, dynamic>> passes = [];
+  List<Map<String, dynamic>> nearbyEvents = [];
   List<bool> liked = [false, false, false];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+
+    _loadData();
 
     timer = Timer.periodic(
       const Duration(seconds: 1),
@@ -170,7 +44,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
 
           carouselTick++;
 
-          if (carouselTick >= 5) {
+          if (carouselTick >= 5 && featuredEvents.isNotEmpty) {
             carouselTick = 0;
 
             currentPage =
@@ -187,6 +61,27 @@ class _EventraHomePageState extends State<EventraHomePage> {
         });
       },
     );
+  }
+
+  Future<void> _loadData() async {
+    final loadedFeatured = await EventraDatabase.instance.fetchFeaturedEvents();
+    final loadedPasses = await EventraDatabase.instance.fetchPasses();
+    final loadedNearby = await EventraDatabase.instance.fetchNearbyEvents();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      featuredEvents = loadedFeatured;
+      passes = loadedPasses;
+      nearbyEvents = loadedNearby;
+      liked = passes
+          .map((pass) => (pass['is_favorite'] as int? ?? 0) == 1)
+          .toList();
+      visibleNearbyCount = nearbyEvents.length < 4 ? nearbyEvents.length : 4;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -214,41 +109,47 @@ class _EventraHomePageState extends State<EventraHomePage> {
       backgroundColor: const Color(0xFF0E0717),
 
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFFD0BCFF),
+                ),
+              )
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
 
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
-              children: [
-                const SizedBox(height: 12),
+                    children: [
+                      const SizedBox(height: 12),
 
-                buildFeaturedCarousel(),
+                      buildFeaturedCarousel(),
 
-                const SizedBox(height: 22),
+                      const SizedBox(height: 22),
 
-                buildExclusiveHeader(),
+                      buildExclusiveHeader(),
 
-                const SizedBox(height: 18),
+                      const SizedBox(height: 18),
 
-                buildPasses(),
+                      buildPasses(),
 
-                const SizedBox(height: 18),
+                      const SizedBox(height: 18),
 
-                buildNearYouHeader(),
+                      buildNearYouHeader(),
 
-                const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                buildNearbyEvents(),
+                      buildNearbyEvents(),
 
-                const SizedBox(height: 100),
-              ],
-            ),
-          ),
-        ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -535,6 +436,11 @@ class _EventraHomePageState extends State<EventraHomePage> {
               setState(() {
                 liked[index] = !liked[index];
               });
+
+              EventraDatabase.instance.setPassFavorite(
+                passId: pass['id'] as int,
+                isFavorite: liked[index],
+              );
             },
 
             icon: AnimatedSwitcher(
@@ -590,7 +496,10 @@ class _EventraHomePageState extends State<EventraHomePage> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: visibleNearbyCount,
+      itemCount:
+          visibleNearbyCount > nearbyEvents.length
+              ? nearbyEvents.length
+              : visibleNearbyCount,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 220,
         crossAxisSpacing: 16,
@@ -681,7 +590,18 @@ class _EventraHomePageState extends State<EventraHomePage> {
             ),
 
             GestureDetector(
-              onTap: () {},
+              onTap: () {
+                final isFavorite = (item['is_favorite'] as int? ?? 0) == 1;
+
+                setState(() {
+                  item['is_favorite'] = isFavorite ? 0 : 1;
+                });
+
+                EventraDatabase.instance.setNearbyFavorite(
+                  eventId: item['id'] as int,
+                  isFavorite: !isFavorite,
+                );
+              },
               child: Container(
                 width: 38,
                 height: 38,
@@ -689,10 +609,11 @@ class _EventraHomePageState extends State<EventraHomePage> {
                   color: const Color(0xFF3B3157),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                  
-                child: const Icon(
-                  Icons.favorite_outline,
-                  color: Color(0xFFD0BCFF),
+                child: Icon(
+                  (item['is_favorite'] as int? ?? 0) == 1
+                      ? Icons.favorite
+                      : Icons.favorite_outline,
+                  color: const Color(0xFFD0BCFF),
                 ),
               ),
             ),
