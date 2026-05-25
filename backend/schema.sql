@@ -114,6 +114,18 @@ CREATE TABLE IF NOT EXISTS app_config (
   config_value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS exclusive_drops (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(200) NOT NULL,
+  badge VARCHAR(80) NOT NULL,          -- label badge kecil, contoh: 'ASIA TOUR JAKARTA'
+  description TEXT NOT NULL,           -- subtitle/deskripsi
+  image TEXT NULL,                 -- URL gambar
+  type ENUM('ticket','placement','merch') NOT NULL DEFAULT 'ticket',
+  countdown_seconds INT NOT NULL DEFAULT 9912, -- default ~2j 45m 12s
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1
+);
+
 INSERT INTO profile (id, name, membership_title, location, upcoming_events_count, avatar_url)
 VALUES (1, 'Sabrina Aryan', 'DIAMOND MEMBER | NYC', 'New York City, USA', 24, NULL)
 ON DUPLICATE KEY UPDATE name = VALUES(name);
@@ -220,3 +232,9 @@ INSERT INTO app_config (config_key, config_value) VALUES
 ('favorites.empty', 'Your saved passes and events will appear here.'),
 ('search.hint', 'Search events, artists, tickets...')
 ON DUPLICATE KEY UPDATE config_value = VALUES(config_value);
+
+INSERT INTO exclusive_drops (id, title, badge, description, type, image, sort_order) VALUES
+(1, 'LIMITED TICKET',  'ASIA TOUR JAKARTA',              'Additional Section B tickets released',                                        'ticket',    'https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=600&auto=format&fit=crop', 1),
+(2, 'EVENT PLACEMENT', 'SPONSORED EVENT PLACEMENT',      'Experience immersive visuals and live performances from local Indonesian artists','placement', 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop', 2),
+(3, 'MERCH PRESALE',   'THE WEEKND – AFTER HOURS TIL DAWN','Exclusive preorders of the new WEEKND drop',                                 'merch',     'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=600&auto=format&fit=crop', 3)
+ON DUPLICATE KEY UPDATE title = VALUES(title);

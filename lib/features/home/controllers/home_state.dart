@@ -1,7 +1,7 @@
 import 'package:eventra/features/home/models/featured_event.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/pass_package.dart';
-
+import 'package:eventra/features/home/models/exclusive_drop.dart';
 enum HomeStatus { initial, loading, success, error }
 
 class HomeState {
@@ -12,6 +12,7 @@ class HomeState {
     this.nearbyEvents = const [],
     this.visibleNearbyCount = 4,
     this.errorMessage,
+    this.exclusiveDrops = const [],
   });
 
   final HomeStatus status;
@@ -20,6 +21,7 @@ class HomeState {
   final List<NearbyEvent> nearbyEvents;     // dari tabel nearby_events
   final int visibleNearbyCount;
   final String? errorMessage;
+  final List<ExclusiveDrop> exclusiveDrops;
 
   bool get isLoading => status == HomeStatus.loading;
   bool get hasError   => status == HomeStatus.error;
@@ -35,6 +37,7 @@ class HomeState {
     List<NearbyEvent>? nearbyEvents,
     int? visibleNearbyCount,
     String? errorMessage,
+    List<ExclusiveDrop>? exclusiveDrops,
   }) =>
       HomeState(
         status: status ?? this.status,
@@ -43,5 +46,6 @@ class HomeState {
         nearbyEvents: nearbyEvents ?? this.nearbyEvents,
         visibleNearbyCount: visibleNearbyCount ?? this.visibleNearbyCount,
         errorMessage: errorMessage ?? this.errorMessage,
+        exclusiveDrops: exclusiveDrops ?? this.exclusiveDrops,
       );
 }

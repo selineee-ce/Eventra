@@ -5,7 +5,7 @@ import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/pass_package.dart';
 import 'package:eventra/features/home/repositories/home_repository.dart';
 import 'package:flutter/foundation.dart';
-
+import 'package:eventra/features/home/models/exclusive_drop.dart';
 class HomeController extends ChangeNotifier {
   HomeController({HomeRepository? repository})
       : _repository = repository ?? const HomeRepository();
@@ -22,17 +22,19 @@ class HomeController extends ChangeNotifier {
         _repository.fetchFeaturedEvents(),
         _repository.fetchPasses(),
         _repository.fetchNearbyEvents(),
+        _repository.fetchExclusiveDrops(),
       ]);
 
       final featured = results[0] as List<FeaturedEvent>;
       final passes   = results[1] as List<PassPackage>;
       final nearby   = results[2] as List<NearbyEvent>;
-
+      final exclusiveDrops = results[3] as List<ExclusiveDrop>;
       _emit(_state.copyWith(
         status: HomeStatus.success,
         featuredEvents: featured,
         passes: passes,
         nearbyEvents: nearby,
+        exclusiveDrops: exclusiveDrops,
         visibleNearbyCount: nearby.length < 4 ? nearby.length : 4,
         errorMessage: null,
       ));

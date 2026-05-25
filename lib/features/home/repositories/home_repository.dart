@@ -13,6 +13,7 @@ import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/home/models/featured_event.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/pass_package.dart';
+import 'package:eventra/features/home/models/exclusive_drop.dart';
 
 class HomeRepository {
   const HomeRepository();
@@ -30,7 +31,6 @@ class HomeRepository {
     final raw = await EventraDatabase.instance.fetchPasses();
     return raw.map(PassPackage.fromJson).toList();
   }
-
   // Mengambil dari tabel `nearby_events`
   // Endpoint: GET /api/home/nearby-events
   Future<List<NearbyEvent>> fetchNearbyEvents() async {
@@ -38,6 +38,10 @@ class HomeRepository {
     return raw.map(NearbyEvent.fromJson).toList();
   }
 
+  Future<List<ExclusiveDrop>> fetchExclusiveDrops() async {
+    final raw = await EventraDatabase.instance.fetchExclusiveDrops();
+    return raw.map(ExclusiveDrop.fromJson).toList();
+  }
   // UPDATE pass_packages SET is_favorite = ? WHERE id = ?
   // Endpoint: POST /api/passes/:id/favorite
   Future<void> setPassFavorite({required int passId, required bool isFavorite}) async {

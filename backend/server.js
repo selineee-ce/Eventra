@@ -157,6 +157,17 @@ app.get('/api/artists', async (_req, res, next) => {
   }
 });
 
+app.get('/api/home/exclusive-drops', async (_req, res, next) => {
+  try {
+    const rows = await query(
+      'SELECT id, title, badge, description, type, image, countdown_seconds, sort_order FROM exclusive_drops WHERE is_active = 1 ORDER BY sort_order ASC'
+    );
+    res.json({ data: rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/passes/:id/favorite', async (req, res, next) => {
   try {
     const passId = Number(req.params.id);

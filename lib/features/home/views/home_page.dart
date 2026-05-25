@@ -8,28 +8,8 @@ import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/pass_package.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EventraHomePage
-//
-// Semua card di halaman ini mengambil data dari MySQL via backend Node.js:
-//
-//   Carousel  → tabel `featured_events`
-//              GET /api/home/featured-events
-//              field: id, title, subtitle, image, tag1, tag2, button, sort_order, is_favorite
-//
-//   Pass cards → tabel `pass_packages`
-//               GET /api/home/passes
-//               field: id, title, description (alias desc), price, sort_order, is_favorite
-//
-//   Nearby grid → tabel `nearby_events`
-//                GET /api/home/nearby-events
-//                field: id, title, date_label (alias date), place, price, image, sort_order, is_favorite
-//
-//   Teks UI    → tabel `app_config`
-//               GET /api/app-config (diload di main.dart via AppConfig)
-// ─────────────────────────────────────────────────────────────────────────────
-
+import 'package:eventra/features/home/models/exclusive_drop.dart';
+import 'package:eventra/features/ticket/buy_ticket_page.dart';
 class EventraHomePage extends StatefulWidget {
   const EventraHomePage({super.key, required this.controller});
 
@@ -44,6 +24,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
 
   int currentPage = 0;
   int carouselTick = 0;
+  Map<int, int> _dropCountdowns = {};
 
   Duration countdown = const Duration(hours: 24);
   Timer? timer;
@@ -57,26 +38,28 @@ class _EventraHomePageState extends State<EventraHomePage> {
     _ctrl.loadAll(); // fetch ketiga tabel sekaligus (paralel)
 
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        if (countdown.inSeconds > 0) {
-          countdown -= const Duration(seconds: 1);
-        }
+    if (!mounted) return;
+    setState(() {
+      if (countdown.inSeconds > 0) {
+        countdown -= const Duration(seconds: 1);
+      }
 
-        carouselTick++;
-        final events = _ctrl.state.featuredEvents;
+      // ← tambah ini
+      _dropCountdowns.updateAll((id, secs) => secs > 0 ? secs - 1 : 0);
 
-        if (carouselTick >= 5 && events.isNotEmpty && _pageController.hasClients) {
-          carouselTick = 0;
-          currentPage = currentPage < events.length - 1 ? currentPage + 1 : 0;
-          _pageController.animateToPage(
-            currentPage,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        }
-      });
+      carouselTick++;
+      final events = _ctrl.state.featuredEvents;
+      if (carouselTick >= 5 && events.isNotEmpty && _pageController.hasClients) {
+        carouselTick = 0;
+        currentPage = currentPage < events.length - 1 ? currentPage + 1 : 0;
+        _pageController.animateToPage(
+          currentPage,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
     });
+  });
   }
 
   @override
@@ -87,7 +70,15 @@ class _EventraHomePageState extends State<EventraHomePage> {
     super.dispose();
   }
 
-  void _onStateChange() => setState(() {});
+  void _onStateChange() {
+    final drops = _ctrl.state.exclusiveDrops;
+    for (final drop in drops) {
+      if (!_dropCountdowns.containsKey(drop.id)) {
+        _dropCountdowns[drop.id] = drop.countdownSeconds;
+      }
+    }
+    setState(() {});
+  }
 
   String get formattedCountdown {
     final hours   = countdown.inHours.toString().padLeft(2, '0');
@@ -131,7 +122,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
                             const SizedBox(height: 18),
 
                             // data dari tabel `pass_packages`
-                            buildPasses(state.passes),
+                            buildExclusiveDrop(state.exclusiveDrops),
 
                             const SizedBox(height: 18),
 
@@ -298,112 +289,105 @@ class _EventraHomePageState extends State<EventraHomePage> {
 
   // ── Exclusive Header — teks dari `app_config` ─────────────
   Widget buildExclusiveHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              // app_config key: 'home.drops_eyebrow' → value: 'LIMITED ACCESS'
-              AppConfig.instance.text('home.drops_eyebrow', 'LIMITED ACCESS'),
-              style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
-            ),
-            Text(
-              // app_config key: 'home.drops_title' → value: 'Exclusive Drops'
-              AppConfig.instance.text('home.drops_title', 'Exclusive Drops'),
-              style: GoogleFonts.poppins(
-                color: Colors.white, fontWeight: FontWeight.w700, fontSize: 24,
-              ),
-            ),
-          ],
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        AppConfig.instance.text('home.drops_eyebrow', 'LIMITED ACCESS'),
+        style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
+      ),
+      Text(
+        AppConfig.instance.text('home.drops_title', 'Exclusive Drops'),
+        style: GoogleFonts.poppins(
+          color: Colors.white, fontWeight: FontWeight.w700, fontSize: 24,
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2A2035),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            formattedCountdown,
-            style: GoogleFonts.poppins(
-              color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   // ── Pass Cards — tabel `pass_packages` ────────────────────
   // field: title, description (alias desc di API), price, is_favorite
-  Widget buildPasses(List<PassPackage> passes) {
-    return Column(
-      children: passes.map((pass) => buildPassCard(pass)).toList(),
-    );
-  }
+  Widget buildExclusiveDrop(List<ExclusiveDrop> drops) {
+  return Column(
+    children: drops.map((drop) => buildExclusiveDropCard(drop)).toList(),
+  );
+}
 
-  Widget buildPassCard(PassPackage pass) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B1526),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 72, height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFF5C4B7A),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pass.title, // field: title
-                  style: GoogleFonts.poppins(
-                    color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18,
+Widget buildExclusiveDropCard(ExclusiveDrop drop) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFF1B1526),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: Colors.white10),
+    ),
+    child: Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: drop.image != null
+              ? Image.network(
+                  drop.image!,
+                  width: 72, height: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 72, height: 72,
+                    color: const Color(0xFF5C4B7A),
+                    child: const Icon(Icons.image_not_supported, color: Colors.white24, size: 28),
                   ),
+                )
+              : Container(
+                  width: 72, height: 72,
+                  color: const Color(0xFF5C4B7A),
+                  child: const Icon(Icons.event, color: Colors.white24, size: 28),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  pass.description, // field: description (API: desc)
-                  style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  pass.price, // field: price
-                  style: GoogleFonts.poppins(
-                    color: Colors.white, fontWeight: FontWeight.w700, fontSize: 24,
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(drop.title,
+                style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+              Text(drop.badge,
+                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700, fontSize: 11)),
+              Text(drop.description,
+                style: GoogleFonts.poppins(color: Colors.white54, fontSize: 11)),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                        _formatSeconds(_dropCountdowns[drop.id] ?? drop.countdownSeconds),
+                        style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
+                      ),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD0BCFF),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text('VIEW DETAILS',
+                          style: GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700, fontSize: 11)),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_forward, color: Colors.black, size: 13),
+                      ]),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          // field: is_favorite → POST /api/passes/:id/favorite
-          IconButton(
-            onPressed: () => _ctrl.togglePassFavorite(pass),
-            icon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
-              child: Icon(
-                pass.isFavorite ? Icons.favorite : Icons.favorite_border,
-                key: ValueKey(pass.isFavorite),
-                color: const Color(0xFFD0BCFF),
+                ],
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
+        ),
+      ],
+    ),
+  );
+}
   // ── Near You Header — teks dari `app_config` ──────────────
   Widget buildNearYouHeader() {
     return Row(
@@ -431,19 +415,32 @@ class _EventraHomePageState extends State<EventraHomePage> {
   // ── Nearby Grid — tabel `nearby_events` ───────────────────
   // field: image, date_label (API: date), title, place, price, is_favorite
   Widget buildNearbyEvents(List<NearbyEvent> events) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: events.length,
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 220,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 20,
-        childAspectRatio: 0.60,
-      ),
-      itemBuilder: (context, index) => buildNearbyCard(events[index]),
-    );
-  }
+  return GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    itemCount: events.length,
+    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: 220,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 20,
+      childAspectRatio: 0.60,
+    ),
+    itemBuilder: (context, index) {
+      final item = events[index];
+      return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BuyTicketPage(event: item),
+            ),
+          );
+        },
+        child: buildNearbyCard(item),
+      );
+    },
+  );
+}
 
   Widget buildNearbyCard(NearbyEvent item) {
     return Column(
@@ -495,35 +492,23 @@ class _EventraHomePageState extends State<EventraHomePage> {
           style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
         ),
         const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              item.price, // field: price
-              style: GoogleFonts.poppins(
-                color: Colors.white, fontWeight: FontWeight.w700, fontSize: 24,
+        GestureDetector(
+          onTap: () => _ctrl.toggleNearbyFavorite(item),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 250),
+            child: Container(
+              key: ValueKey(item.isFavorite),
+              width: 38, height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B3157),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                item.isFavorite ? Icons.favorite : Icons.favorite_outline,
+                color: const Color(0xFFD0BCFF),
               ),
             ),
-            // field: is_favorite → POST /api/nearby-events/:id/favorite
-            GestureDetector(
-              onTap: () => _ctrl.toggleNearbyFavorite(item),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Container(
-                  key: ValueKey(item.isFavorite),
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B3157),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    item.isFavorite ? Icons.favorite : Icons.favorite_outline,
-                    color: const Color(0xFFD0BCFF),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -544,6 +529,13 @@ class _EventraHomePageState extends State<EventraHomePage> {
         ),
       ),
     );
+  }
+
+  String _formatSeconds(int totalSeconds) {
+    final h = (totalSeconds ~/ 3600).toString().padLeft(2, '0');
+    final m = ((totalSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
+    final s = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$h : $m : $s';
   }
 
   ImageProvider _eventImage(String path) {

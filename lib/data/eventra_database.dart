@@ -17,6 +17,9 @@ class EventraDatabase {
 
   Future<List<Map<String, dynamic>>> fetchPasses() async =>
       _getList('/home/passes');
+      
+  Future<List<Map<String, dynamic>>> fetchExclusiveDrops() async =>
+    _getList('/home/exclusive-drops');
 
   Future<List<Map<String, dynamic>>> fetchNearbyEvents() async =>
       _getList('/home/nearby-events');
