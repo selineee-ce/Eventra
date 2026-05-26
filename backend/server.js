@@ -34,7 +34,7 @@ async function tableExists(tableName) {
      FROM information_schema.TABLES
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
      LIMIT 1`,
-    [tableName]
+    [tableName],
   );
   return rows.length > 0;
 }
@@ -93,6 +93,19 @@ function normalizeRowLabel(value) {
 
 function normalizeSeatLabel(value) {
   return String(value || '').replace(/^SEAT\s+/i, '').trim();
+}
+
+function formatCompactCount(value) {
+  const numericValue = Number(value || 0);
+
+  if (!Number.isFinite(numericValue)) {
+    return '0';
+  }
+
+  return new Intl.NumberFormat('en', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(numericValue);
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -161,7 +174,9 @@ app.get('/api/notifications', async (_req, res, next) => {
 
 app.get('/api/profile', async (_req, res, next) => {
   try {
-    const [row] = await query('SELECT id, name, membership_title, location, upcoming_events_count, avatar_url FROM profile ORDER BY id ASC LIMIT 1');
+    const [row] = await query(
+      'SELECT id, username, name, email, phone, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified FROM users ORDER BY id ASC LIMIT 1',
+    );
     res.json({ profile: row || {} });
   } catch (error) {
     next(error);
@@ -201,11 +216,14 @@ app.get('/api/favorites', async (_req, res, next) => {
 
 app.get('/api/artists', async (_req, res, next) => {
   try {
-    const artists = await query('SELECT id, name, followers, monthly_listeners AS monthlyListeners, events_count AS eventsCount, genre, description, image_url AS imageUrl, sort_order FROM artists ORDER BY sort_order ASC');
-    const [events] = await pool.query('SELECT artist_id, title, lineup, venue, location, date_label AS date FROM artist_events ORDER BY sort_order ASC');
+    const artists = await query(
+      'SELECT id, name, followers_count, description, avatar_url AS imageUrl, sort_order FROM users WHERE role = ? ORDER BY sort_order ASC, followers_count DESC',
+      ['promoter'],
+    );
+    const [events] = await pool.query('SELECT user_id, title, lineup, venue, location, date_label AS date FROM user_events ORDER BY sort_order ASC');
 
     const groupedEvents = events.reduce((accumulator, event) => {
-      const key = String(event.artist_id);
+      const key = String(event.user_id);
       if (!accumulator[key]) {
         accumulator[key] = [];
       }
@@ -221,10 +239,7 @@ app.get('/api/artists', async (_req, res, next) => {
 
     const data = artists.map((artist) => ({
       name: artist.name,
-      followers: artist.followers,
-      monthlyListeners: artist.monthlyListeners,
-      eventsCount: artist.eventsCount,
-      genre: artist.genre,
+      followers: `${formatCompactCount(artist.followers_count)} Followers`,
       description: artist.description,
       imageUrl: artist.imageUrl,
       upcomingEvents: groupedEvents[String(artist.id)] || [],
@@ -454,20 +469,25 @@ app.post('/api/auth/register', async (req, res, next) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await pool.execute(
-      `INSERT INTO users (username, email, phone, password_hash, membership_title, location, upcoming_events_count, is_verified)
-       VALUES (?, ?, ?, ?, 'STANDARD MEMBER', 'Set your location', 0, 1)`,
-      [username, email, phone || null, passwordHash],
+      `INSERT INTO users (username, name, email, phone, password_hash, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified, sort_order)
+       VALUES (?, ?, ?, ?, ?, 'Set your location', NULL, 0, 0, NULL, 'user', 1, 0)`,
+      [username, username, email, phone || null, passwordHash],
     );
 
     res.status(201).json({
       user: {
         id: result.insertId,
         username,
+        name: username,
         email,
         phone: phone || null,
-        membership_title: 'STANDARD MEMBER',
         location: 'Set your location',
+        avatar_url: null,
+        followers_count: 0,
         upcoming_events_count: 0,
+        description: null,
+        role: 'user',
+        is_verified: 1,
       },
     });
   } catch (error) {
@@ -488,7 +508,7 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
 
     const [user] = await query(
-      `SELECT id, username, email, phone, password_hash, membership_title, location, avatar_url, upcoming_events_count, role
+      `SELECT id, username, name, email, phone, password_hash, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified
        FROM users
        WHERE email = ? OR phone = ? OR username = ?
        LIMIT 1`,

@@ -26,8 +26,7 @@ Aplikasi ini dikembangkan untuk mengatasi masalah tersebarnya informasi konser d
 ### Prasyarat
 
 * Instal [Flutter SDK](https://docs.flutter.dev/get-started/install) versi terbaru.
-* Instal [Node.js](https://nodejs.org/) untuk menjalankan backend.
-* Pastikan [MySQL](https://www.mysql.com/) sudah terinstal dan berjalan.
+* Instal [Docker Desktop](https://www.docker.com/products/docker-desktop/) untuk menjalankan backend dan MySQL lewat Compose.
 
 ### Langkah-langkah:
 
@@ -38,13 +37,17 @@ cd eventra
 
 ```
 
-2. Setup Backend:
-Masuk ke folder backend, instal dependensi, dan sesuaikan konfigurasi database MySQL kamu.
+2. Setup Backend + Database:
+Jalankan backend Node.js dan MySQL sekaligus dengan Docker Compose.
 ```bash
-cd backend
-npm install
-npm start
+docker compose up --build
+```
 
+API akan tersedia di `http://localhost:3000`, sedangkan MySQL berjalan di `localhost:3306`.
+
+Jika kamu ingin mematikan stack-nya:
+```bash
+docker compose down
 ```
 
 3. Setup Frontend:

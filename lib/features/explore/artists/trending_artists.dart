@@ -137,16 +137,6 @@ class _TrendingArtistsPageState extends State<TrendingArtistsPage> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              artist['genre'] as String,
-                              style: const TextStyle(
-                                color: Colors.purpleAccent,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
                             Text(
                               artist['followers'] as String,
                               style: const TextStyle(

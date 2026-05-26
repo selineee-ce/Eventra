@@ -2,6 +2,7 @@ import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
+import 'package:eventra/features/home/views/notification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -52,7 +53,11 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
-                const SizedBox(height: 30),
+                const SizedBox(height: 6),
+
+                _buildHeader(context),
+
+                const SizedBox(height: 26),
 
                 //PROFILE HEADER
                 _buildAvatar(profile['avatar_url'] as String?),
@@ -67,12 +72,14 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  profile['membership_title'] as String? ?? '',
+                  ((profile['bio'] as String?)?.isNotEmpty ?? false)
+                      ? profile['bio'] as String
+                      : 'No bio yet.',
                   style: GoogleFonts.poppins(
                     color: Colors.white60,
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w400,
-                    letterSpacing: 1.2,
+                    letterSpacing: 0.8,
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -102,10 +109,18 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                 Row(
                   children: [
                     _buildStatCard(
-                      profile['upcoming_events_count']?.toString() ?? '0',
+                      _displayCount(profile['upcoming_events_count']),
                       AppConfig.instance.text(
                         'profile.stats.upcoming',
                         'UPCOMING EVENTS',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _buildStatCard(
+                      _displayCount(profile['followers_count']),
+                      AppConfig.instance.text(
+                        'profile.stats.followers',
+                        'FOLLOWERS',
                       ),
                     ),
                   ],
@@ -131,7 +146,7 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
 
                 //ACCOUNT SETTINGS LIST
                 _buildSettingsItem(
-                  icon: Icons.campaign_outlined, 
+                  icon: Icons.campaign_outlined,
                   title: "Promoter Roles",
                   statusText: "• PENDING APPROVAL",
                   statusColor: const Color(0xFF4FA7FF),
@@ -139,7 +154,7 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "SWITCH", 
+                        "SWITCH",
                         style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w400),
                       ),
                       const SizedBox(width: 12),
@@ -149,33 +164,8 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                   showChevron: false,
                 ),
                 _buildSettingsItem(
-                  icon: Icons.video_library_outlined, 
-                  title: "Subscription",
-                  statusText: "PREMIUM ACTIVE",
-                  statusColor: Colors.white38,
-                ),
-                _buildSettingsItem(
-                  icon: Icons.language_outlined, 
-                  title: "Languages",
-                  statusText: "ENGLISH (US)",
-                  statusColor: Colors.white38,
-                ),
-                _buildSettingsItem(
-                  icon: Icons.location_on_outlined, 
+                  icon: Icons.location_on_outlined,
                   title: "Location",
-                ),
-                _buildSettingsItem(
-                  icon: Icons.brightness_3_outlined, 
-                  title: "Display",
-                  trailingWidget: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "DARK", 
-                        style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w400),
-                      ),
-                    ],
-                  ),
                   isLast: true,
                 ),
 
@@ -223,6 +213,43 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
   }
 
   // Widget Helper untuk Kartu Statistik
+  String _displayCount(dynamic value) {
+    if (value == null) {
+      return '0';
+    }
+
+    if (value is num) {
+      return value.toString();
+    }
+
+    final parsed = int.tryParse(value.toString());
+    return parsed?.toString() ?? value.toString();
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () => Navigator.maybePop(context),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+        ),
+        const SizedBox(width: 48),
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationPage(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.notifications_none, color: Colors.white),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAvatar(String? avatarUrl) {
     if (avatarUrl == null || avatarUrl.isEmpty) {
       return const CircleAvatar(

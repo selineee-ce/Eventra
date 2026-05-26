@@ -54,15 +54,6 @@ class ArtistProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              artistData['genre'] as String? ?? '',
-              style: GoogleFonts.poppins(
-                color: Colors.purpleAccent,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
               artistData['followers'] as String? ?? '',
               style: GoogleFonts.poppins(
                 color: const Color(0xFFD0BCFF),
