@@ -1,11 +1,14 @@
 import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/favorites_notifier.dart';
+import 'package:eventra/features/home/controllers/home_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EventraFavoritesPage extends StatefulWidget {
-  const EventraFavoritesPage({super.key});
+  const EventraFavoritesPage({super.key, required this.controller});
+
+  final HomeController controller;
 
   @override
   State<EventraFavoritesPage> createState() => _EventraFavoritesPageState();
@@ -45,6 +48,35 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
       favorites = loadedFavorites;
       _isLoading = false;
     });
+  }
+
+  Future<void> _removeFavorite(Map<String, dynamic> favorite) async {
+    final id = int.tryParse(favorite['id'].toString());
+    final type = favorite['type'] as String? ?? 'event';
+
+    if (id == null) {
+      return;
+    }
+
+    final previousFavorites = List<Map<String, dynamic>>.from(favorites);
+    setState(() {
+      favorites = favorites.where((item) {
+        return item['id'] != id || item['type'] != type;
+      }).toList();
+    });
+
+    try {
+      await widget.controller.setFavoriteByType(
+        type: type,
+        id: id,
+        isFavorite: false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        favorites = previousFavorites;
+      });
+    }
   }
 
   @override
@@ -144,13 +176,31 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
             ),
           ),
           const SizedBox(width: 10),
-          Text(
-            favorite['price'] as String? ?? '',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                favorite['price'] as String? ?? '',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => _removeFavorite(favorite),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B3157),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.favorite, color: Color(0xFFD0BCFF)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

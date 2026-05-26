@@ -6,9 +6,10 @@ import 'package:eventra/features/home/models/pass_package.dart';
 import 'package:eventra/features/home/repositories/home_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:eventra/features/home/models/exclusive_drop.dart';
+
 class HomeController extends ChangeNotifier {
   HomeController({HomeRepository? repository})
-      : _repository = repository ?? const HomeRepository();
+    : _repository = repository ?? const HomeRepository();
 
   final HomeRepository _repository;
 
@@ -26,20 +27,24 @@ class HomeController extends ChangeNotifier {
       ]);
 
       final featured = results[0] as List<FeaturedEvent>;
-      final passes   = results[1] as List<PassPackage>;
-      final nearby   = results[2] as List<NearbyEvent>;
+      final passes = results[1] as List<PassPackage>;
+      final nearby = results[2] as List<NearbyEvent>;
       final exclusiveDrops = results[3] as List<ExclusiveDrop>;
-      _emit(_state.copyWith(
-        status: HomeStatus.success,
-        featuredEvents: featured,
-        passes: passes,
-        nearbyEvents: nearby,
-        exclusiveDrops: exclusiveDrops,
-        visibleNearbyCount: nearby.length < 4 ? nearby.length : 4,
-        errorMessage: null,
-      ));
+      _emit(
+        _state.copyWith(
+          status: HomeStatus.success,
+          featuredEvents: featured,
+          passes: passes,
+          nearbyEvents: nearby,
+          exclusiveDrops: exclusiveDrops,
+          visibleNearbyCount: nearby.length < 4 ? nearby.length : 4,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      _emit(_state.copyWith(status: HomeStatus.error, errorMessage: e.toString()));
+      _emit(
+        _state.copyWith(status: HomeStatus.error, errorMessage: e.toString()),
+      );
     }
   }
 
@@ -62,23 +67,94 @@ class HomeController extends ChangeNotifier {
     final newVal = !event.isFavorite;
     _updateNearby(event.copyWith(isFavorite: newVal));
     try {
-      await _repository.setNearbyEventFavorite(eventId: event.id, isFavorite: newVal);
+      await _repository.setNearbyEventFavorite(
+        eventId: event.id,
+        isFavorite: newVal,
+      );
       FavoritesNotifier.instance.notify(); // ← sinyal ke FavoritesPage
     } catch (_) {
       _updateNearby(event.copyWith(isFavorite: event.isFavorite)); // rollback
     }
   }
 
+  Future<void> setFavoriteByType({
+    required String type,
+    required int id,
+    required bool isFavorite,
+  }) async {
+    if (type == 'pass') {
+      final pass = _findPass(id);
+      if (pass != null) {
+        _updatePass(pass.copyWith(isFavorite: isFavorite));
+      }
+
+      try {
+        await _repository.setPassFavorite(passId: id, isFavorite: isFavorite);
+        FavoritesNotifier.instance.notify();
+      } catch (_) {
+        if (pass != null) {
+          _updatePass(pass);
+        }
+      }
+      return;
+    }
+
+    final event = _findNearbyEvent(id);
+    if (event != null) {
+      _updateNearby(event.copyWith(isFavorite: isFavorite));
+    }
+
+    try {
+      await _repository.setNearbyEventFavorite(
+        eventId: id,
+        isFavorite: isFavorite,
+      );
+      FavoritesNotifier.instance.notify();
+    } catch (_) {
+      if (event != null) {
+        _updateNearby(event);
+      }
+    }
+  }
+
   void showAllNearbyEvents() =>
       _emit(_state.copyWith(visibleNearbyCount: _state.nearbyEvents.length));
 
-  void _updatePass(PassPackage updated) => _emit(_state.copyWith(
-        passes: _state.passes.map((p) => p.id == updated.id ? updated : p).toList(),
-      ));
+  void resetNearbyEvents() => _emit(_state.copyWith(visibleNearbyCount: 4));
 
-  void _updateNearby(NearbyEvent updated) => _emit(_state.copyWith(
-        nearbyEvents: _state.nearbyEvents.map((e) => e.id == updated.id ? updated : e).toList(),
-      ));
+  void _updatePass(PassPackage updated) => _emit(
+    _state.copyWith(
+      passes: _state.passes
+          .map((p) => p.id == updated.id ? updated : p)
+          .toList(),
+    ),
+  );
+
+  void _updateNearby(NearbyEvent updated) => _emit(
+    _state.copyWith(
+      nearbyEvents: _state.nearbyEvents
+          .map((e) => e.id == updated.id ? updated : e)
+          .toList(),
+    ),
+  );
+
+  PassPackage? _findPass(int id) {
+    for (final pass in _state.passes) {
+      if (pass.id == id) {
+        return pass;
+      }
+    }
+    return null;
+  }
+
+  NearbyEvent? _findNearbyEvent(int id) {
+    for (final event in _state.nearbyEvents) {
+      if (event.id == id) {
+        return event;
+      }
+    }
+    return null;
+  }
 
   void _emit(HomeState s) {
     _state = s;

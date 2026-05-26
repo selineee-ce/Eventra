@@ -1,8 +1,14 @@
 import 'package:eventra/data/app_config.dart';
+import 'package:eventra/data/tickets_notifier.dart';
 import 'package:eventra/features/favorites/favorites_page.dart';
 import 'package:eventra/features/explore/artists/trending_artists.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
+import 'package:eventra/features/home/models/nearby_event.dart';
+import 'package:eventra/features/home/models/ticket_type.dart';
 import 'package:eventra/features/home/repositories/home_repository.dart';
+import 'package:eventra/features/ticket/buy_ticket_page.dart';
+import 'package:eventra/features/ticket/payment_page.dart';
+import 'package:eventra/features/ticket/payment_status_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 
@@ -60,21 +66,110 @@ class _MainScreenState extends State<MainScreen> {
   void openNotificationPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const NotificationPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const NotificationPage()),
     );
+  }
+
+  NearbyEvent? _selectedEvent; // ← tambah variable ini
+  NearbyEvent? _checkoutEvent;
+  List<TicketType> _checkoutTickets = [];
+  Map<String, dynamic>? _paymentResult;
+
+  void openBuyTicketPage(NearbyEvent event) {
+    setState(() {
+      _selectedEvent = event;
+      _currentIndex = 5; // index khusus buy ticket
+    });
+  }
+
+  void closeBuyTicketPage() {
+    setState(() {
+      _selectedEvent = null;
+      _checkoutEvent = null;
+      _checkoutTickets = [];
+      _paymentResult = null;
+      _currentIndex = 0;
+    });
+  }
+
+  void openPaymentPage(NearbyEvent event, List<TicketType> tickets) {
+    setState(() {
+      _checkoutEvent = event;
+      _checkoutTickets = tickets;
+      _paymentResult = null;
+      _currentIndex = 6;
+    });
+  }
+
+  void closePaymentPage() {
+    setState(() {
+      _checkoutEvent = null;
+      _checkoutTickets = [];
+      _paymentResult = null;
+      _currentIndex = _selectedEvent == null ? 0 : 5;
+    });
+  }
+
+  void openPaymentStatus(Map<String, dynamic> payment) {
+    TicketsNotifier.instance.notify();
+    setState(() {
+      _paymentResult = payment;
+      _currentIndex = 7;
+    });
+  }
+
+  void viewGeneratedTickets() {
+    TicketsNotifier.instance.notify();
+    setState(() {
+      _selectedEvent = null;
+      _checkoutEvent = null;
+      _checkoutTickets = [];
+      _paymentResult = null;
+      _currentIndex = 2;
+    });
+  }
+
+  void backHomeFromPaymentStatus() {
+    setState(() {
+      _selectedEvent = null;
+      _checkoutEvent = null;
+      _checkoutTickets = [];
+      _paymentResult = null;
+      _currentIndex = 0;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     // EventraHomePage menerima controller — data ditarik dari MySQL
     final pages = [
-      EventraHomePage(controller: _homeController),
+      EventraHomePage(
+        controller: _homeController,
+        onEventTap: openBuyTicketPage,
+      ),
       const TrendingArtistsPage(),
       const EventraTicketsPage(),
-      const EventraFavoritesPage(),
+      EventraFavoritesPage(controller: _homeController),
       const EventraProfilePage(),
+      if (_selectedEvent != null)
+        BuyTicketPage(
+          event: _selectedEvent!,
+          onBack: closeBuyTicketPage,
+          onCheckout: openPaymentPage,
+        ),
+      if (_checkoutEvent != null)
+        PaymentPage(
+          event: _checkoutEvent!,
+          tickets: _checkoutTickets,
+          onBack: closePaymentPage,
+          onPaymentComplete: openPaymentStatus,
+        ),
+      if (_paymentResult != null)
+        PaymentStatusPage(
+          payment: _paymentResult!,
+          onViewTickets: viewGeneratedTickets,
+          onBackHome: backHomeFromPaymentStatus,
+        ),
     ];
 
     return Scaffold(
@@ -82,9 +177,7 @@ class _MainScreenState extends State<MainScreen> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.mainAppBackground,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.mainAppBackground),
         child: SafeArea(
           child: Column(
             children: [
@@ -117,11 +210,19 @@ class _MainScreenState extends State<MainScreen> {
                               borderRadius: BorderRadius.circular(30),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                            prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: Colors.white54,
+                            ),
                             suffixIcon: GestureDetector(
                               onTap: toggleSearchPage,
-                              child: const Icon(Icons.close, color: Colors.white54),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
+                              ),
                             ),
                           ),
                           onChanged: (value) {},
@@ -133,7 +234,7 @@ class _MainScreenState extends State<MainScreen> {
               /// PAGE CONTENT
               Expanded(
                 child: IndexedStack(
-                  index: _currentIndex,
+                  index: _currentIndex > pages.length - 1 ? 0 : _currentIndex,
                   children: pages,
                 ),
               ),
@@ -149,10 +250,14 @@ class _MainScreenState extends State<MainScreen> {
           highlightColor: Colors.transparent,
         ),
         child: MainNavBar(
-          currentIndex: _currentIndex,
+          currentIndex: _currentIndex > 4 ? 0 : _currentIndex,
           onTap: (index) {
             setState(() {
               _currentIndex = index;
+              _selectedEvent = null;
+              _checkoutEvent = null;
+              _checkoutTickets = [];
+              _paymentResult = null;
             });
           },
         ),

@@ -124,14 +124,22 @@ class TicketDetailPage extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, color: Color(0xFF8A51F2), size: 25),
+                            const Icon(
+                              Icons.location_on,
+                              color: Color(0xFF8A51F2),
+                              size: 25,
+                            ),
                             const SizedBox(width: 4),
-                            Text(
-                              venue,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 25,
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Text(
+                                venue,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],
@@ -166,7 +174,9 @@ class TicketDetailPage extends StatelessWidget {
                         (index) => Expanded(
                           child: Container(
                             height: 1,
-                            color: index % 2 == 0 ? Colors.transparent : Colors.white24,
+                            color: index % 2 == 0
+                                ? Colors.transparent
+                                : Colors.white24,
                           ),
                         ),
                       ),
@@ -218,12 +228,22 @@ class TicketDetailPage extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.white38, fontSize: 15, fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+            color: Colors.white38,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.poppins(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w700),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -241,12 +261,22 @@ class TicketDetailPage extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.poppins(color: Colors.white38, fontSize: 15, fontWeight: FontWeight.w600),
+            style: GoogleFonts.poppins(
+              color: Colors.white38,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -259,13 +289,13 @@ class TicketDetailCardClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     var path = Path();
 
-    double cutTop = size.height - 238; 
+    double cutTop = size.height - 238;
     double radius = 25;
 
     path.lineTo(0, cutTop - radius);
     path.arcToPoint(
       Offset(0, cutTop + radius),
-      radius: Radius.circular(radius)
+      radius: Radius.circular(radius),
     );
     path.lineTo(0, size.height);
     path.lineTo(size.width, size.height);

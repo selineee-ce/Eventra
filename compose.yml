@@ -9,7 +9,7 @@ services:
       MYSQL_USER: eventra
       MYSQL_PASSWORD: eventra
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./backend/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro

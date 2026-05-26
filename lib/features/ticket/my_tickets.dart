@@ -1,5 +1,6 @@
 import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_database.dart';
+import 'package:eventra/data/tickets_notifier.dart';
 import 'package:eventra/features/ticket/ticket_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -15,10 +16,24 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
   List<Map<String, dynamic>> _ticketList = [];
   bool _isLoading = true;
 
+  String _cleanLabel(dynamic value, String prefix) {
+    return value
+        .toString()
+        .replaceFirst(RegExp('^$prefix\\s+', caseSensitive: false), '')
+        .trim();
+  }
+
   @override
   void initState() {
     super.initState();
     _loadTickets();
+    TicketsNotifier.instance.addListener(_loadTickets);
+  }
+
+  @override
+  void dispose() {
+    TicketsNotifier.instance.removeListener(_loadTickets);
+    super.dispose();
   }
 
   Future<void> _loadTickets() async {
@@ -41,13 +56,14 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
       body: SafeArea(
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFFD0BCFF),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
               )
             : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -167,6 +183,16 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                     width: 75,
                     height: 75,
                     fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 75,
+                      height: 75,
+                      color: const Color(0xFF2A2035),
+                      child: const Icon(
+                        Icons.confirmation_number,
+                        color: Colors.white24,
+                        size: 28,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -198,8 +224,12 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                         runSpacing: 6,
                         children: [
                           _buildMiniTag('SEC ${ticket['section']}'),
-                          _buildMiniTag('ROW ${ticket['row_label']}'),
-                          _buildMiniTag('SEAT ${ticket['seat_label']}'),
+                          _buildMiniTag(
+                            'ROW ${_cleanLabel(ticket['row_label'], 'ROW')}',
+                          ),
+                          _buildMiniTag(
+                            'SEAT ${_cleanLabel(ticket['seat_label'], 'SEAT')}',
+                          ),
                         ],
                       ),
                     ],
@@ -234,8 +264,8 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                     date: ticket['date_label'] as String,
                     time: ticket['time_label'] as String,
                     section: ticket['section'] as String,
-                    row: ticket['row_label'] as String,
-                    seat: ticket['seat_label'] as String,
+                    row: _cleanLabel(ticket['row_label'], 'ROW'),
+                    seat: _cleanLabel(ticket['seat_label'], 'SEAT'),
                     qrData: ticket['qr_data'] as String,
                   ),
                 ),
@@ -246,7 +276,10 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               alignment: Alignment.center,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white24),
@@ -261,10 +294,7 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      AppConfig.instance.text(
-                        'tickets.view_pass',
-                        'VIEW PASS',
-                      ),
+                      AppConfig.instance.text('tickets.view_pass', 'VIEW PASS'),
                       style: GoogleFonts.poppins(
                         color: Colors.white70,
                         fontSize: 15,
@@ -290,10 +320,7 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
       ),
       child: Text(
         text,
-        style: GoogleFonts.poppins(
-          color: Colors.white38,
-          fontSize: 11,
-        ),
+        style: GoogleFonts.poppins(color: Colors.white38, fontSize: 11),
       ),
     );
   }

@@ -28,6 +28,73 @@ async function query(sql, params = []) {
   return rows;
 }
 
+async function tableExists(tableName) {
+  const rows = await query(
+    `SELECT TABLE_NAME
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+     LIMIT 1`,
+    [tableName]
+  );
+  return rows.length > 0;
+}
+
+async function ensurePaymentTables() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS payment_orders (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      event_id INT NOT NULL,
+      payment_method ENUM('qris','gopay','ovo','visa') NOT NULL,
+      payment_status ENUM('PENDING','SUCCESS','FAILED') NOT NULL DEFAULT 'PENDING',
+      subtotal INT NOT NULL,
+      service_fee INT NOT NULL,
+      total INT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS payment_order_items (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      payment_order_id INT NOT NULL,
+      ticket_type_id INT NOT NULL,
+      ticket_name VARCHAR(120) NOT NULL,
+      quantity INT NOT NULL,
+      unit_price INT NOT NULL
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS payment_cards (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      payment_order_id INT NOT NULL,
+      card_holder VARCHAR(120) NOT NULL,
+      card_brand VARCHAR(40) NOT NULL,
+      card_last4 VARCHAR(4) NOT NULL,
+      card_expiry VARCHAR(7) NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+function normalizePaymentMethod(method) {
+  const normalized = String(method || '').toLowerCase();
+  return ['qris', 'gopay', 'ovo', 'visa'].includes(normalized) ? normalized : null;
+}
+
+function maskCardNumber(cardNumber) {
+  const digits = String(cardNumber || '').replace(/\D/g, '');
+  return digits.slice(-4);
+}
+
+function normalizeRowLabel(value) {
+  return String(value || '').replace(/^ROW\s+/i, '').trim();
+}
+
+function normalizeSeatLabel(value) {
+  return String(value || '').replace(/^SEAT\s+/i, '').trim();
+}
+
 app.get('/api/health', async (_req, res) => {
   try {
     await query('SELECT 1 AS ok');
@@ -48,7 +115,11 @@ app.get('/api/home/featured-events', async (_req, res, next) => {
 
 app.get('/api/home/passes', async (_req, res, next) => {
   try {
-    const rows = await query('SELECT id, title, description AS desc, price, sort_order, is_favorite FROM pass_packages ORDER BY sort_order ASC');
+    if (!(await tableExists('pass_packages'))) {
+      return res.json({ data: [] });
+    }
+
+    const rows = await query('SELECT id, title, description AS `desc`, price, sort_order, is_favorite FROM pass_packages ORDER BY sort_order ASC');
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -66,8 +137,14 @@ app.get('/api/home/nearby-events', async (_req, res, next) => {
 
 app.get('/api/tickets', async (_req, res, next) => {
   try {
-    const rows = await query('SELECT id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, sort_order FROM tickets ORDER BY sort_order ASC');
-    res.json({ data: rows });
+    const rows = await query('SELECT id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, ticket_type, ticket_status, sort_order FROM tickets ORDER BY sort_order ASC');
+    const data = rows.map((ticket) => ({
+      ...ticket,
+      row_label: normalizeRowLabel(ticket.row_label),
+      seat_label: normalizeSeatLabel(ticket.seat_label),
+      section: ticket.ticket_type || ticket.section,
+    }));
+    res.json({ data });
   } catch (error) {
     next(error);
   }
@@ -107,9 +184,11 @@ app.get('/api/app-config', async (_req, res, next) => {
 
 app.get('/api/favorites', async (_req, res, next) => {
   try {
-    const passes = await query(
-      'SELECT id, title, description AS subtitle, price, "pass" AS type FROM pass_packages WHERE is_favorite = 1 ORDER BY sort_order ASC',
-    );
+    const passes = (await tableExists('pass_packages'))
+      ? await query(
+          'SELECT id, title, description AS subtitle, price, "pass" AS type FROM pass_packages WHERE is_favorite = 1 ORDER BY sort_order ASC',
+        )
+      : [];
     const events = await query(
       'SELECT id, title, place AS subtitle, price, "event" AS type FROM nearby_events WHERE is_favorite = 1 ORDER BY sort_order ASC',
     );
@@ -168,6 +247,32 @@ app.get('/api/home/exclusive-drops', async (_req, res, next) => {
   }
 });
 
+app.get('/api/nearby-events/:id/ticket-types', async (req, res, next) => {
+  try {
+    const eventId = Number(req.params.id);
+    const rows = await query(
+      'SELECT id, name, badge, badge_color, description, bullet1, bullet2, bullet3, price, stock_remaining FROM event_ticket_types WHERE nearby_event_id = ? ORDER BY sort_order ASC',
+      [eventId]
+    );
+    res.json({ data: rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/nearby-events/:id/detail', async (req, res, next) => {
+  try {
+    const eventId = Number(req.params.id);
+    const [row] = await query(
+      'SELECT id, title, date_label, place, price, image, detail_image, venue_layout, artist_name, show_time, description FROM nearby_events WHERE id = ?',
+      [eventId]
+    );
+    res.json({ data: row || {} });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/passes/:id/favorite', async (req, res, next) => {
   try {
     const passId = Number(req.params.id);
@@ -187,6 +292,155 @@ app.post('/api/nearby-events/:id/favorite', async (req, res, next) => {
     res.json({ ok: true });
   } catch (error) {
     next(error);
+  }
+});
+
+app.post('/api/payments/checkout', async (req, res, next) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const eventId = Number(req.body?.eventId);
+    const method = normalizePaymentMethod(req.body?.paymentMethod);
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    const card = req.body?.card || {};
+
+    if (!eventId || !method || items.length === 0) {
+      return res.status(400).json({ error: 'Event, payment method, and ticket items are required' });
+    }
+
+    if (method === 'visa') {
+      const last4 = maskCardNumber(card.cardNumber);
+      if (!card.cardHolder || !card.expiry || !card.cvv || last4.length !== 4) {
+        return res.status(400).json({ error: 'Valid Visa card details are required' });
+      }
+    }
+
+    await connection.beginTransaction();
+
+    const [events] = await connection.execute(
+      'SELECT id, title, image, date_label, place, show_time FROM nearby_events WHERE id = ? LIMIT 1',
+      [eventId]
+    );
+    const event = events[0];
+
+    if (!event) {
+      await connection.rollback();
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const ticketIds = items.map((item) => Number(item.ticketTypeId)).filter(Boolean);
+    if (ticketIds.length === 0) {
+      await connection.rollback();
+      return res.status(400).json({ error: 'Invalid ticket selection' });
+    }
+
+    const placeholders = ticketIds.map(() => '?').join(',');
+    const [ticketTypes] = await connection.execute(
+      `SELECT id, name, price, stock_remaining FROM event_ticket_types WHERE nearby_event_id = ? AND id IN (${placeholders}) FOR UPDATE`,
+      [eventId, ...ticketIds]
+    );
+    const ticketMap = new Map(ticketTypes.map((ticket) => [Number(ticket.id), ticket]));
+
+    let subtotal = 0;
+    const normalizedItems = [];
+
+    for (const item of items) {
+      const ticketTypeId = Number(item.ticketTypeId);
+      const quantity = Number(item.quantity);
+      const ticket = ticketMap.get(ticketTypeId);
+
+      if (!ticket || !quantity || quantity < 1) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Invalid ticket selection' });
+      }
+
+      if (ticket.stock_remaining < quantity) {
+        await connection.rollback();
+        return res.status(409).json({ error: `${ticket.name} only has ${ticket.stock_remaining} tickets left` });
+      }
+
+      subtotal += ticket.price * quantity;
+      normalizedItems.push({ ticket, quantity });
+    }
+
+    const serviceFee = Math.round(subtotal * 0.035);
+    const total = subtotal + serviceFee;
+
+    const [orderResult] = await connection.execute(
+      `INSERT INTO payment_orders (event_id, payment_method, payment_status, subtotal, service_fee, total)
+       VALUES (?, ?, 'SUCCESS', ?, ?, ?)`,
+      [eventId, method, subtotal, serviceFee, total]
+    );
+    const paymentOrderId = orderResult.insertId;
+
+    if (method === 'visa') {
+      await connection.execute(
+        `INSERT INTO payment_cards (payment_order_id, card_holder, card_brand, card_last4, card_expiry)
+         VALUES (?, ?, 'Visa', ?, ?)`,
+        [paymentOrderId, card.cardHolder, maskCardNumber(card.cardNumber), card.expiry]
+      );
+    }
+
+    const [[ticketCounter]] = await connection.query('SELECT COALESCE(MAX(id), 0) AS max_id FROM tickets');
+    let nextTicketId = Number(ticketCounter.max_id) + 1;
+
+    for (const item of normalizedItems) {
+      await connection.execute(
+        `INSERT INTO payment_order_items (payment_order_id, ticket_type_id, ticket_name, quantity, unit_price)
+         VALUES (?, ?, ?, ?, ?)`,
+        [paymentOrderId, item.ticket.id, item.ticket.name, item.quantity, item.ticket.price]
+      );
+
+      await connection.execute(
+        'UPDATE event_ticket_types SET stock_remaining = stock_remaining - ? WHERE id = ?',
+        [item.quantity, item.ticket.id]
+      );
+
+      for (let index = 1; index <= item.quantity; index++) {
+        const rowLabel = String.fromCharCode(64 + (((nextTicketId - 1) % 6) + 1));
+        const seatLabel = String(((nextTicketId - 1) % 30) + 1).padStart(2, '0');
+        await connection.execute(
+          `INSERT INTO tickets (
+            id, title, image, date_label, time_label, venue, section, row_label, seat_label,
+            qr_data, ticket_type, ticket_status, sort_order
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UPCOMING', ?)`,
+          [
+            nextTicketId,
+            event.title,
+            event.image,
+            event.date_label,
+            event.show_time || '19:00 WIB',
+            event.place,
+            item.ticket.name,
+            rowLabel,
+            seatLabel,
+            `EVT-${eventId}-${paymentOrderId}-${nextTicketId}`,
+            item.ticket.name,
+            nextTicketId,
+          ]
+        );
+        nextTicketId++;
+      }
+    }
+
+    await connection.commit();
+
+    res.status(201).json({
+      payment: {
+        id: paymentOrderId,
+        status: 'SUCCESS',
+        method,
+        subtotal,
+        serviceFee,
+        total,
+        qrisPayload: method === 'qris' ? `EVENTRA-QRIS-${paymentOrderId}` : null,
+      },
+    });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
   }
 });
 
@@ -256,6 +510,13 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ error: error.message || 'Internal server error' });
 });
 
-app.listen(port, () => {
-  console.log(`Eventra API listening on port ${port}`);
-});
+ensurePaymentTables()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`Eventra API listening on port ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed to initialize payment tables:', error);
+    process.exit(1);
+  });

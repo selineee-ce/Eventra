@@ -17,9 +17,9 @@ class EventraDatabase {
 
   Future<List<Map<String, dynamic>>> fetchPasses() async =>
       _getList('/home/passes');
-      
+
   Future<List<Map<String, dynamic>>> fetchExclusiveDrops() async =>
-    _getList('/home/exclusive-drops');
+      _getList('/home/exclusive-drops');
 
   Future<List<Map<String, dynamic>>> fetchNearbyEvents() async =>
       _getList('/home/nearby-events');
@@ -32,6 +32,16 @@ class EventraDatabase {
 
   Future<List<Map<String, dynamic>>> fetchFavorites() async =>
       _getList('/favorites');
+
+  Future<List<Map<String, dynamic>>> fetchTicketTypes(int eventId) async =>
+      _getList('/nearby-events/$eventId/ticket-types');
+
+  Future<Map<String, dynamic>> fetchNearbyEventDetail(int eventId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/nearby-events/$eventId/detail'),
+    );
+    return _decodeMap(response, 'data');
+  }
 
   Future<Map<String, String>> fetchAppConfig() async {
     final response = await http.get(Uri.parse('$_baseUrl/app-config'));
@@ -67,7 +77,29 @@ class EventraDatabase {
     required int eventId,
     required bool isFavorite,
   }) async {
-    await _postJson('/nearby-events/$eventId/favorite', {'isFavorite': isFavorite});
+    await _postJson('/nearby-events/$eventId/favorite', {
+      'isFavorite': isFavorite,
+    });
+  }
+
+  Future<Map<String, dynamic>> checkoutPayment({
+    required int eventId,
+    required String paymentMethod,
+    required List<Map<String, dynamic>> items,
+    Map<String, dynamic>? card,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$_baseUrl/payments/checkout'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'eventId': eventId,
+        'paymentMethod': paymentMethod,
+        'items': items,
+        if (card != null) 'card': card,
+      }),
+    );
+
+    return _decodeMap(response, 'payment');
   }
 
   Future<Map<String, dynamic>> login({
@@ -77,10 +109,7 @@ class EventraDatabase {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/login'),
       headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'identifier': identifier,
-        'password': password,
-      }),
+      body: jsonEncode({'identifier': identifier, 'password': password}),
     );
 
     return _decodeMap(response, 'user');
@@ -144,17 +173,13 @@ class EventraDatabase {
   }
 
   Future<void> _postJson(String path, Map<String, dynamic> body) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl$path'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+    final response = await http.post(
+      Uri.parse('$_baseUrl$path'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
 
-      _decode(response);
-    } catch (_) {
-      return;
-    }
+    _decode(response);
   }
 
   Map<String, dynamic> _decode(http.Response response) {
