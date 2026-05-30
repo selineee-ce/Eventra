@@ -141,7 +141,7 @@ app.get('/api/home/passes', async (_req, res, next) => {
 
 app.get('/api/home/nearby-events', async (_req, res, next) => {
   try {
-    const rows = await query('SELECT id, title, date_label AS date, place, price, image, sort_order, is_favorite FROM nearby_events ORDER BY sort_order ASC');
+    const rows = await query('SELECT id, title, date_label AS date, place, city, artist_name, price, image, sort_order, is_favorite FROM nearby_events ORDER BY sort_order ASC');
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -201,11 +201,11 @@ app.get('/api/favorites', async (_req, res, next) => {
   try {
     const passes = (await tableExists('pass_packages'))
       ? await query(
-          'SELECT id, title, description AS subtitle, price, "pass" AS type FROM pass_packages WHERE is_favorite = 1 ORDER BY sort_order ASC',
+          'SELECT id, title, description AS subtitle, price, NULL AS image, NULL AS date, NULL AS place, NULL AS city, "pass" AS type FROM pass_packages WHERE is_favorite = 1 ORDER BY sort_order ASC',
         )
       : [];
     const events = await query(
-      'SELECT id, title, place AS subtitle, price, "event" AS type FROM nearby_events WHERE is_favorite = 1 ORDER BY sort_order ASC',
+      'SELECT id, title, place AS subtitle, price, image, date_label AS date, place, city, artist_name, "event" AS type FROM nearby_events WHERE is_favorite = 1 ORDER BY sort_order ASC',
     );
 
     res.json({ data: [...passes, ...events] });

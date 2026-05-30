@@ -1,7 +1,9 @@
 import 'package:eventra/data/app_config.dart';
+import 'package:eventra/core/widgets/event_card.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/favorites_notifier.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
+import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,7 +17,7 @@ class EventraFavoritesPage extends StatefulWidget {
 }
 
 class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
-  List<Map<String, dynamic>> favorites = [];
+  List<NearbyEvent> favoriteEvents = [];
   bool _isLoading = true;
 
   @override
@@ -35,46 +37,37 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
   }
 
   Future<void> _loadFavorites() async {
-    // Fetch dari /api/favorites
-    // Query di server.js:
-    //   SELECT ... FROM pass_packages WHERE is_favorite = 1
-    //   UNION
-    //   SELECT ... FROM nearby_events WHERE is_favorite = 1
-    final loadedFavorites = await EventraDatabase.instance.fetchFavorites();
+    final loadedEvents = await EventraDatabase.instance.fetchNearbyEvents();
 
     if (!mounted) return;
 
     setState(() {
-      favorites = loadedFavorites;
+      favoriteEvents = loadedEvents
+          .map(NearbyEvent.fromJson)
+          .where((event) => event.isFavorite)
+          .toList();
       _isLoading = false;
     });
   }
 
-  Future<void> _removeFavorite(Map<String, dynamic> favorite) async {
-    final id = int.tryParse(favorite['id'].toString());
-    final type = favorite['type'] as String? ?? 'event';
-
-    if (id == null) {
-      return;
-    }
-
-    final previousFavorites = List<Map<String, dynamic>>.from(favorites);
+  Future<void> _removeFavorite(NearbyEvent event) async {
+    final previousFavorites = List<NearbyEvent>.from(favoriteEvents);
     setState(() {
-      favorites = favorites.where((item) {
-        return item['id'] != id || item['type'] != type;
-      }).toList();
+      favoriteEvents = favoriteEvents
+          .where((item) => item.id != event.id)
+          .toList();
     });
 
     try {
       await widget.controller.setFavoriteByType(
-        type: type,
-        id: id,
+        type: 'event',
+        id: event.id,
         isFavorite: false,
       );
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        favorites = previousFavorites;
+        favoriteEvents = previousFavorites;
       });
     }
   }
@@ -104,7 +97,7 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                if (favorites.isEmpty)
+                if (favoriteEvents.isEmpty)
                   Text(
                     AppConfig.instance.text(
                       'favorites.empty',
@@ -116,94 +109,36 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
                     ),
                   )
                 else
-                  ...favorites.map(_favoriteCard),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: favoriteEvents.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 220,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.82,
+                        ),
+                    itemBuilder: (context, index) {
+                      return _favoriteEventCard(favoriteEvents[index]);
+                    },
+                  ),
               ],
             ),
     );
   }
 
-  Widget _favoriteCard(Map<String, dynamic> favorite) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B1526),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0x26D0BCFF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              favorite['type'] == 'pass'
-                  ? Icons.workspace_premium_outlined
-                  : Icons.event_outlined,
-              color: const Color(0xFFD0BCFF),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  favorite['title'] as String? ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  favorite['subtitle'] as String? ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                favorite['price'] as String? ?? '',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: () => _removeFavorite(favorite),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B3157),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.favorite, color: Color(0xFFD0BCFF)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget _favoriteEventCard(NearbyEvent event) {
+    return EventraEventCard(
+      image: event.image,
+      dateLabel: event.dateLabel,
+      title: event.title,
+      subtitle: event.artistName.isEmpty ? 'artist lineup' : event.artistName,
+      venueLabel: '${event.place},\n${event.city}',
+      isFavorite: true,
+      onFavoriteTap: () => _removeFavorite(event),
+      onActionTap: () {},
     );
   }
 }

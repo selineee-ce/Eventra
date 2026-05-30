@@ -355,6 +355,8 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
   }
 
   Widget _buildVenueLayout(String assetPath, String venue) {
+    final normalizedAssetPath = _normalizeVenueLayoutAsset(assetPath);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -385,7 +387,7 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
               width: double.infinity,
               color: Colors.white,
               child: Image.asset(
-                assetPath,
+                normalizedAssetPath,
                 fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => Container(
                   height: 180,
@@ -404,6 +406,17 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
         ],
       ),
     );
+  }
+
+  String _normalizeVenueLayoutAsset(String assetPath) {
+    const jpgOnlyLayouts = {
+      'assets/stadiums/atlas_layout.png': 'assets/stadiums/atlas_layout.jpg',
+      'assets/stadiums/gbk_layout.png': 'assets/stadiums/gbk_layout.jpg',
+      'assets/stadiums/grand_layout.png': 'assets/stadiums/grand_layout.jpg',
+      'assets/stadiums/sleman_layout.png': 'assets/stadiums/sleman_layout.jpg',
+    };
+
+    return jpgOnlyLayouts[assetPath] ?? assetPath;
   }
 
   Widget _buildTicketCard(TicketType t) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:eventra/data/app_config.dart';
+import 'package:eventra/core/widgets/event_card.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
 import 'package:eventra/features/home/models/featured_event.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
@@ -511,116 +512,23 @@ class _EventraHomePageState extends State<EventraHomePage> {
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 220,
         crossAxisSpacing: 16,
-        mainAxisSpacing: 20,
-        childAspectRatio: 0.60,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.82,
       ),
       itemBuilder: (context, index) {
         final item = events[index];
-        return GestureDetector(
+        return EventraEventCard(
+          image: item.image,
+          dateLabel: item.dateLabel,
+          title: item.title,
+          subtitle: item.artistName.isEmpty ? 'artist lineup' : item.artistName,
+          venueLabel: '${item.place},\n${item.city}',
+          isFavorite: item.isFavorite,
           onTap: () => widget.onEventTap(item),
-          child: buildNearbyCard(item),
+          onActionTap: () => widget.onEventTap(item),
+          onFavoriteTap: () => _ctrl.toggleNearbyFavorite(item),
         );
       },
-    );
-  }
-
-  Widget buildNearbyCard(NearbyEvent item) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 175,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.network(
-                    item.image, // field: image (URL Unsplash dari DB)
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFF2A2035),
-                      child: const Icon(
-                        Icons.music_note,
-                        color: Colors.white24,
-                        size: 40,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      item.dateLabel, // field: date_label (API: date)
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 72,
-          child: Text(
-            item.title,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              height: 1.15,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 4),
-
-        SizedBox(
-          height: 18,
-          child: Text(
-            item.place,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
-          ),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () => _ctrl.toggleNearbyFavorite(item),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: Container(
-              key: ValueKey(item.isFavorite),
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B3157),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                item.isFavorite ? Icons.favorite : Icons.favorite_outline,
-                color: const Color(0xFFD0BCFF),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 

@@ -70,7 +70,7 @@ UPDATE nearby_events SET
   artist_name = 'Pamungkas',
   show_time = 'Thursday, 04 Sep - 19:00 WIB',
   description = 'Pamungkas performs a full-band Birdy era set in Bandung with seated and standing categories for different viewing preferences.',
-  venue_layout = 'assets/stadiums/gbk_layout.png'
+  venue_layout = 'assets/stadiums/gbk_layout.jpg'
 WHERE id = 2;
 
 UPDATE nearby_events SET
@@ -78,7 +78,7 @@ UPDATE nearby_events SET
   artist_name = 'Hindia',
   show_time = 'Saturday, 11 Oct - 19:00 WIB',
   description = 'Hindia returns with a narrative live show in Surabaya, featuring festival floor access and reserved premium categories.',
-  venue_layout = 'assets/stadiums/grand_layout.png'
+  venue_layout = 'assets/stadiums/grand_layout.jpg'
 WHERE id = 3;
 
 UPDATE nearby_events SET
@@ -86,7 +86,7 @@ UPDATE nearby_events SET
   artist_name = 'Reality Club',
   show_time = 'Saturday, 09 Aug - 19:00 WIB',
   description = 'Reality Club performs an intimate Yogyakarta show with regular, priority, and meet-and-greet ticket experiences.',
-  venue_layout = 'assets/stadiums/sleman_layout.png'
+  venue_layout = 'assets/stadiums/sleman_layout.jpg'
 WHERE id = 4;
 
 UPDATE nearby_events SET
@@ -94,7 +94,7 @@ UPDATE nearby_events SET
   artist_name = 'Rich Brian',
   show_time = 'Sunday, 02 Nov - 20:00 WITA',
   description = 'Rich Brian headlines a Bali beach-club show with general access, VIP deck, and backstage-style premium access.',
-  venue_layout = 'assets/stadiums/atlas_layout.png'
+  venue_layout = 'assets/stadiums/atlas_layout.jpg'
 WHERE id = 5;
 
 UPDATE nearby_events SET
@@ -102,7 +102,7 @@ UPDATE nearby_events SET
   artist_name = 'Tiara Andini',
   show_time = 'Sunday, 21 Sep - 19:00 WIB',
   description = 'Tiara Andini presents a showcase concert in Medan with accessible seating and premium close-view categories.',
-  venue_layout = 'assets/stadiums/gbk_layout.png'
+  venue_layout = 'assets/stadiums/gbk_layout.jpg'
 WHERE id = 6;
 
 UPDATE nearby_events SET
