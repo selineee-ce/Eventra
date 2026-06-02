@@ -43,7 +43,7 @@ async function ensurePaymentTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS event_ticket_types (
       id INT PRIMARY KEY,
-      nearby_event_id INT NOT NULL,
+      event_id INT NOT NULL,
       name VARCHAR(120) NOT NULL,
       badge VARCHAR(80) NULL,
       badge_color VARCHAR(30) NULL,
@@ -148,9 +148,23 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.get('/api/home/featured-events', async (_req, res, next) => {
+  app.get('/api/home/featured-events', async (_req, res, next) => {
   try {
-    const rows = await query('SELECT id, title, subtitle, image, tag1, tag2, button, sort_order, is_favorite FROM featured_events ORDER BY sort_order ASC');
+    const rows = await query(`
+      SELECT
+        id,
+        title,
+        COALESCE(lineup, venue) AS subtitle,
+        image,
+        tag1,
+        tag2,
+        button,
+        sort_order,
+        is_favorite
+      FROM events
+      WHERE is_featured = 1
+      ORDER BY sort_order ASC
+    `);
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -172,7 +186,21 @@ app.get('/api/home/passes', async (_req, res, next) => {
 
 app.get('/api/home/nearby-events', async (_req, res, next) => {
   try {
-    const rows = await query('SELECT id, title, date_label AS date, place, city, artist_name, price, image, sort_order, is_favorite FROM nearby_events ORDER BY sort_order ASC');
+    const rows = await query(`
+      SELECT
+        id,
+        title,
+        date_label AS date,
+        venue AS place,
+        city,
+        COALESCE(lineup, title) AS artist_name,
+        price,
+        image,
+        sort_order,
+        is_favorite
+      FROM events
+      ORDER BY sort_order ASC
+    `);
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -236,7 +264,20 @@ app.get('/api/favorites', async (_req, res, next) => {
         )
       : [];
     const events = await query(
-      'SELECT id, title, place AS subtitle, price, image, date_label AS date, place, city, artist_name, "event" AS type FROM nearby_events WHERE is_favorite = 1 ORDER BY sort_order ASC',
+      `SELECT
+        id,
+        title,
+        venue AS subtitle,
+        price,
+        image,
+        date_label AS date,
+        venue AS place,
+        city,
+        COALESCE(lineup, title) AS artist_name,
+        "event" AS type
+       FROM events
+       WHERE is_favorite = 1
+       ORDER BY sort_order ASC`,
     );
 
     res.json({ data: [...passes, ...events] });
@@ -251,7 +292,7 @@ app.get('/api/artists', async (_req, res, next) => {
       'SELECT id, name, followers_count, description, avatar_url AS imageUrl, sort_order FROM users WHERE role = ? ORDER BY sort_order ASC, followers_count DESC',
       ['promoter'],
     );
-    const [events] = await pool.query('SELECT user_id, title, lineup, venue, location, date_label AS date FROM user_events ORDER BY sort_order ASC');
+    const events = await query('SELECT user_id, title, lineup, venue, city AS location, date_label AS date FROM events WHERE user_id IS NOT NULL ORDER BY sort_order ASC');
 
     const groupedEvents = events.reduce((accumulator, event) => {
       const key = String(event.user_id);
@@ -297,7 +338,7 @@ app.get('/api/nearby-events/:id/ticket-types', async (req, res, next) => {
   try {
     const eventId = Number(req.params.id);
     const rows = await query(
-      'SELECT id, name, badge, badge_color, description, bullet1, bullet2, bullet3, price, stock_remaining, max_per_order FROM event_ticket_types WHERE nearby_event_id = ? ORDER BY sort_order ASC',
+      'SELECT id, name, badge, badge_color, description, bullet1, bullet2, bullet3, price, stock_remaining, max_per_order FROM event_ticket_types WHERE event_id = ? ORDER BY sort_order ASC',
       [eventId]
     );
     res.json({ data: rows });
@@ -310,7 +351,21 @@ app.get('/api/nearby-events/:id/detail', async (req, res, next) => {
   try {
     const eventId = Number(req.params.id);
     const [row] = await query(
-      'SELECT id, title, date_label, place, city, price, image, detail_image, venue_layout, artist_name, show_time, description FROM nearby_events WHERE id = ?',
+      `SELECT
+        id,
+        title,
+        date_label,
+        venue AS place,
+        city,
+        price,
+        image,
+        detail_image,
+        venue_layout,
+        COALESCE(lineup, title) AS artist_name,
+        show_time,
+        description
+       FROM events
+       WHERE id = ?`,
       [eventId]
     );
     res.json({ data: row || {} });
@@ -334,7 +389,7 @@ app.post('/api/nearby-events/:id/favorite', async (req, res, next) => {
   try {
     const eventId = Number(req.params.id);
     const isFavorite = req.body?.isFavorite ? 1 : 0;
-    await query('UPDATE nearby_events SET is_favorite = ? WHERE id = ?', [isFavorite, eventId]);
+    await query('UPDATE events SET is_favorite = ? WHERE id = ?', [isFavorite, eventId]);
     res.json({ ok: true });
   } catch (error) {
     next(error);
@@ -364,7 +419,7 @@ app.post('/api/payments/checkout', async (req, res, next) => {
     await connection.beginTransaction();
 
     const [events] = await connection.execute(
-      'SELECT id, title, image, date_label, place, show_time FROM nearby_events WHERE id = ? LIMIT 1',
+      'SELECT id, title, image, date_label, venue AS place, show_time FROM events WHERE id = ? LIMIT 1',
       [eventId]
     );
     const event = events[0];
@@ -382,7 +437,7 @@ app.post('/api/payments/checkout', async (req, res, next) => {
 
     const placeholders = ticketIds.map(() => '?').join(',');
     const [ticketTypes] = await connection.execute(
-      `SELECT id, name, price, stock_remaining, max_per_order FROM event_ticket_types WHERE nearby_event_id = ? AND id IN (${placeholders}) FOR UPDATE`,
+      `SELECT id, name, price, stock_remaining, max_per_order FROM event_ticket_types WHERE event_id = ? AND id IN (${placeholders}) FOR UPDATE`,
       [eventId, ...ticketIds]
     );
     const ticketMap = new Map(ticketTypes.map((ticket) => [Number(ticket.id), ticket]));
