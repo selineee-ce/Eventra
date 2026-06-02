@@ -2,35 +2,35 @@ USE eventra;
 
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nearby_events' AND COLUMN_NAME = 'detail_image') = 0,
-  'ALTER TABLE nearby_events ADD COLUMN detail_image TEXT NULL',
+  'ALTER TABLE events ADD COLUMN detail_image TEXT NULL',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nearby_events' AND COLUMN_NAME = 'artist_name') = 0,
-  'ALTER TABLE nearby_events ADD COLUMN artist_name VARCHAR(160) NULL',
+  'ALTER TABLE events ADD COLUMN artist_name VARCHAR(160) NULL',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nearby_events' AND COLUMN_NAME = 'show_time') = 0,
-  'ALTER TABLE nearby_events ADD COLUMN show_time VARCHAR(80) NULL',
+  'ALTER TABLE events ADD COLUMN show_time VARCHAR(80) NULL',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nearby_events' AND COLUMN_NAME = 'description') = 0,
-  'ALTER TABLE nearby_events ADD COLUMN description TEXT NULL',
+  'ALTER TABLE events ADD COLUMN description TEXT NULL',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'nearby_events' AND COLUMN_NAME = 'venue_layout') = 0,
-  'ALTER TABLE nearby_events ADD COLUMN venue_layout VARCHAR(160) NULL',
+  'ALTER TABLE events ADD COLUMN venue_layout VARCHAR(160) NULL',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
@@ -65,7 +65,7 @@ SET @sql = IF(
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'NIKI',
   show_time = 'Saturday, 21 Aug - 19:30 WIB',
@@ -73,7 +73,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/tennis_layout.jpg'
 WHERE id = 1;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'Pamungkas',
   show_time = 'Thursday, 04 Sep - 19:00 WIB',
@@ -81,7 +81,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/gbk_layout.jpg'
 WHERE id = 2;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'Hindia',
   show_time = 'Saturday, 11 Oct - 19:00 WIB',
@@ -89,7 +89,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/grand_layout.jpg'
 WHERE id = 3;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1503095396549-807759245b35?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'Reality Club',
   show_time = 'Saturday, 09 Aug - 19:00 WIB',
@@ -97,7 +97,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/sleman_layout.jpg'
 WHERE id = 4;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1499364615650-ec38552f4f34?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'Rich Brian',
   show_time = 'Sunday, 02 Nov - 20:00 WITA',
@@ -105,7 +105,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/atlas_layout.jpg'
 WHERE id = 5;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'Tiara Andini',
   show_time = 'Sunday, 21 Sep - 19:00 WIB',
@@ -113,7 +113,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/gbk_layout.jpg'
 WHERE id = 6;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'BLACKPINK',
   show_time = 'Sunday, 18 Jan - 19:00 WIB',
@@ -121,7 +121,7 @@ UPDATE nearby_events SET
   venue_layout = 'assets/stadiums/jis_layout.jpg'
 WHERE id = 7;
 
-UPDATE nearby_events SET
+UPDATE events SET
   detail_image = 'https://images.unsplash.com/photo-1508973378895-6cf7c3d9f1f3?auto=format&fit=crop&w=1400&q=80',
   artist_name = 'Tulus',
   show_time = 'Tuesday, 14 Oct - 19:30 WIB',

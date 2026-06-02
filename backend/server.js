@@ -42,7 +42,7 @@ async function tableExists(tableName) {
 async function ensurePaymentTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS event_ticket_types (
-      id INT PRIMARY KEY,
+      id INT PRIMARY KEY AUTO_INCREMENT,
       event_id INT NOT NULL,
       name VARCHAR(120) NOT NULL,
       badge VARCHAR(80) NULL,
@@ -54,7 +54,8 @@ async function ensurePaymentTables() {
       price INT NOT NULL,
       stock_remaining INT NOT NULL DEFAULT 0,
       max_per_order INT NOT NULL DEFAULT 4,
-      sort_order INT NOT NULL
+      sort_order INT NOT NULL,
+      CONSTRAINT fk_ticket_types_event_api FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
     )
   `);
 
@@ -91,7 +92,8 @@ async function ensurePaymentTables() {
       ticket_type_id INT NOT NULL,
       ticket_name VARCHAR(120) NOT NULL,
       quantity INT NOT NULL,
-      unit_price INT NOT NULL
+      unit_price INT NOT NULL,
+      CONSTRAINT fk_payment_items_order_api FOREIGN KEY (payment_order_id) REFERENCES payment_orders(id) ON DELETE CASCADE
     )
   `);
 
@@ -184,8 +186,13 @@ app.get('/api/home/passes', async (_req, res, next) => {
   }
 });
 
-app.get('/api/home/nearby-events', async (_req, res, next) => {
+app.get('/api/home/nearby-events', async (req, res, next) => {
   try {
+    const userLocation = req.query.location;
+    if (!userLocation) {
+      return res.json({ data: [] });
+    }
+
     const rows = await query(`
       SELECT
         id,
@@ -199,8 +206,10 @@ app.get('/api/home/nearby-events', async (_req, res, next) => {
         sort_order,
         is_favorite
       FROM events
+      WHERE LOWER(TRIM(city)) = LOWER(TRIM(?))
       ORDER BY sort_order ASC
-    `);
+    `, [userLocation]);
+
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -289,35 +298,53 @@ app.get('/api/favorites', async (_req, res, next) => {
 app.get('/api/artists', async (_req, res, next) => {
   try {
     const artists = await query(
-      'SELECT id, name, followers_count, description, avatar_url AS imageUrl, sort_order FROM users WHERE role = ? ORDER BY sort_order ASC, followers_count DESC',
+      `SELECT id, name, followers_count, description, genre, avatar_url AS imageUrl
+        FROM users
+        WHERE role = ?
+        ORDER BY followers_count DESC
+        LIMIT 15
+      `,
       ['promoter'],
     );
-    const events = await query('SELECT user_id, title, lineup, venue, city AS location, date_label AS date FROM events WHERE user_id IS NOT NULL ORDER BY sort_order ASC');
+   
+    const allEvents = await query(`
+      SELECT id, user_id, title, lineup, venue, city, date_label, image, is_favorite
+      FROM events
+      ORDER BY sort_order ASC
+    `);
 
-    const groupedEvents = events.reduce((accumulator, event) => {
-      const key = String(event.user_id);
-      if (!accumulator[key]) {
-        accumulator[key] = [];
-      }
-      accumulator[key].push({
-        title: event.title,
-        lineup: event.lineup,
-        venue: event.venue,
-        location: event.location,
-        date: event.date,
+    const responseData = artists.map(artist => {
+      const upcomingEvents = allEvents.filter(event => {
+        // Cocokkan berdasarkan user_id ATAU cek jika nama artis ada di dalam string lineup
+        const isCreatedByArtist = event.user_id === artist.id;
+        const isIncludedInLineup = event.lineup && event.lineup.toLowerCase().includes(artist.name.toLowerCase());
+        
+        return isCreatedByArtist || isIncludedInLineup;
       });
-      return accumulator;
-    }, {});
 
-    const data = artists.map((artist) => ({
-      name: artist.name,
-      followers: `${formatCompactCount(artist.followers_count)} Followers`,
-      description: artist.description,
-      imageUrl: artist.imageUrl,
-      upcomingEvents: groupedEvents[String(artist.id)] || [],
-    }));
+      return {
+        id: artist.id,
+        name: artist.name,
+        username: artist.username,
+        avatar_url: artist.avatar_url,
+        genre: artist.genre,
+        description: artist.description,
+        followers_count: formatCompactCount(artist.followers_count),
+        upcomingEvents: upcomingEvents.map(event => ({
+          id: event.id,
+          title: event.title,
+          lineup: event.lineup,
+          venue: event.venue,
+          city: event.city,
+          date_label: event.date_label,
+          image: event.image,
+          is_favorite: event.is_favorite
+        }))
+      };
+    });
 
-    res.json({ data });
+    res.json(responseData);
+
   } catch (error) {
     next(error);
   }
