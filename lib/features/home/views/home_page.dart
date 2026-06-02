@@ -113,7 +113,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -260,7 +260,8 @@ class _EventraHomePageState extends State<EventraHomePage> {
                   event.subtitle, // field: subtitle
                   style: GoogleFonts.poppins(
                     color: Colors.white70,
-                    fontSize: 13,
+                    fontSize: 15,
+                    height: 1.35,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -302,6 +303,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
             style: GoogleFonts.poppins(
               color: Colors.black,
               fontWeight: FontWeight.w700,
+              fontSize: 15,
             ),
           ),
           const SizedBox(width: 8),
@@ -318,14 +320,18 @@ class _EventraHomePageState extends State<EventraHomePage> {
       children: [
         Text(
           AppConfig.instance.text('home.drops_eyebrow', 'LIMITED ACCESS'),
-          style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
+          style: GoogleFonts.poppins(
+            color: Colors.white54,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Text(
           AppConfig.instance.text('home.drops_title', 'Exclusive Drops'),
           style: GoogleFonts.poppins(
             color: Colors.white,
             fontWeight: FontWeight.w700,
-            fontSize: 24,
+            fontSize: 26,
           ),
         ),
       ],
@@ -399,14 +405,17 @@ class _EventraHomePageState extends State<EventraHomePage> {
                   style: GoogleFonts.poppins(
                     color: const Color(0xFFD0BCFF),
                     fontWeight: FontWeight.w700,
-                    fontSize: 11,
+                    fontSize: 12,
                   ),
                 ),
                 Text(
                   drop.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     color: Colors.white54,
-                    fontSize: 11,
+                    fontSize: 13,
+                    height: 1.35,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -420,6 +429,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
+                        fontSize: 14,
                       ),
                     ),
                     GestureDetector(
@@ -441,7 +451,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
                               style: GoogleFonts.poppins(
                                 color: Colors.black,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 11,
+                                fontSize: 12,
                               ),
                             ),
                             const SizedBox(width: 4),
@@ -468,37 +478,52 @@ class _EventraHomePageState extends State<EventraHomePage> {
   Widget buildNearYouHeader() {
     final nearbyCount = _ctrl.state.nearbyEvents.length;
     final isShowingAll = _ctrl.state.visibleNearbyCount >= nearbyCount;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          // app_config key: 'home.nearby_title' → 'Happening Near You'
-          AppConfig.instance.text('home.nearby_title', 'Happening Near You'),
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            if (isShowingAll) {
-              _ctrl.resetNearbyEvents(); // ← tambah method ini
-            } else {
-              _ctrl.showAllNearbyEvents();
-            }
-          },
-          child: Text(
-            isShowingAll
-                ? 'SHOW LESS'
-                : AppConfig.instance.text('home.view_all', 'VIEW ALL'),
-            style: GoogleFonts.poppins(
-              color: Colors.white70,
-              fontWeight: FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = (constraints.maxWidth / 390).clamp(0.88, 1.05).toDouble();
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                // app_config key: 'home.nearby_title' → 'Happening Near You'
+                AppConfig.instance.text(
+                  'home.nearby_title',
+                  'Happening Near You',
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 26 * scale,
+                  height: 1.1,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+            TextButton(
+              onPressed: () {
+                if (isShowingAll) {
+                  _ctrl.resetNearbyEvents(); // ← tambah method ini
+                } else {
+                  _ctrl.showAllNearbyEvents();
+                }
+              },
+              child: Text(
+                isShowingAll
+                    ? 'SHOW LESS'
+                    : AppConfig.instance.text('home.view_all', 'VIEW ALL'),
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13 * scale,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -510,23 +535,27 @@ class _EventraHomePageState extends State<EventraHomePage> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: events.length,
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 220,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.82,
+        maxCrossAxisExtent: 350,
+        crossAxisSpacing: 18,
+        mainAxisSpacing: 18,
+        mainAxisExtent: 340,
       ),
       itemBuilder: (context, index) {
         final item = events[index];
-        return EventraEventCard(
-          image: item.image,
-          dateLabel: item.dateLabel,
-          title: item.title,
-          subtitle: item.artistName.isEmpty ? 'artist lineup' : item.artistName,
-          venueLabel: '${item.place},\n${item.city}',
-          isFavorite: item.isFavorite,
-          onTap: () => widget.onEventTap(item),
-          onActionTap: () => widget.onEventTap(item),
-          onFavoriteTap: () => _ctrl.toggleNearbyFavorite(item),
+        return Center(
+          child: EventraEventCard(
+            image: item.image,
+            dateLabel: item.dateLabel,
+            title: item.title,
+            subtitle: item.artistName.isEmpty
+                ? 'artist lineup'
+                : item.artistName,
+            venueLabel: '${item.place}, ${item.city}',
+            isFavorite: item.isFavorite,
+            onTap: () => widget.onEventTap(item),
+            onActionTap: () => widget.onEventTap(item),
+            onFavoriteTap: () => _ctrl.toggleNearbyFavorite(item),
+          ),
         );
       },
     );
@@ -544,7 +573,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
         text,
         style: GoogleFonts.poppins(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
       ),

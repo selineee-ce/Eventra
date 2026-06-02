@@ -74,9 +74,11 @@ class _MainScreenState extends State<MainScreen> {
   NearbyEvent? _checkoutEvent;
   List<TicketType> _checkoutTickets = [];
   Map<String, dynamic>? _paymentResult;
+  int _buyTicketReturnIndex = 0;
 
   void openBuyTicketPage(NearbyEvent event) {
     setState(() {
+      _buyTicketReturnIndex = _currentIndex <= 4 ? _currentIndex : 0;
       _selectedEvent = event;
       _currentIndex = 5; // index khusus buy ticket
     });
@@ -88,7 +90,7 @@ class _MainScreenState extends State<MainScreen> {
       _checkoutEvent = null;
       _checkoutTickets = [];
       _paymentResult = null;
-      _currentIndex = 0;
+      _currentIndex = _buyTicketReturnIndex;
     });
   }
 
@@ -136,6 +138,7 @@ class _MainScreenState extends State<MainScreen> {
       _checkoutTickets = [];
       _paymentResult = null;
       _currentIndex = 0;
+      _buyTicketReturnIndex = 0;
     });
   }
 
@@ -149,7 +152,10 @@ class _MainScreenState extends State<MainScreen> {
       ),
       const TrendingArtistsPage(),
       const EventraTicketsPage(),
-      EventraFavoritesPage(controller: _homeController),
+      EventraFavoritesPage(
+        controller: _homeController,
+        onEventTap: openBuyTicketPage,
+      ),
       const EventraProfilePage(),
       if (_selectedEvent != null)
         BuyTicketPage(

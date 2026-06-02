@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS event_ticket_types (
   bullet3 VARCHAR(160) NULL,
   price INT NOT NULL,
   stock_remaining INT NOT NULL DEFAULT 0,
+  max_per_order INT NOT NULL DEFAULT 4,
   sort_order INT NOT NULL,
   CONSTRAINT fk_ticket_types_nearby_event FOREIGN KEY (nearby_event_id) REFERENCES nearby_events(id) ON DELETE CASCADE
 );
@@ -318,18 +319,18 @@ INSERT INTO pass_packages (id, title, description, price, sort_order, is_favorit
 
 INSERT INTO event_ticket_types (
   id, nearby_event_id, name, badge, badge_color, description,
-  bullet1, bullet2, bullet3, price, sort_order
+  bullet1, bullet2, bullet3, price, stock_remaining, max_per_order, sort_order
 ) VALUES
-(1,1,'Daily Pass','BEST VALUE','#20B486','Single-day festival access.','Valid for one selected festival day','General admission area','Digital ticket with QR verification',850000,1),
-(2,1,'3-Day Pass','POPULAR','#F59E0B','Full festival weekend access.','Access for 29-31 May 2026','Multiple stages and festival area','Best for out-of-town visitors',1850000,2),
-(3,2,'Daily Pass','LIMITED','#EF4444','Single-day Pestapora access.','Valid for one selected day','Festival ground access','Official digital ticket',450000,1),
-(4,2,'3-Day Pass','FAN PICK','#8B5CF6','Three-day Pestapora access.','Access for 25-27 Sep 2026','All regular stages','Digital ticket with QR verification',950000,2),
-(5,3,'GA Pass','EARLY BIRD','#06B6D4','General admission access for DWP.','Festival ground access','Digital ticket delivery','Official ID verification required',1200000,1),
-(6,3,'VIP Deck','VIP','#EAB308','Premium viewing and lounge access.','Elevated viewing deck','Dedicated entry lane','Selected hospitality access',2500000,2),
-(7,4,'CAT 1','HOT','#EF4444','Reserved seating for BLACKPINK Jakarta.','Assigned seat category','Digital QR entry','Official ID verification required',2900000,1),
-(8,4,'VIP Soundcheck','SOUNDCHECK','#EC4899','VIP package with soundcheck access.','Soundcheck session','VIP laminate and merch','Priority entry lane',5500000,2),
-(9,5,'Festival Seating','ARCHIVE','#64748B','Archive ticket category from public sale reference.','Historical listing','GBK stadium event','Digital ticket sample',800000,1),
-(10,6,'Regular Pass','DISCOVERY','#22C55E','Regular Synchronize Fest access.','Festival ground access','Digital ticket with QR','Reminder enabled',500000,1);
+(1,1,'Daily Pass','BEST VALUE','#20B486','Single-day festival access.','Valid for one selected festival day','General admission area','Digital ticket with QR verification',850000,120,6,1),
+(2,1,'3-Day Pass','POPULAR','#F59E0B','Full festival weekend access.','Access for 29-31 May 2026','Multiple stages and festival area','Best for out-of-town visitors',1850000,80,4,2),
+(3,2,'Daily Pass','LIMITED','#EF4444','Single-day Pestapora access.','Valid for one selected day','Festival ground access','Official digital ticket',450000,160,6,1),
+(4,2,'3-Day Pass','FAN PICK','#8B5CF6','Three-day Pestapora access.','Access for 25-27 Sep 2026','All regular stages','Digital ticket with QR verification',950000,90,4,2),
+(5,3,'GA Pass','EARLY BIRD','#06B6D4','General admission access for DWP.','Festival ground access','Digital ticket delivery','Official ID verification required',1200000,100,4,1),
+(6,3,'VIP Deck','VIP','#EAB308','Premium viewing and lounge access.','Elevated viewing deck','Dedicated entry lane','Selected hospitality access',2500000,40,2,2),
+(7,4,'CAT 1','HOT','#EF4444','Reserved seating for BLACKPINK Jakarta.','Assigned seat category','Digital QR entry','Official ID verification required',2900000,70,4,1),
+(8,4,'VIP Soundcheck','SOUNDCHECK','#EC4899','VIP package with soundcheck access.','Soundcheck session','VIP laminate and merch','Priority entry lane',5500000,20,2,2),
+(9,5,'Festival Seating','ARCHIVE','#64748B','Archive ticket category from public sale reference.','Historical listing','GBK stadium event','Digital ticket sample',800000,50,4,1),
+(10,6,'Regular Pass','DISCOVERY','#22C55E','Regular Synchronize Fest access.','Festival ground access','Digital ticket with QR','Reminder enabled',500000,130,6,1);
 
 INSERT INTO artists (
   id, name, followers, description,

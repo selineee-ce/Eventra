@@ -47,12 +47,20 @@ CREATE TABLE IF NOT EXISTS event_ticket_types (
   bullet3 VARCHAR(160) NULL,
   price INT NOT NULL,
   stock_remaining INT NOT NULL DEFAULT 0,
+  max_per_order INT NOT NULL DEFAULT 4,
   sort_order INT NOT NULL
 );
 
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_ticket_types' AND COLUMN_NAME = 'stock_remaining') = 0,
   'ALTER TABLE event_ticket_types ADD COLUMN stock_remaining INT NOT NULL DEFAULT 0 AFTER price',
+  'SELECT 1'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_ticket_types' AND COLUMN_NAME = 'max_per_order') = 0,
+  'ALTER TABLE event_ticket_types ADD COLUMN max_per_order INT NOT NULL DEFAULT 4 AFTER stock_remaining',
   'SELECT 1'
 );
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
@@ -125,51 +133,51 @@ DELETE FROM event_ticket_types WHERE nearby_event_id BETWEEN 1 AND 8;
 
 INSERT INTO event_ticket_types (
   id, nearby_event_id, name, badge, badge_color, description,
-  bullet1, bullet2, bullet3, price, stock_remaining, sort_order
+  bullet1, bullet2, bullet3, price, stock_remaining, max_per_order, sort_order
 ) VALUES
-(101,1,'VIP','Ultimate','red','Closest Tennis Indoor category in front of the stage.','VIP center section based on venue layout','Priority entrance lane','Limited allocation only',2500000,24,1),
-(102,1,'CAT 1','Premium','orange','Side-front category with strong stage sightline.','CAT 1 pink section on layout','Reserved seating block','Digital QR ticket entry',1450000,64,2),
-(103,1,'CAT 2','Standard','purple','Middle category behind VIP area.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',950000,120,3),
-(104,1,'CAT 3','Standard','purple','Back and side category for budget access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',650000,180,4),
+(101,1,'VIP','Ultimate','red','Closest Tennis Indoor category in front of the stage.','VIP center section based on venue layout','Priority entrance lane','Limited allocation only',2500000,24,2,1),
+(102,1,'CAT 1','Premium','orange','Side-front category with strong stage sightline.','CAT 1 pink section on layout','Reserved seating block','Digital QR ticket entry',1450000,64,4,2),
+(103,1,'CAT 2','Standard','purple','Middle category behind VIP area.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',950000,120,6,3),
+(104,1,'CAT 3','Standard','purple','Back and side category for budget access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',650000,180,6,4),
 
-(201,2,'VIP Floor','Ultimate','red','Closest floor category to the stage.','VIP floor purple section on layout','Priority entrance lane','Digital QR ticket entry',1250000,36,1),
-(202,2,'Festival Floor','Premium','orange','Main standing festival floor behind VIP.','Festival floor pink section on layout','Dedicated entrance lane','Digital QR ticket entry',850000,90,2),
-(203,2,'CAT 1','Premium','orange','Side-front seated category near stage.','CAT 1 orange section on layout','Reserved seating block','Digital QR ticket entry',650000,120,3),
-(204,2,'CAT 2','Standard','purple','Mid-side seated category.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',450000,160,4),
-(205,2,'CAT 3','Standard','purple','Outer seated category for value access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',350000,220,5),
-(206,2,'CAT 4 Upper','Standard','purple','Upper category for wide stadium view.','CAT 4 green upper section on layout','Standard queue lane','Digital QR ticket entry',250000,260,6),
+(201,2,'VIP Floor','Ultimate','red','Closest floor category to the stage.','VIP floor purple section on layout','Priority entrance lane','Digital QR ticket entry',1250000,36,2,1),
+(202,2,'Festival Floor','Premium','orange','Main standing festival floor behind VIP.','Festival floor pink section on layout','Dedicated entrance lane','Digital QR ticket entry',850000,90,4,2),
+(203,2,'CAT 1','Premium','orange','Side-front seated category near stage.','CAT 1 orange section on layout','Reserved seating block','Digital QR ticket entry',650000,120,4,3),
+(204,2,'CAT 2','Standard','purple','Mid-side seated category.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',450000,160,6,4),
+(205,2,'CAT 3','Standard','purple','Outer seated category for value access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',350000,220,6,5),
+(206,2,'CAT 4 Upper','Standard','purple','Upper category for wide stadium view.','CAT 4 green upper section on layout','Standard queue lane','Digital QR ticket entry',250000,260,6,6),
 
-(301,3,'VIP','Ultimate','red','Closest Grand City category in front of the stage.','VIP purple section on layout','Priority entrance lane','Digital QR ticket entry',1350000,28,1),
-(302,3,'CAT 1','Premium','orange','Front-middle category behind VIP.','CAT 1 pink section on layout','Reserved seating block','Digital QR ticket entry',850000,80,2),
-(303,3,'CAT 2','Standard','purple','Middle category with centered stage view.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',500000,140,3),
-(304,3,'CAT 3','Standard','purple','Rear and side category for regular entry.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',350000,200,4),
+(301,3,'VIP','Ultimate','red','Closest Grand City category in front of the stage.','VIP purple section on layout','Priority entrance lane','Digital QR ticket entry',1350000,28,2,1),
+(302,3,'CAT 1','Premium','orange','Front-middle category behind VIP.','CAT 1 pink section on layout','Reserved seating block','Digital QR ticket entry',850000,80,4,2),
+(303,3,'CAT 2','Standard','purple','Middle category with centered stage view.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',500000,140,6,3),
+(304,3,'CAT 3','Standard','purple','Rear and side category for regular entry.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',350000,200,6,4),
 
-(401,4,'VIP','Ultimate','red','Closest Sleman City Hall category in front of the stage.','VIP purple section on layout','Priority entrance lane','Digital QR ticket entry',1100000,20,1),
-(402,4,'CAT 1','Premium','orange','Front-middle category behind VIP.','CAT 1 pink section on layout','Dedicated entrance lane','Digital QR ticket entry',650000,54,2),
-(403,4,'CAT 2','Standard','purple','Side-middle category on both wings.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',450000,88,3),
-(404,4,'CAT 3','Standard','purple','Rear category for regular access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',350000,140,4),
+(401,4,'VIP','Ultimate','red','Closest Sleman City Hall category in front of the stage.','VIP purple section on layout','Priority entrance lane','Digital QR ticket entry',1100000,20,2,1),
+(402,4,'CAT 1','Premium','orange','Front-middle category behind VIP.','CAT 1 pink section on layout','Dedicated entrance lane','Digital QR ticket entry',650000,54,4,2),
+(403,4,'CAT 2','Standard','purple','Side-middle category on both wings.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',450000,88,6,3),
+(404,4,'CAT 3','Standard','purple','Rear category for regular access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',350000,140,6,4),
 
-(501,5,'VIP Deck','Ultimate','red','Top premium deck category at Atlas Beach Club.','VIP deck purple section on layout','Priority entrance lane','Selected hospitality access',3000000,16,1),
-(502,5,'VIP Table','Premium','orange','Premium table category below VIP deck.','VIP table pink section on layout','Dedicated entrance lane','Table-area access',2200000,30,2),
-(503,5,'GA','Standard','purple','General admission area near the main floor.','GA yellow section on layout','Digital QR ticket entry','Sales end on event day, 18:00 WITA',1000000,120,3),
-(504,5,'Beach Zone','Standard','purple','Beach zone category with wider venue view.','Beach zone blue section on layout','Digital QR ticket entry','Standard queue lane',750000,180,4),
+(501,5,'VIP Deck','Ultimate','red','Top premium deck category at Atlas Beach Club.','VIP deck purple section on layout','Priority entrance lane','Selected hospitality access',3000000,16,2,1),
+(502,5,'VIP Table','Premium','orange','Premium table category below VIP deck.','VIP table pink section on layout','Dedicated entrance lane','Table-area access',2200000,30,2,2),
+(503,5,'GA','Standard','purple','General admission area near the main floor.','GA yellow section on layout','Digital QR ticket entry','Sales end on event day, 18:00 WITA',1000000,120,6,3),
+(504,5,'Beach Zone','Standard','purple','Beach zone category with wider venue view.','Beach zone blue section on layout','Digital QR ticket entry','Standard queue lane',750000,180,6,4),
 
-(601,6,'VIP Floor','Ultimate','red','Closest floor category to the stage.','VIP floor purple section on layout','Priority entrance lane','Digital QR ticket entry',900000,18,1),
-(602,6,'Festival Floor','Premium','orange','Main floor category behind VIP.','Festival floor pink section on layout','Dedicated entrance lane','Digital QR ticket entry',650000,70,2),
-(603,6,'CAT 1','Premium','orange','Side-front seated category.','CAT 1 orange section on layout','Reserved seating block','Digital QR ticket entry',550000,96,3),
-(604,6,'CAT 2','Standard','purple','Mid-side category.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',400000,130,4),
-(605,6,'CAT 3','Standard','purple','Outer lower category.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',300000,170,5),
-(606,6,'CAT 4 Upper','Standard','purple','Upper-category seating.','CAT 4 green upper section on layout','Standard queue lane','Digital QR ticket entry',225000,240,6),
+(601,6,'VIP Floor','Ultimate','red','Closest floor category to the stage.','VIP floor purple section on layout','Priority entrance lane','Digital QR ticket entry',900000,18,2,1),
+(602,6,'Festival Floor','Premium','orange','Main floor category behind VIP.','Festival floor pink section on layout','Dedicated entrance lane','Digital QR ticket entry',650000,70,4,2),
+(603,6,'CAT 1','Premium','orange','Side-front seated category.','CAT 1 orange section on layout','Reserved seating block','Digital QR ticket entry',550000,96,4,3),
+(604,6,'CAT 2','Standard','purple','Mid-side category.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',400000,130,6,4),
+(605,6,'CAT 3','Standard','purple','Outer lower category.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',300000,170,6,5),
+(606,6,'CAT 4 Upper','Standard','purple','Upper-category seating.','CAT 4 green upper section on layout','Standard queue lane','Digital QR ticket entry',225000,240,6,6),
 
-(701,7,'VIP Floor','Ultimate','red','Closest floor category for BLACKPINK Jakarta.','VIP floor purple section on JIS layout','Priority entrance lane','Official ID verification required',5500000,12,1),
-(702,7,'Festival Floor','Premium','orange','Main festival floor behind VIP.','Festival floor pink section on JIS layout','Dedicated entrance lane','Digital QR ticket entry',4200000,42,2),
-(703,7,'CAT 1','Premium','orange','Side-front reserved stadium seating.','CAT 1 orange section on JIS layout','Reserved seat category','Digital QR ticket entry',3200000,75,3),
-(704,7,'CAT 2','Standard','purple','Mid-side reserved stadium seating.','CAT 2 yellow section on JIS layout','Reserved seat category','Digital QR ticket entry',2500000,120,4),
-(705,7,'CAT 3','Standard','purple','Lower outer stadium seating.','CAT 3 blue section on JIS layout','Reserved seat category','Digital QR ticket entry',1900000,160,5),
-(706,7,'CAT 4 Upper','Standard','purple','Upper stadium seating category.','CAT 4 green upper section on JIS layout','Reserved seat category','Digital QR ticket entry',1450000,220,6),
+(701,7,'VIP Floor','Ultimate','red','Closest floor category for BLACKPINK Jakarta.','VIP floor purple section on JIS layout','Priority entrance lane','Official ID verification required',5500000,12,2,1),
+(702,7,'Festival Floor','Premium','orange','Main festival floor behind VIP.','Festival floor pink section on JIS layout','Dedicated entrance lane','Digital QR ticket entry',4200000,42,2,2),
+(703,7,'CAT 1','Premium','orange','Side-front reserved stadium seating.','CAT 1 orange section on JIS layout','Reserved seat category','Digital QR ticket entry',3200000,75,4,3),
+(704,7,'CAT 2','Standard','purple','Mid-side reserved stadium seating.','CAT 2 yellow section on JIS layout','Reserved seat category','Digital QR ticket entry',2500000,120,4,4),
+(705,7,'CAT 3','Standard','purple','Lower outer stadium seating.','CAT 3 blue section on JIS layout','Reserved seat category','Digital QR ticket entry',1900000,160,6,5),
+(706,7,'CAT 4 Upper','Standard','purple','Upper stadium seating category.','CAT 4 green upper section on JIS layout','Reserved seat category','Digital QR ticket entry',1450000,220,6,6),
 
-(801,8,'VIP Floor','Ultimate','red','Closest category to the stage at JIExpo.','VIP floor purple section on layout','Priority entrance lane','Digital QR ticket entry',1500000,25,1),
-(802,8,'Festival Floor','Premium','orange','Main festival floor behind VIP.','Festival floor pink section on layout','Dedicated entrance lane','Digital QR ticket entry',1100000,60,2),
-(803,8,'CAT 1','Premium','orange','Side-front category near stage.','CAT 1 orange section on layout','Reserved seating block','Digital QR ticket entry',900000,100,3),
-(804,8,'CAT 2','Standard','purple','Middle category with centered view.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',650000,150,4),
-(805,8,'CAT 3','Standard','purple','Rear and side category for regular access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',550000,210,5);
+(801,8,'VIP Floor','Ultimate','red','Closest category to the stage at JIExpo.','VIP floor purple section on layout','Priority entrance lane','Digital QR ticket entry',1500000,25,2,1),
+(802,8,'Festival Floor','Premium','orange','Main festival floor behind VIP.','Festival floor pink section on layout','Dedicated entrance lane','Digital QR ticket entry',1100000,60,4,2),
+(803,8,'CAT 1','Premium','orange','Side-front category near stage.','CAT 1 orange section on layout','Reserved seating block','Digital QR ticket entry',900000,100,4,3),
+(804,8,'CAT 2','Standard','purple','Middle category with centered view.','CAT 2 yellow section on layout','Standard queue lane','Digital QR ticket entry',650000,150,6,4),
+(805,8,'CAT 3','Standard','purple','Rear and side category for regular access.','CAT 3 blue section on layout','Standard queue lane','Digital QR ticket entry',550000,210,6,5);

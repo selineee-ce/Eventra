@@ -9,6 +9,7 @@ class TicketType {
   final String? bullet3;
   final int price;
   final int stockRemaining;
+  final int maxPerOrder;
   int quantity;
 
   TicketType({
@@ -22,6 +23,7 @@ class TicketType {
     this.bullet3,
     required this.price,
     required this.stockRemaining,
+    required this.maxPerOrder,
     this.quantity = 0,
   });
 
@@ -36,5 +38,6 @@ class TicketType {
     bullet3: json['bullet3'] as String?,
     price: json['price'] as int? ?? 0,
     stockRemaining: json['stock_remaining'] as int? ?? 0,
+    maxPerOrder: json['max_per_order'] as int? ?? 4,
   );
 }

@@ -14,6 +14,7 @@ class EventraEventCard extends StatelessWidget {
     this.onTap,
     this.onFavoriteTap,
     this.onActionTap,
+    this.compact = false,
   });
 
   final String image;
@@ -26,124 +27,145 @@ class EventraEventCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onFavoriteTap;
   final VoidCallback? onActionTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF23172F),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white10),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 10,
-              offset: Offset(0, 5),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : (compact ? 320.0 : 350.0);
+        final scale = (width / 330).clamp(0.84, 1.08).toDouble();
+        final isTight = width < 285;
+        final padding = (compact ? 12.0 : 14.0) * scale;
+
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            constraints: BoxConstraints(
+              minHeight: compact ? 260 : 340,
+              maxWidth: compact ? 350 : 380,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 116,
-                width: double.infinity,
-                child: Stack(
-                  children: [
-                    Positioned.fill(child: _buildImage()),
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.24),
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.34),
-                            ],
+            decoration: BoxDecoration(
+              color: const Color(0xFF23172F),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white10),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x66000000),
+                  blurRadius: 10,
+                  offset: Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: (compact ? 132 : 170) * scale,
+                    width: double.infinity,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: _buildImage()),
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.24),
+                                  Colors.transparent,
+                                  Colors.black.withValues(alpha: 0.34),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: _buildDatePill(scale),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: _buildFavoriteButton(scale),
+                        ),
+                      ],
                     ),
-                    Positioned(top: 8, left: 8, child: _buildDatePill()),
-                    Positioned(top: 8, right: 8, child: _buildFavoriteButton()),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        bottom: 38,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        padding,
+                        padding * 0.85,
+                        padding,
+                        padding,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: isTight ? 2 : 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: (compact ? 17 : 20) * scale,
+                              height: 1.12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (subtitle != null && subtitle!.isNotEmpty) ...[
+                            SizedBox(height: 5 * scale),
                             Text(
-                              title,
-                              maxLines: 2,
+                              subtitle!,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 15,
-                                height: 1.1,
-                                fontWeight: FontWeight.w800,
+                                color: Colors.white70,
+                                fontSize: (compact ? 12 : 14) * scale,
+                                height: 1.2,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                            if (subtitle != null && subtitle!.isNotEmpty) ...[
-                              const SizedBox(height: 1),
-                              Text(
-                                subtitle!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                  height: 1.1,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
-                      ),
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                venueLabel.toUpperCase(),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white60,
-                                  fontSize: 9,
-                                  height: 1.15,
-                                  fontWeight: FontWeight.w700,
+                          const Spacer(),
+                          if (isTight)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildVenueText(scale, maxLines: 2),
+                                SizedBox(height: 8 * scale),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: _buildActionButton(scale),
                                 ),
-                              ),
+                              ],
+                            )
+                          else
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(child: _buildVenueText(scale)),
+                                SizedBox(width: 8 * scale),
+                                _buildActionButton(scale),
+                              ],
                             ),
-                            const SizedBox(width: 6),
-                            _buildActionButton(),
-                          ],
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -174,9 +196,26 @@ class EventraEventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDatePill() {
+  Widget _buildVenueText(double scale, {int maxLines = 3}) {
+    return Text(
+      venueLabel.toUpperCase(),
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.poppins(
+        color: Colors.white70,
+        fontSize: (compact ? 11 : 13) * scale,
+        height: 1.18,
+        fontWeight: FontWeight.w700,
+      ),
+    );
+  }
+
+  Widget _buildDatePill(double scale) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      padding: EdgeInsets.symmetric(
+        horizontal: 10 * scale,
+        vertical: 6 * scale,
+      ),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(18),
@@ -185,22 +224,22 @@ class EventraEventCard extends StatelessWidget {
         dateLabel,
         style: GoogleFonts.poppins(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: (compact ? 11 : 12) * scale,
           fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 
-  Widget _buildFavoriteButton() {
+  Widget _buildFavoriteButton(double scale) {
     return GestureDetector(
       onTap: onFavoriteTap,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),
         child: Container(
           key: ValueKey(isFavorite),
-          width: 30,
-          height: 30,
+          width: (compact ? 34 : 38) * scale,
+          height: (compact ? 34 : 38) * scale,
           decoration: BoxDecoration(
             color: const Color(0xFF3B3157).withValues(alpha: 0.86),
             borderRadius: BorderRadius.circular(10),
@@ -208,25 +247,27 @@ class EventraEventCard extends StatelessWidget {
           child: Icon(
             isFavorite ? Icons.favorite : Icons.favorite_border,
             color: const Color(0xFFD0BCFF),
-            size: 19,
+            size: (compact ? 20 : 22) * scale,
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActionButton() {
+  Widget _buildActionButton(double scale) {
     return GestureDetector(
       onTap: onActionTap ?? onTap,
       child: SizedBox(
-        height: 28,
+        height: (compact ? 34 : 38) * scale,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: const Color(0xFFD0BCFF),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: (compact ? 10 : 13) * scale,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -236,15 +277,15 @@ class EventraEventCard extends StatelessWidget {
                   overflow: TextOverflow.clip,
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF4D2B6C),
-                    fontSize: 9,
+                    fontSize: (compact ? 10 : 12) * scale,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(width: 4),
-                const Icon(
+                SizedBox(width: 5 * scale),
+                Icon(
                   Icons.arrow_forward,
-                  color: Color(0xFF4D2B6C),
-                  size: 12,
+                  color: const Color(0xFF4D2B6C),
+                  size: (compact ? 13 : 15) * scale,
                 ),
               ],
             ),

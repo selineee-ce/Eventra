@@ -41,6 +41,37 @@ async function tableExists(tableName) {
 
 async function ensurePaymentTables() {
   await query(`
+    CREATE TABLE IF NOT EXISTS event_ticket_types (
+      id INT PRIMARY KEY,
+      nearby_event_id INT NOT NULL,
+      name VARCHAR(120) NOT NULL,
+      badge VARCHAR(80) NULL,
+      badge_color VARCHAR(30) NULL,
+      description TEXT NULL,
+      bullet1 VARCHAR(160) NULL,
+      bullet2 VARCHAR(160) NULL,
+      bullet3 VARCHAR(160) NULL,
+      price INT NOT NULL,
+      stock_remaining INT NOT NULL DEFAULT 0,
+      max_per_order INT NOT NULL DEFAULT 4,
+      sort_order INT NOT NULL
+    )
+  `);
+
+  const maxPerOrderColumn = await query(
+    `SELECT COLUMN_NAME
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'event_ticket_types'
+       AND COLUMN_NAME = 'max_per_order'
+     LIMIT 1`,
+  );
+
+  if (maxPerOrderColumn.length === 0) {
+    await query('ALTER TABLE event_ticket_types ADD COLUMN max_per_order INT NOT NULL DEFAULT 4 AFTER stock_remaining');
+  }
+
+  await query(`
     CREATE TABLE IF NOT EXISTS payment_orders (
       id INT PRIMARY KEY AUTO_INCREMENT,
       event_id INT NOT NULL,
@@ -266,7 +297,7 @@ app.get('/api/nearby-events/:id/ticket-types', async (req, res, next) => {
   try {
     const eventId = Number(req.params.id);
     const rows = await query(
-      'SELECT id, name, badge, badge_color, description, bullet1, bullet2, bullet3, price, stock_remaining FROM event_ticket_types WHERE nearby_event_id = ? ORDER BY sort_order ASC',
+      'SELECT id, name, badge, badge_color, description, bullet1, bullet2, bullet3, price, stock_remaining, max_per_order FROM event_ticket_types WHERE nearby_event_id = ? ORDER BY sort_order ASC',
       [eventId]
     );
     res.json({ data: rows });
@@ -279,7 +310,7 @@ app.get('/api/nearby-events/:id/detail', async (req, res, next) => {
   try {
     const eventId = Number(req.params.id);
     const [row] = await query(
-      'SELECT id, title, date_label, place, price, image, detail_image, venue_layout, artist_name, show_time, description FROM nearby_events WHERE id = ?',
+      'SELECT id, title, date_label, place, city, price, image, detail_image, venue_layout, artist_name, show_time, description FROM nearby_events WHERE id = ?',
       [eventId]
     );
     res.json({ data: row || {} });
@@ -351,7 +382,7 @@ app.post('/api/payments/checkout', async (req, res, next) => {
 
     const placeholders = ticketIds.map(() => '?').join(',');
     const [ticketTypes] = await connection.execute(
-      `SELECT id, name, price, stock_remaining FROM event_ticket_types WHERE nearby_event_id = ? AND id IN (${placeholders}) FOR UPDATE`,
+      `SELECT id, name, price, stock_remaining, max_per_order FROM event_ticket_types WHERE nearby_event_id = ? AND id IN (${placeholders}) FOR UPDATE`,
       [eventId, ...ticketIds]
     );
     const ticketMap = new Map(ticketTypes.map((ticket) => [Number(ticket.id), ticket]));
@@ -372,6 +403,12 @@ app.post('/api/payments/checkout', async (req, res, next) => {
       if (ticket.stock_remaining < quantity) {
         await connection.rollback();
         return res.status(409).json({ error: `${ticket.name} only has ${ticket.stock_remaining} tickets left` });
+      }
+
+      const maxPerOrder = Number(ticket.max_per_order || 4);
+      if (maxPerOrder > 0 && quantity > maxPerOrder) {
+        await connection.rollback();
+        return res.status(400).json({ error: `${ticket.name} has a maximum purchase of ${maxPerOrder} tickets per order` });
       }
 
       subtotal += ticket.price * quantity;
