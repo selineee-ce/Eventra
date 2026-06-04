@@ -1,140 +1,350 @@
+import 'package:eventra/core/widgets/event_card.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ArtistProfilePage extends StatelessWidget {
-  final Map<String, dynamic> artistData;
-
   const ArtistProfilePage({super.key, required this.artistData});
+
+  final Map<String, dynamic> artistData;
 
   @override
   Widget build(BuildContext context) {
-    final upcomingEvents = (artistData['upcomingEvents'] as List<dynamic>? ?? []);
+    // Ambil data dasar dari parameters
+    final imageUrl =
+        artistData['imageUrl'] as String? ??
+        artistData['avatar_url'] as String? ??
+        '';
+    final name = artistData['name'] as String? ?? 'Artist Profile';
+    final followers =
+        (artistData['followers'] ?? artistData['followers_count'])
+            ?.toString() ??
+        '0';
+    final description = artistData['description'] as String? ?? '';
+    final rank = artistData['rank'] as int? ?? 0;
+
+    // Ambil data konser yang sudah di-filter oleh server
+    final upcomingEvents = (artistData['upcomingEvents'] as List? ?? const [])
+        .whereType<Map>()
+        .map((event) => Map<String, dynamic>.from(event))
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
       appBar: AppBar(
         backgroundColor: const Color(0xFF16111F),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
-          artistData['name'] as String? ?? 'Artist Profile',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          'EVENTRA',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFFD0BCFF),
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.network(
-                artistData['imageUrl'] as String,
-                width: double.infinity,
-                height: 320,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 320,
-                  color: const Color(0xFF1B1526),
-                  child: const Center(
-                    child: Icon(Icons.person, color: Colors.white24, size: 72),
-                  ),
+            _ArtistHero(
+              imageUrl: imageUrl,
+              name: name,
+              followers: followers,
+              eventsCount: upcomingEvents.length,
+              rank: rank,
+            ),
+            const SizedBox(height: 14),
+            _SectionPanel(
+              title: 'ABOUT ${name.toUpperCase()}',
+              child: Text(
+                description.isEmpty
+                    ? 'No artist description available.'
+                    : description,
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.45,
                 ),
               ),
             ),
             const SizedBox(height: 20),
             Text(
-              artistData['name'] as String? ?? '',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              artistData['followers'] as String? ?? '',
-              style: GoogleFonts.poppins(
-                color: const Color(0xFFD0BCFF),
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              artistData['description'] as String? ?? '',
-              style: GoogleFonts.poppins(
-                color: Colors.white70,
-                height: 1.5,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
               'Upcoming Events',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontSize: 22,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 12),
+
+            // Render list konser
             if (upcomingEvents.isEmpty)
-              Text(
-                'No upcoming events saved for this artist yet.',
-                style: GoogleFonts.poppins(color: Colors.white54),
-              )
-            else
-              ...upcomingEvents.map(
-                (event) => Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1B1526),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event['title'] as String? ?? '',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        event['lineup'] as String? ?? '',
-                        style: GoogleFonts.poppins(color: Colors.white54),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${event['venue']} • ${event['location']}',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white38,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        event['date'] as String? ?? '',
-                        style: GoogleFonts.poppins(
-                          color: const Color(0xFFD0BCFF),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text(
+                    'There is no upcoming events',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white54,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
+              )
+            else ...[
+              ...upcomingEvents.map((event) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: EventraEventCard(
+                    compact: true,
+                    image:
+                        event['image'] as String? ??
+                        event['image_url'] as String? ??
+                        '',
+                    dateLabel: _formatDate(
+                      event['date_label'] as String? ?? '',
+                    ),
+                    title: event['title'] as String? ?? '',
+                    subtitle: event['lineup'] as String? ?? name,
+                    venueLabel:
+                        '${event['venue'] ?? ''}, ${event['city'] ?? ''}',
+                    isFavorite: (event['is_favorite'] as int? ?? 0) == 1,
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
+    );
+  }
+
+  static String _formatDate(String raw) {
+    if (raw.isEmpty) return 'TBA';
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+
+    return '${months[parsed.month - 1]} ${parsed.day}';
+  }
+}
+
+// ============== SUB-COMPONENTS WIDGETS ==============
+class _ArtistHero extends StatelessWidget {
+  const _ArtistHero({
+    required this.imageUrl,
+    required this.name,
+    required this.followers,
+    required this.eventsCount,
+    required this.rank,
+  });
+
+  final String imageUrl;
+  final String name;
+  final String followers;
+  final int eventsCount;
+  final int rank;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 320,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _ArtistImage(path: imageUrl),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.05),
+                    Colors.black.withValues(alpha: 0.72),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 18,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Badge(text: '#$rank TRENDING ARTISTS'),
+                  const SizedBox(height: 8),
+                  Text(
+                    name.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 32,
+                      height: 0.95,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _HeroStat(label: 'FOLLOWER', value: followers),
+                      const SizedBox(width: 22),
+                      _HeroStat(label: 'EVENTS', value: '$eventsCount'),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.favorite_border, size: 18),
+                    label: const Text('ADD TO FAVORITES'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD0BCFF),
+                      foregroundColor: const Color(0xFF4D2B6C),
+                      textStyle: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArtistImage extends StatelessWidget {
+  const _ArtistImage({required this.path});
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    if (path.startsWith('assets/')) {
+      return Image.asset(path, fit: BoxFit.cover);
+    }
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(path, fit: BoxFit.cover);
+    }
+    return Container(
+      color: const Color(0xFF1B1526),
+      child: const Icon(Icons.person, color: Colors.white24, size: 72),
+    );
+  }
+}
+
+class _SectionPanel extends StatelessWidget {
+  const _SectionPanel({required this.title, required this.child});
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1526),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD0BCFF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          color: const Color(0xFF4D2B6C),
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroStat extends StatelessWidget {
+  const _HeroStat({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: Colors.white70,
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }

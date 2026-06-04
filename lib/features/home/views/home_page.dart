@@ -39,7 +39,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
   void initState() {
     super.initState();
     _ctrl.addListener(_onStateChange);
-    _ctrl.loadAll(); // fetch ketiga tabel sekaligus (paralel)
+    _ctrl.loadAll();
 
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -53,9 +53,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
 
         carouselTick++;
         final events = _ctrl.state.featuredEvents;
-        if (carouselTick >= 5 &&
-            events.isNotEmpty &&
-            _pageController.hasClients) {
+        if (carouselTick >= 5 && events.isNotEmpty && _pageController.hasClients) {
           carouselTick = 0;
           currentPage = currentPage < events.length - 1 ? currentPage + 1 : 0;
           _pageController.animateToPage(

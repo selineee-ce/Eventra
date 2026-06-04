@@ -102,9 +102,9 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
 
     final detailImage =
         _detail['detail_image'] as String? ?? widget.event.image;
-    final artistName = _detail['artist_name'] as String? ?? widget.event.title;
+    final artistName = _detail['lineup'] as String? ?? widget.event.title;
     final showTime = _detail['show_time'] as String? ?? widget.event.dateLabel;
-    final venue = _detail['place'] as String? ?? widget.event.place;
+    final venue = _detail['venue'] as String? ?? widget.event.place;
     final city = _detail['city'] as String? ?? widget.event.city;
     final description = _detail['description'] as String? ?? '';
     final venueLayout = _detail['venue_layout'] as String?;

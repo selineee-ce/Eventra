@@ -16,6 +16,16 @@ class HomeController extends ChangeNotifier {
   HomeState _state = const HomeState();
   HomeState get state => _state;
 
+  /// Memfilter data lokal events berdasarkan kota yang sama dengan profile user
+  List<NearbyEvent> getEventsByCity(String? userLocation) {
+    if (userLocation == null || userLocation.isEmpty) {
+      return _state.nearbyEvents; 
+    }
+    return _state.nearbyEvents.where((event) {
+      return event.city.trim().toLowerCase() == userLocation.trim().toLowerCase();
+    }).toList();
+  }
+
   Future<void> loadAll() async {
     _emit(_state.copyWith(status: HomeStatus.loading));
     try {

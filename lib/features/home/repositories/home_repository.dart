@@ -7,9 +7,9 @@
 //     → HomeRepository (parse JSON → typed model objects)
 //     → HomeController → Widget
 //
-// Tidak ada hardcode URL di sini. Semua URL dikelola oleh EventraDatabase
-// yang membaca EVENTRA_API_URL dari environment variable saat build.
+
 import 'package:eventra/data/eventra_database.dart';
+import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/home/models/featured_event.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/pass_package.dart';
@@ -31,20 +31,45 @@ class HomeRepository {
     final raw = await EventraDatabase.instance.fetchPasses();
     return raw.map(PassPackage.fromJson).toList();
   }
+
   // Mengambil dari tabel `nearby_events`
   // Endpoint: GET /api/home/nearby-events
   Future<List<NearbyEvent>> fetchNearbyEvents() async {
-    final raw = await EventraDatabase.instance.fetchNearbyEvents();
+    final location = await _currentLocation();
+    final raw = await EventraDatabase.instance.fetchNearbyEvents(
+      location: location,
+    );
     return raw.map(NearbyEvent.fromJson).toList();
+  }
+
+  Future<String?> _currentLocation() async {
+    final sessionLocation = EventraSession.instance.currentUser?['location'];
+    if (sessionLocation != null &&
+        sessionLocation.toString().trim().isNotEmpty) {
+      return sessionLocation.toString();
+    }
+
+    final profile = await EventraDatabase.instance.fetchProfile();
+    final profileLocation = profile['location'];
+    if (profileLocation != null &&
+        profileLocation.toString().trim().isNotEmpty) {
+      return profileLocation.toString();
+    }
+
+    return null;
   }
 
   Future<List<ExclusiveDrop>> fetchExclusiveDrops() async {
     final raw = await EventraDatabase.instance.fetchExclusiveDrops();
     return raw.map(ExclusiveDrop.fromJson).toList();
   }
+
   // UPDATE pass_packages SET is_favorite = ? WHERE id = ?
   // Endpoint: POST /api/passes/:id/favorite
-  Future<void> setPassFavorite({required int passId, required bool isFavorite}) async {
+  Future<void> setPassFavorite({
+    required int passId,
+    required bool isFavorite,
+  }) async {
     await EventraDatabase.instance.setPassFavorite(
       passId: passId,
       isFavorite: isFavorite,
@@ -53,7 +78,10 @@ class HomeRepository {
 
   // UPDATE nearby_events SET is_favorite = ? WHERE id = ?
   // Endpoint: POST /api/nearby-events/:id/favorite
-  Future<void> setNearbyEventFavorite({required int eventId, required bool isFavorite}) async {
+  Future<void> setNearbyEventFavorite({
+    required int eventId,
+    required bool isFavorite,
+  }) async {
     await EventraDatabase.instance.setNearbyFavorite(
       eventId: eventId,
       isFavorite: isFavorite,

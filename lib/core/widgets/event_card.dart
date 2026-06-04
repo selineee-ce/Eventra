@@ -39,128 +39,129 @@ class EventraEventCard extends StatelessWidget {
         final scale = (width / 330).clamp(0.84, 1.08).toDouble();
         final isTight = width < 285;
         final padding = (compact ? 12.0 : 14.0) * scale;
+        final cardHeight = compact ? 286.0 : 340.0;
 
         return GestureDetector(
           onTap: onTap,
-          child: Container(
-            constraints: BoxConstraints(
-              minHeight: compact ? 260 : 340,
-              maxWidth: compact ? 350 : 380,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF23172F),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white10),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x66000000),
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: (compact ? 132 : 170) * scale,
-                    width: double.infinity,
-                    child: Stack(
-                      children: [
-                        Positioned.fill(child: _buildImage()),
-                        Positioned.fill(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.24),
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.34),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: _buildDatePill(scale),
-                        ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: _buildFavoriteButton(scale),
-                        ),
-                      ],
-                    ),
+          child: SizedBox(
+            height: cardHeight,
+            child: Container(
+              constraints: BoxConstraints(maxWidth: compact ? 350 : 380),
+              decoration: BoxDecoration(
+                color: const Color(0xFF23172F),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white10),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        padding,
-                        padding * 0.85,
-                        padding,
-                        padding,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      height: (compact ? 132 : 170) * scale,
+                      width: double.infinity,
+                      child: Stack(
                         children: [
-                          Text(
-                            title,
-                            maxLines: isTight ? 2 : 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: (compact ? 17 : 20) * scale,
-                              height: 1.12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (subtitle != null && subtitle!.isNotEmpty) ...[
-                            SizedBox(height: 5 * scale),
-                            Text(
-                              subtitle!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white70,
-                                fontSize: (compact ? 12 : 14) * scale,
-                                height: 1.2,
-                                fontWeight: FontWeight.w500,
+                          Positioned.fill(child: _buildImage()),
+                          Positioned.fill(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withValues(alpha: 0.24),
+                                    Colors.transparent,
+                                    Colors.black.withValues(alpha: 0.34),
+                                  ],
+                                ),
                               ),
                             ),
-                          ],
-                          const Spacer(),
-                          if (isTight)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildVenueText(scale, maxLines: 2),
-                                SizedBox(height: 8 * scale),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: _buildActionButton(scale),
-                                ),
-                              ],
-                            )
-                          else
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Expanded(child: _buildVenueText(scale)),
-                                SizedBox(width: 8 * scale),
-                                _buildActionButton(scale),
-                              ],
-                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: _buildDatePill(scale),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: _buildFavoriteButton(scale),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          padding,
+                          padding * 0.85,
+                          padding,
+                          padding,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: isTight ? 2 : 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: (compact ? 17 : 20) * scale,
+                                height: 1.12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (subtitle != null && subtitle!.isNotEmpty) ...[
+                              SizedBox(height: 5 * scale),
+                              Text(
+                                subtitle!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                  fontSize: (compact ? 12 : 14) * scale,
+                                  height: 1.2,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                            const Spacer(),
+                            if (isTight)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildVenueText(scale, maxLines: 2),
+                                  SizedBox(height: 8 * scale),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: _buildActionButton(scale),
+                                  ),
+                                ],
+                              )
+                            else
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Expanded(child: _buildVenueText(scale)),
+                                  SizedBox(width: 8 * scale),
+                                  _buildActionButton(scale),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

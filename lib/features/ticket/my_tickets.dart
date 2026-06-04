@@ -180,12 +180,12 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
                     ticket['image'] as String,
-                    width: 75,
-                    height: 75,
+                    width: 100,
+                    height: 100,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
-                      width: 75,
-                      height: 75,
+                      width: 100,
+                      height: 100,
                       color: const Color(0xFF2A2035),
                       child: const Icon(
                         Icons.confirmation_number,
