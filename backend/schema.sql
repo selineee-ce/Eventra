@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS events (
     price VARCHAR(40) NULL,
     image TEXT NULL,
     detail_image TEXT NULL,
+    venue_layout VARCHAR(160) NULL,
     description TEXT NULL,
     source_url TEXT NULL,
     tag1 VARCHAR(50) NULL,
@@ -139,7 +140,7 @@ INSERT INTO users (id, username, name, email, phone, password_hash, bio, locatio
 (18, 'niki', 'NIKI', 'niki@eventra.local', '+628135554433', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Buzz Tour', 'Jakarta, Indonesia', 'assets/artists/Niki.jpg', 7000000, 220, 12, 'R&B / Pop', 'Indonesia''s finest 88rising star bringing smooth R&B storytelling.', 'promoter', 1),
 (19, 'alanwalker', 'Alan Walker', 'alan@eventra.local', '+4721000123', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Walkerworld', 'Bergen, Norway', 'assets/artists/AlanWalker.jpg', 28000000, 700, 22, 'EDM', 'Masked hitmaker behind Faded delivering high-energy tracks.', 'promoter', 1),
 (20, 'dewa19', 'Dewa 19', 'dewa19@eventra.local', '+628119909876', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', '30 Tahun Dewa 19', 'Surabaya, Indonesia', 'assets/artists/Dewa19.jpg', 4500000, 1100, 5, 'Classic Rock', 'Indonesian rock royalty. Anthems engraved in cultural DNA.', 'promoter', 1)
-ON DUPLICATE KEY UPDATE username=VALUES(username), name=VALUES(name), email=VALUES(email), password_hash=VALUES(password_hash), followers_count=VALUES(followers_count);
+ON DUPLICATE KEY UPDATE username=VALUES(username), name=VALUES(name), email=VALUES(email), password_hash=VALUES(password_hash), bio=VALUES(bio), location=VALUES(location), avatar_url=VALUES(avatar_url), followers_count=VALUES(followers_count), events_count=VALUES(events_count), upcoming_events_count=VALUES(upcoming_events_count), genre=VALUES(genre), description=VALUES(description), role=VALUES(role), is_verified=VALUES(is_verified);
 
 SET @rank := 0;
 UPDATE users SET sort_order = (@rank := @rank + 1) ORDER BY followers_count DESC;
@@ -157,14 +158,11 @@ INSERT INTO users (username, name, email, phone, password_hash, bio, location, a
 INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_time, price, image, description, tag1, tag2, button, is_featured, is_limited, remaining_seats, is_favorite) VALUES
 (1, 13, 'myBCA Java Jazz Festival 2026', 'Laufey, Java Jazz Lineup', 'NICE PIK 2, Tangerang', 'Tangerang', '2026-05-29', '20:00 WIB', 'Rp850.000', 'assets/events/laufey_jiexpo.webp', 'Festival dates are set for 29-31 May 2026 at NICE, PIK 2.', 'JAZZ FESTIVAL', 'OFFICIAL 2026', 'GET TICKETS', 1, 1, 48, 1),
 
-(2, 15, 'Pestapora 2026', 'Hindia, Sheila On 7, Tulus, Fiersa Besari', 'Gambir Expo JIExpo', 'Jakarta', '2026-09-25', '15:00 WIB', 'Rp450.000', 'assets/events/pestapora.jpg', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 'LOCAL FEST', 'THREE DAYS', 'BOOK NOW', 1, 0, 150, 1),
-(3, 8, 'Pestapora 2026', 'Hindia, Sheila On 7, Tulus, Fiersa Besari', 'Gambir Expo JIExpo', 'Jakarta', '2026-09-25', '15:00 WIB', 'Rp450.000', 'assets/events/pestapora.jpg', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 'LOCAL FEST', 'THREE DAYS', 'BOOK NOW', 1, 0, 120, 1),
-(4, 10, 'Pestapora 2026', 'Hindia, Sheila On 7, Tulus, Fiersa Besari', 'Gambir Expo JIExpo', 'Jakarta', '2026-09-25', '15:00 WIB', 'Rp450.000', 'assets/events/pestapora.jpg', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 'LOCAL FEST', 'THREE DAYS', 'BOOK NOW', 1, 0, 95, 1),
-(5, 7, 'Pestapora 2026', 'Hindia, Sheila On 7, Tulus, Fiersa Besari', 'Gambir Expo JIExpo', 'Jakarta', '2026-09-25', '15:00 WIB', 'Rp450.000', 'assets/events/pestapora.jpg', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 'LOCAL FEST', 'THREE DAYS', 'BOOK NOW', 1, 0, 60, 1),
+(2, 15, 'Pestapora 2026', 'Hindia, Sheila On 7, Tulus, Fiersa Besari', 'Gambir Expo JIExpo', 'Jakarta', '2026-09-25', '15:00 WIB', 'Rp450.000', 'assets/events/wtf2026.jpg', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 'LOCAL FEST', 'THREE DAYS', 'BOOK NOW', 1, 0, 150, 1),
 
-(6, 19, 'Djakarta Warehouse Project 2026', 'Alan Walker, DWP Lineup', 'GWK Cultural Park', 'Bali', '2026-12-31', '18:00 WIB', 'Rp1.200.000', 'assets/events/alan_walker.jpg', 'Djakarta Warehouse Project 2026 is now listed in Eventra discovery.', 'EDM FESTIVAL', 'YEAR END', 'EXPLORE', 1, 1, 80, 0),
+(6, 19, 'Djakarta Warehouse Project 2026', 'Alan Walker, Martin Garrix, Hardwell', 'GWK Cultural Park', 'Bali', '2026-12-31', '18:00 WIB', 'Rp1.200.000', 'assets/events/featured_events/featured_dwp.jpg', 'Djakarta Warehouse Project 2026 is now listed in Eventra discovery.', 'EDM FESTIVAL', 'YEAR END', 'EXPLORE', 1, 1, 80, 0),
 
-(7, 2, 'Coldplay: Music Of The Spheres Jakarta', 'Coldplay', 'Gelora Bung Karno Stadium', 'Jakarta', '2023-11-15', '20:00 WIB', 'Rp800.000', 'assets/events/featured_coldplay.jpg', 'Coldplay first Indonesia stadium show archive listing.', 'ARCHIVE', 'WORLD TOUR', 'VIEW DETAIL', 1, 0, 0, 0),
+(7, 2, 'Coldplay: Music Of The Spheres Jakarta', 'Coldplay', 'Gelora Bung Karno Stadium', 'Jakarta', '2023-11-15', '20:00 WIB', 'Rp800.000', 'assets/events/featured_events/featured_coldplay.jpg', 'Coldplay first Indonesia stadium show archive listing.', 'ARCHIVE', 'WORLD TOUR', 'VIEW DETAIL', 0, 0, 0, 0),
 
 (8, 8, 'Sheila On 7: Tunggu Aku Di Jakarta', 'Sheila On 7', 'Stadion Utama Gelora Bung Karno', 'Jakarta', '2026-12-25', '19:00 WIB', 'Rp600.000', 'assets/events/so7_gbk.webp', 'Every concert is a massive karaoke session across generations.', 'LOCAL ROCK', 'SOLO CONCERT', 'BUY TICKETS', 0, 0, 200, 1),
 
@@ -172,7 +170,7 @@ INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_ti
 
 (10, 5, 'SEVENTEEN: Right Here World Tour Jakarta', 'SEVENTEEN', 'Jakarta International Stadium', 'Jakarta', '2026-09-15', '18:30 WIB', 'IDR 1.800k', 'assets/events/seventeen_concert.jpeg', 'General Sales for SEVENTEEN: Right Here World Tour Jakarta starts in 30 minutes. Get ready!', 'K-POP', 'STADIUM', 'BUY TICKETS', 0, 0, 500, 0),
 
-(11, 19, 'Alan Walker: Walkerworld Tour Bali', 'Alan Walker', 'Atlas Beach Club, Badung', 'Bali', '2026-10-10', '16:00 WITA', 'IDR 750k', 'assets/events/alan_walker2.jpeg', 'Alan Walker: Walkerworld Tour Bali has updated its gate-open time to 04:00 PM.', 'EDM', 'CLUB SHOW', 'BOOK NOW', 0, 0, 110, 0),
+(11, 19, 'Alan Walker: Walkerworld Tour Bali', 'Alan Walker', 'Atlas Beach Club, Badung', 'Bali', '2026-10-10', '16:00 WITA', 'IDR 750k', 'assets/events/alan_walker2.jpg', 'Alan Walker: Walkerworld Tour Bali has updated its gate-open time to 04:00 PM.', 'EDM', 'CLUB SHOW', 'BOOK NOW', 0, 0, 110, 0),
 
 (12, 6, 'Bring Me The Horizon: Live in Jakarta', 'Bring Me The Horizon', 'Ancol Carnaval Circuit', 'Jakarta', '2026-11-20', '20:00 WIB', 'IDR 1.250k', 'assets/events/bmth_ancol.jpg', 'Pushing the boundaries of heavy alternative rock music.', 'ROCK', 'LIVE', 'GET TICKETS', 0, 0, 75, 0),
 
@@ -181,10 +179,6 @@ INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_ti
 (14, 11, 'Keshi: Requiem Tour', 'Keshi', 'Istora Senayan', 'Jakarta', '2027-01-18', '20:00 WIB', 'IDR 1.350k', 'assets/events/keshi_istora.jpg', 'Moody, guitar-driven R&B tracks from the king of falsettos.', 'R&B', 'LO-FI', 'GET TICKETS', 0, 0, 85, 0),
 
 (15, 8, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'GBK Sports Complex', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0),
-(16, 20, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'GBK Sports Complex', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0),
-(17, 10, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'GBK Sports Complex', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0),
-(18, 18, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'GBK Sports Complex', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0),
-(19, 15, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'GBK Sports Complex', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0);
 
 (20, 1, 'Sabrina Carpenter: Short n Sweet Tour', 'Sabrina Carpenter', 'ICE BSD', 'Tangerang', '2026-06-18', '19:30 WIB', 'Rp1.250.000', 'assets/events/sabrina_ice.avif', 'Espresso-fueled pop anthems live in Jakarta.', 'POP', 'WORLD TOUR', 'GET TICKETS', 1, 1, 25, 0),
 
@@ -198,18 +192,20 @@ INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_ti
 
 (25, 20, 'Dewa 19: 30 Tahun Karaoke Massal', 'Dewa 19', 'Stadion Utama Gelora Bung Karno', 'Jakarta', '2026-11-28', '19:30 WIB', 'Rp350.000', 'assets/events/dewa_gbk.webp', 'Indonesian rock royalty celebrating their best anthems.', 'CLASSIC ROCK', 'ANNIVERSARY', 'BUY TICKETS', 0, 0, 400, 1),
 
-(26, 3, 'Bruno Mars: Live in Bali 2026', 'Bruno Mars', 'GWK Cultural Park, Bali', 'Bali', '2026-12-31', '18:00 WIB', 'Rp2.500.000', 'assets/events/featured_events/featured_bruno.jpg',  'The ultimate showman bringing 24K Magic back to the stage.', 'FUNK / POP', 'STADIUM SHOW', 1, 1, 45, 0),
+(26, 3, 'Bruno Mars: Live in Bali 2026', 'Bruno Mars', 'GWK Cultural Park, Bali', 'Bali', '2026-12-31', '18:00 WIB', 'Rp2.500.000', 'assets/events/featured_events/featured_bruno.png',  'The ultimate showman bringing 24K Magic back to the stage.', 'FUNK / POP', 'STADIUM SHOW', 'BUY TICKETS', 1, 1, 45, 0),
 
 (27, 10, 'TULUS: Tur Manusia Jakarta', 'TULUS', 'Santhika Hall Kelapa Gading', 'Jakarta', '2026-08-20', '20:00 WIB', 'Rp550.000', 'assets/events/tulus.jpg', 'Award-winning singer-songwriter with deep, emotional soul tracks.', 'SOUL / POP', 'SOLO TOUR', 'BOOK NOW', 0, 0, 55, 0),
 
 (28, 16, 'NewJeans: Bunnies Party in Jakarta', 'NewJeans', 'Beach City International Stadium', 'Jakarta', '2026-07-04', '17:00 WIB', 'Rp1.300.000', 'assets/events/newjeans.webp', 'Pioneering easy-listening Y2K R&B revival fan-meeting event.', 'K-POP', 'FAN MEETING', 'GET TICKETS', 0, 1, 30, 0),
 
-(29, 13, 'Laufey: Bewitched Tour', 'Laufey', 'JIExpo Theatre', 'Jakarta', '2026-06-02', '20:30 WIB', 'Rp1.100.000', 'assets/events/laufey_solo.jpg', 'Laufey: Bewitched Tour at JIExpo Theatre starts in 5 hours. Prepare your QR Code.', 'JAZZ', 'SOLO SHOW', 'GET TICKETS', 0, 0, 12, 1)
+(29, 13, 'Laufey: Bewitched Tour', 'Laufey', 'JIExpo Theatre', 'Jakarta', '2026-06-02', '20:30 WIB', 'Rp1.100.000', 'assets/events/laufey_solo.jpg', 'Laufey: Bewitched Tour at JIExpo Theatre starts in 5 hours. Prepare your QR Code.', 'JAZZ', 'SOLO SHOW', 'GET TICKETS', 0, 0, 12, 1),
 
 (30, 15, 'Hindia: Lagipula Hidup Akan Berakhir', 'Hindia', 'Tennis Indoor Senayan', 'Jakarta', '2027-02-14', '19:30 WIB', 'IDR 450k', 'assets/events/hindia_tennis_indoor.jpeg', 'Official Hindia: Lagipula Hidup Akan Berakhir merchandise is now available for pre-order.', 'INDIE', 'LOCAL', 'BUY TICKETS', 0, 0, 140, 1),
 
-(31, 19, 'Djakarta Warehouse Project 2026', 'Alan Walker, Martin Garrix, Hardwell', 'GWK Cultural Park, Bali', 'Bali', '2026-12-31', '18:00 WIB', 'Rp1.200.000', 'assets/events/featured_events/featured_dwp.jpg', 'Experience South East Asia''s biggest electronic dance music festival.', 'EDM FESTIVAL', 'DAY ONE', 'EXPLORE', 1, 0, 300, 0),
-ON DUPLICATE KEY UPDATE title=VALUES(title), venue=VALUES(venue), image=VALUES(image);
+(31, 19, 'Djakarta Warehouse Project 2026 Deluxe', 'Alan Walker, Martin Garrix, Hardwell', 'GWK Cultural Park, Bali', 'Bali', '2026-12-31', '18:00 WIB', 'Rp1.200.000', 'assets/events/featured_events/featured_dwp.jpg', 'Experience South East Asia''s biggest electronic dance music festival.', 'EDM FESTIVAL', 'DAY ONE', 'EXPLORE', 0, 0, 300, 0)
+ON DUPLICATE KEY UPDATE title=VALUES(title), lineup=VALUES(lineup), venue=VALUES(venue), city=VALUES(city), date_label=VALUES(date_label), show_time=VALUES(show_time), price=VALUES(price), image=VALUES(image), description=VALUES(description), tag1=VALUES(tag1), tag2=VALUES(tag2), button=VALUES(button), is_featured=VALUES(is_featured), is_limited=VALUES(is_limited), remaining_seats=VALUES(remaining_seats), is_favorite=VALUES(is_favorite);
+
+DELETE FROM events WHERE id IN (3, 4, 5, 16, 17, 18, 19);
 -- Mengurutkan berdasarkan tanggal kalender secara otomatis
 SET @rank := 0;
 UPDATE events SET sort_order = (@rank := @rank + 1) ORDER BY STR_TO_DATE(date_label, '%Y-%m-%d') ASC;
@@ -220,12 +216,12 @@ INSERT INTO event_ticket_types (id, event_id, name, badge, badge_color, descript
 (2, 1, '3-Day Pass', 'POPULAR', '#F59E0B', 'Full festival weekend access.', 'Access for 29-31 May 2026', 'Multiple stages and festival area', 'Best for out-of-town visitors', 1850000, 80, 4, 2),
 (3, 2, 'Daily Pass', 'LIMITED', '#EF4444', 'Single-day Pestapora access.', 'Valid for one selected day', 'Festival ground access', 'Official digital ticket', 450000, 160, 6, 1),
 (4, 2, '3-Day Pass', 'FAN PICK', '#8B5CF6', 'Three-day Pestapora access.', 'Access for 25-27 Sep 2026', 'All regular stages', 'Digital ticket with QR verification', 950000, 90, 4, 2),
-(5, 3, 'GA Pass', 'EARLY BIRD', '#06B6D4', 'General admission access for DWP.', 'Festival ground access', 'Digital ticket delivery', 'Official ID verification required', 1200000, 100, 4, 1),
-(6, 3, 'VIP Deck', 'VIP', '#EAB308', 'Premium viewing and lounge access.', 'Elevated viewing deck', 'Dedicated entry lane', 'Selected hospitality access', 2500000, 40, 2, 2),
-(7, 6, 'CAT 1', 'HOT', '#EF4444', 'Reserved seating for BLACKPINK Jakarta.', 'Assigned seat category', 'Digital QR entry', 'Official ID verification required', 2900000, 70, 4, 1),
-(8, 6, 'VIP Soundcheck', 'SOUNDCHECK', '#EC4899', 'VIP package with soundcheck access.', 'Soundcheck session', 'VIP laminate and merch', 'Priority entry lane', 5500000, 20, 2, 2),
-(9, 4, 'Festival Seating', 'ARCHIVE', '#64748B', 'Archive ticket category from public sale reference.', 'Historical listing', 'GBK stadium event', 'Digital ticket sample', 800000, 50, 4, 1),
-(10, 7, 'Regular Pass', 'DISCOVERY', '#22C55E', 'Regular Synchronize Fest access.', 'Festival ground access', 'Digital ticket with QR', 'Reminder enabled', 500000, 130, 6, 1)
+(5, 6, 'GA Pass', 'EARLY BIRD', '#06B6D4', 'General admission access for DWP.', 'Festival ground access', 'Digital ticket delivery', 'Official ID verification required', 1200000, 100, 4, 1),
+(6, 6, 'VIP Deck', 'VIP', '#EAB308', 'Premium viewing and lounge access.', 'Elevated viewing deck', 'Dedicated entry lane', 'Selected hospitality access', 2500000, 40, 2, 2),
+(7, 21, 'CAT 1', 'HOT', '#EF4444', 'Reserved seating for Bruno Mars Jakarta.', 'Assigned seat category', 'Digital QR entry', 'Official ID verification required', 1500000, 70, 4, 1),
+(8, 21, 'VIP Experience', 'VIP', '#EC4899', 'VIP package with premium viewing access.', 'Premium viewing section', 'VIP laminate and merch', 'Priority entry lane', 3500000, 20, 2, 2),
+(9, 7, 'Festival Seating', 'ARCHIVE', '#64748B', 'Archive ticket category from public sale reference.', 'Historical listing', 'GBK stadium event', 'Digital ticket sample', 800000, 50, 4, 1),
+(10, 15, 'Regular Pass', 'DISCOVERY', '#22C55E', 'We The Fest regular access.', 'Festival ground access', 'Digital ticket with QR', 'Reminder enabled', 500000, 130, 6, 1)
 ON DUPLICATE KEY UPDATE name=VALUES(name), price=VALUES(price);
 
 -- Seed Data Tickets Dompet User
@@ -247,15 +243,15 @@ INSERT INTO notifications (id, title, subtitle, sort_order) VALUES
 (8, 'Waitlist Alert ', 'Additional CAT 1 tickets for Taylor Swift: The Eras Tour have been released. Grab them fast!', 8),
 (9, 'Java Jazz 2026 is live', 'Festival dates are set for 29-31 May 2026 at NICE, PIK 2.', 1),
 (10, 'Pestapora 2026 reminder', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 2),
-(11, 'DWP 2026 added', 'Djakarta Warehouse Project 2026 is now listed in Eventra discovery.', 3),
+(11, 'DWP 2026 added', 'Djakarta Warehouse Project 2026 is now listed in Eventra discovery.', 3)
 ON DUPLICATE KEY UPDATE title=VALUES(title), subtitle=VALUES(subtitle);
 
 -- Seed Data Exclusive Drops
-INSERT INTO exclusive_drops (id, title, ticket_type, description, image_url, venue, city, date_label, time_label, price, slots_left, is_active, sort_order) VALUES 
-(1, 'LIMITED TICKET', 'ASIA TOUR JAKARTA', 'Additional Section B tickets released', 'assets/events/laufey_jiexpo.webp', 'NICE PIK 2', 'Tangerang', '2026-06-03', '01:59:18 AM', 9912, 48, 1, 1), 
-(2, 'EVENT PLACEMENT', 'SPONSORED EVENT PLACEMENT', 'Experience immersive visuals and live performances from local Indonesian artists', 'assets/events/wtf2026.jpg', 'Gambir Expo & Hall D2 JIExpo', 'Jakarta', '2026-06-03', '01:59:18 AM', 45000, 20, 1, 2), 
-(3, 'MERCH PRESALE', 'THE WEEKND - AFTER HOURS TIL DAWN', 'Exclusive preorders of the new WEEKND drop', 'assets/events/so7_gbk.webp', 'Gelora Bung Karno Main Stadium', 'Jakarta', '2026-06-03', '01:59:18 AM', 75000, 10, 1, 3) 
-ON DUPLICATE KEY UPDATE title = VALUES(title), ticket_type = VALUES(ticket_type), description = VALUES(description), date_label = VALUES(date_label), time_label = VALUES(time_label);
+INSERT INTO exclusive_drops (id, title, badge, description, image, venue, city, event_date, type, countdown_seconds, remaining_seats, is_active, sort_order) VALUES
+(1, 'LIMITED TICKET', 'ASIA TOUR JAKARTA', 'Additional Section B tickets released', 'assets/events/laufey_jiexpo.webp', 'NICE PIK 2', 'Tangerang', '2026-06-03', 'ticket', 9912, 48, 1, 1),
+(2, 'EVENT PLACEMENT', 'SPONSORED EVENT PLACEMENT', 'Experience immersive visuals and live performances from local Indonesian artists', 'assets/events/wtf2026.jpg', 'Gambir Expo & Hall D2 JIExpo', 'Jakarta', '2026-06-03', 'ticket', 45000, 20, 1, 2),
+(3, 'MERCH PRESALE', 'THE WEEKND - AFTER HOURS TIL DAWN', 'Exclusive preorders of the new WEEKND drop', 'assets/events/so7_gbk.webp', 'Gelora Bung Karno Main Stadium', 'Jakarta', '2026-06-03', 'merch', 75000, 10, 1, 3)
+ON DUPLICATE KEY UPDATE title = VALUES(title), badge = VALUES(badge), description = VALUES(description), image = VALUES(image), event_date = VALUES(event_date), type = VALUES(type), countdown_seconds = VALUES(countdown_seconds), remaining_seats = VALUES(remaining_seats);
 
 -- Seed Data App Config
 INSERT INTO app_config (config_key, config_value) VALUES

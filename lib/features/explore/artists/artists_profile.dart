@@ -10,14 +10,23 @@ class ArtistProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Ambil data dasar dari parameters
-    final imageUrl = artistData['imageUrl'] as String? ?? artistData['avatar_url'] as String? ?? '';
+    final imageUrl =
+        artistData['imageUrl'] as String? ??
+        artistData['avatar_url'] as String? ??
+        '';
     final name = artistData['name'] as String? ?? 'Artist Profile';
-    final followers = artistData['followers']?.toString() ?? '0';
+    final followers =
+        (artistData['followers'] ?? artistData['followers_count'])
+            ?.toString() ??
+        '0';
     final description = artistData['description'] as String? ?? '';
     final rank = artistData['rank'] as int? ?? 0;
 
     // Ambil data konser yang sudah di-filter oleh server
-    final List<dynamic> upcomingEvents = artistData['upcomingEvents'] as List<dynamic>? ?? [];
+    final upcomingEvents = (artistData['upcomingEvents'] as List? ?? const [])
+        .whereType<Map>()
+        .map((event) => Map<String, dynamic>.from(event))
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
@@ -53,7 +62,9 @@ class ArtistProfilePage extends StatelessWidget {
             _SectionPanel(
               title: 'ABOUT ${name.toUpperCase()}',
               child: Text(
-                description.isEmpty ? 'No artist description available.' : description,
+                description.isEmpty
+                    ? 'No artist description available.'
+                    : description,
                 style: GoogleFonts.poppins(
                   color: Colors.white70,
                   fontSize: 13,
@@ -71,7 +82,7 @@ class ArtistProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             // Render list konser
             if (upcomingEvents.isEmpty)
               Padding(
@@ -88,25 +99,27 @@ class ArtistProfilePage extends StatelessWidget {
                 ),
               )
             else ...[
-              ...upcomingEvents.map(
-                (eventData) {
-                  final event = eventData as Map<String, dynamic>;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: EventraEventCard(
-                      compact: true,
-                      image: event['image'] as String? ?? event['image_url'] as String? ?? '',
-                      dateLabel: _formatDate(event['date_label'] as String? ?? ''),
-                      title: event['title'] as String? ?? '',
-                      subtitle: event['lineup'] as String? ?? name,
-                      venueLabel: '${event['venue'] ?? ''}, ${event['city'] ?? ''}',
-                      isFavorite: (event['is_favorite'] as int? ?? 0) == 1,
+              ...upcomingEvents.map((event) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: EventraEventCard(
+                    compact: true,
+                    image:
+                        event['image'] as String? ??
+                        event['image_url'] as String? ??
+                        '',
+                    dateLabel: _formatDate(
+                      event['date_label'] as String? ?? '',
                     ),
-                  );
-                },
-              ),
-            ]
+                    title: event['title'] as String? ?? '',
+                    subtitle: event['lineup'] as String? ?? name,
+                    venueLabel:
+                        '${event['venue'] ?? ''}, ${event['city'] ?? ''}',
+                    isFavorite: (event['is_favorite'] as int? ?? 0) == 1,
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
@@ -119,8 +132,18 @@ class ArtistProfilePage extends StatelessWidget {
     if (parsed == null) return raw;
 
     const months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
     ];
 
     return '${months[parsed.month - 1]} ${parsed.day}';
@@ -160,8 +183,8 @@ class _ArtistHero extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.05),
-                    Colors.black.withOpacity(0.72),
+                    Colors.black.withValues(alpha: 0.05),
+                    Colors.black.withValues(alpha: 0.72),
                   ],
                 ),
               ),

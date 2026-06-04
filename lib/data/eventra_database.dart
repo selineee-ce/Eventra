@@ -21,8 +21,12 @@ class EventraDatabase {
   Future<List<Map<String, dynamic>>> fetchExclusiveDrops() async =>
       _getList('/home/exclusive-drops');
 
-  Future<List<Map<String, dynamic>>> fetchNearbyEvents() async =>
-      _getList('/home/nearby-events');
+  Future<List<Map<String, dynamic>>> fetchNearbyEvents({String? location}) {
+    final query = (location == null || location.trim().isEmpty)
+        ? ''
+        : '?location=${Uri.encodeQueryComponent(location.trim())}';
+    return _getList('/home/nearby-events$query');
+  }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async =>
       _getList('/tickets');
@@ -62,9 +66,8 @@ class EventraDatabase {
     return _decodeMap(response, 'profile');
   }
 
-  Future<List<Map<String, dynamic>>> fetchTrendingArtists() async {
-    return _getList('/artists');
-  }
+  Future<List<Map<String, dynamic>>> fetchTrendingArtists() async =>
+      _getList('/artists');
 
   Future<void> setPassFavorite({
     required int passId,
