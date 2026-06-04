@@ -51,7 +51,7 @@ class _RegisterPageState extends State<RegisterPage> {
         password: _passwordController.text,
       );
 
-      EventraSession.instance.setUser(user);
+      await EventraSession.instance.setUser(user);
 
       if (!mounted) {
         return;

@@ -24,18 +24,30 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
   }
 
   Future<void> _loadProfile() async {
-    final loadedProfile =
-        EventraSession.instance.currentUser ??
-        await EventraDatabase.instance.fetchProfile();
+    try {
+      final loadedProfile = await EventraDatabase.instance.fetchProfile();
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        profile = loadedProfile;
+        _isLoading = false;
+      });
+
+      // Update session with fresh data from database
+      await EventraSession.instance.setUser(loadedProfile);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        profile = EventraSession.instance.currentUser ?? {};
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      profile = loadedProfile;
-      _isLoading = false;
-    });
   }
 
   @override
@@ -173,8 +185,11 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
 
                 // --- LOGOUT BUTTON ---
                 GestureDetector(
-                  onTap: () {
-                    EventraSession.instance.clear();
+                  onTap: () async {
+                    await EventraSession.instance.clear();
+                    if (!mounted) {
+                      return;
+                    }
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(

@@ -53,6 +53,34 @@ async function columnExists(tableName, columnName) {
 }
 
 async function ensurePaymentTables() {
+  if (await tableExists('users')) {
+    const requiredUserColumns = [
+      { name: 'name', type: 'VARCHAR(120) NOT NULL', after: 'username', defaultValue: 'username' },
+      { name: 'bio', type: 'TEXT NULL', after: 'password_hash' },
+      { name: 'location', type: 'VARCHAR(120) NULL', after: 'bio' },
+      { name: 'avatar_url', type: 'TEXT NULL', after: 'location' },
+      { name: 'followers_count', type: 'INT NOT NULL DEFAULT 0', after: 'avatar_url' },
+      { name: 'events_count', type: 'INT NOT NULL DEFAULT 0', after: 'followers_count' },
+      { name: 'upcoming_events_count', type: 'INT NOT NULL DEFAULT 0', after: 'events_count' },
+      { name: 'genre', type: 'VARCHAR(120) NULL', after: 'upcoming_events_count' },
+      { name: 'description', type: 'TEXT NULL', after: 'genre' },
+      { name: 'role', type: "VARCHAR(50) NOT NULL DEFAULT 'user'", after: 'description' },
+      { name: 'is_verified', type: 'TINYINT(1) NOT NULL DEFAULT 0', after: 'role' },
+      { name: 'sort_order', type: 'INT NOT NULL DEFAULT 0', after: 'is_verified' },
+    ];
+
+    for (const col of requiredUserColumns) {
+      if (!(await columnExists('users', col.name))) {
+        console.log(`Migrating users table: adding "${col.name}" column...`);
+        await query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type} AFTER ${col.after}`);
+        if (col.defaultValue === 'username') {
+          await query(`UPDATE users SET ${col.name} = username`);
+        }
+        console.log(`Successfully added "${col.name}" column.`);
+      }
+    }
+  }
+
   if (await tableExists('events')) {
     const venueLayoutColumn = await query(
       `SELECT COLUMN_NAME
@@ -103,6 +131,7 @@ async function ensurePaymentTables() {
   await query(`
     CREATE TABLE IF NOT EXISTS payment_orders (
       id INT PRIMARY KEY AUTO_INCREMENT,
+      user_id INT NULL,
       event_id INT NOT NULL,
       payment_method ENUM('qris','gopay','ovo','visa') NOT NULL,
       payment_status ENUM('PENDING','SUCCESS','FAILED') NOT NULL DEFAULT 'PENDING',
@@ -112,6 +141,46 @@ async function ensurePaymentTables() {
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  const paymentOrdersUserIdColumn = await query(
+    `SELECT COLUMN_NAME
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'payment_orders'
+       AND COLUMN_NAME = 'user_id'
+     LIMIT 1`,
+  );
+
+  if (paymentOrdersUserIdColumn.length === 0) {
+    await query('ALTER TABLE payment_orders ADD COLUMN user_id INT NULL AFTER id');
+  }
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS user_favorites (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      user_id INT NOT NULL,
+      favorite_type ENUM('event','pass') NOT NULL,
+      item_id INT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_user_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE KEY uq_user_favorites_item (user_id, favorite_type, item_id)
+    )
+  `);
+
+  if (await tableExists('tickets')) {
+    const ticketsUserIdColumn = await query(
+      `SELECT COLUMN_NAME
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME = 'tickets'
+         AND COLUMN_NAME = 'user_id'
+       LIMIT 1`,
+    );
+
+    if (ticketsUserIdColumn.length === 0) {
+      await query('ALTER TABLE tickets ADD COLUMN user_id INT NULL AFTER id');
+    }
+  }
 
   await query(`
     CREATE TABLE IF NOT EXISTS payment_order_items (
@@ -176,6 +245,28 @@ function normalizeTitle(value) {
     .trim();
 }
 
+function getRequestUserId(req) {
+  const userIdHeader = req.header('x-user-id');
+  const parsedUserId = Number(userIdHeader);
+
+  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+    return null;
+  }
+
+  return parsedUserId;
+}
+
+function requireUserId(req, res) {
+  const userId = getRequestUserId(req);
+
+  if (!userId) {
+    res.status(401).json({ error: 'Missing user session' });
+    return null;
+  }
+
+  return userId;
+}
+
 app.get('/api/health', async (_req, res) => {
   try {
     await query('SELECT 1 AS ok');
@@ -185,8 +276,10 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
-app.get('/api/home/featured-events', async (_req, res, next) => {
+app.get('/api/home/featured-events', async (req, res, next) => {
   try {
+    const userId = getRequestUserId(req);
+
     const rows = (await tableExists('events'))
       ? await query(`
         SELECT
@@ -198,11 +291,20 @@ app.get('/api/home/featured-events', async (_req, res, next) => {
           tag2,
           button,
           sort_order,
-          is_favorite
+          CASE
+            WHEN ? IS NULL THEN is_favorite
+            ELSE EXISTS(
+              SELECT 1
+              FROM user_favorites uf
+              WHERE uf.user_id = ?
+                AND uf.favorite_type = 'event'
+                AND uf.item_id = events.id
+            )
+          END AS is_favorite
         FROM events
         WHERE is_featured = 1
         ORDER BY sort_order ASC
-      `)
+      `, [userId, userId])
       : await query(`
         SELECT
           id,
@@ -223,13 +325,35 @@ app.get('/api/home/featured-events', async (_req, res, next) => {
   }
 });
 
-app.get('/api/home/passes', async (_req, res, next) => {
+app.get('/api/home/passes', async (req, res, next) => {
   try {
+    const userId = getRequestUserId(req);
+
     if (!(await tableExists('pass_packages'))) {
       return res.json({ data: [] });
     }
 
-    const rows = await query('SELECT id, title, description AS `desc`, price, sort_order, is_favorite FROM pass_packages ORDER BY sort_order ASC');
+    const rows = await query(
+      `SELECT
+        id,
+        title,
+        description AS \`desc\`,
+        price,
+        sort_order,
+        CASE
+          WHEN ? IS NULL THEN is_favorite
+          ELSE EXISTS(
+            SELECT 1
+            FROM user_favorites uf
+            WHERE uf.user_id = ?
+              AND uf.favorite_type = 'pass'
+              AND uf.item_id = pass_packages.id
+          )
+        END AS is_favorite
+      FROM pass_packages
+      ORDER BY sort_order ASC`,
+      [userId, userId],
+    );
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -238,6 +362,7 @@ app.get('/api/home/passes', async (_req, res, next) => {
 
 app.get('/api/home/nearby-events', async (req, res, next) => {
   try {
+    const userId = getRequestUserId(req);
     const userLocation = String(req.query.location || '').trim();
     const city = userLocation.includes(',')
       ? userLocation.split(',')[0].trim()
@@ -259,11 +384,20 @@ app.get('/api/home/nearby-events', async (req, res, next) => {
           price,
           image,
           sort_order,
-          is_favorite
+          CASE
+            WHEN ? IS NULL THEN is_favorite
+            ELSE EXISTS(
+              SELECT 1
+              FROM user_favorites uf
+              WHERE uf.user_id = ?
+                AND uf.favorite_type = 'event'
+                AND uf.item_id = events.id
+            )
+          END AS is_favorite
         FROM events
         WHERE (? = '' OR LOWER(TRIM(city)) = LOWER(TRIM(?)))
         ORDER BY sort_order ASC
-      `, [city, city])
+      `, [userId, userId, city, city])
       : await query(`
         SELECT
           id,
@@ -291,9 +425,20 @@ app.get('/api/home/nearby-events', async (req, res, next) => {
   }
 });
 
-app.get('/api/tickets', async (_req, res, next) => {
+app.get('/api/tickets', async (req, res, next) => {
   try {
-    const rows = await query('SELECT id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, ticket_type, ticket_status, sort_order FROM tickets ORDER BY sort_order ASC');
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
+    const rows = await query(
+      `SELECT id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, ticket_type, ticket_status, sort_order
+       FROM tickets
+       WHERE user_id = ?
+       ORDER BY sort_order ASC`,
+      [userId],
+    );
     const data = rows.map((ticket) => ({
       ...ticket,
       row_label: normalizeRowLabel(ticket.row_label),
@@ -315,25 +460,21 @@ app.get('/api/notifications', async (_req, res, next) => {
   }
 });
 
-app.get('/api/profile', async (_req, res, next) => {
+app.get('/api/profile', async (req, res, next) => {
   try {
-    const [row] = (await tableExists('profile'))
-      ? await query(
-          `SELECT id, name, membership_title, location, avatar_url,
-            upcoming_events_count, 0 AS followers_count, membership_title AS bio,
-            'user' AS role, 1 AS is_verified
-           FROM profile
-           ORDER BY id ASC
-           LIMIT 1`,
-        )
-      : await query(
-          `SELECT id, username, name, email, phone, bio, location, avatar_url,
-            followers_count, upcoming_events_count, description, role, is_verified
-           FROM users
-           WHERE role = 'user'
-           ORDER BY id ASC
-           LIMIT 1`,
-        );
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
+    const [row] = await query(
+      `SELECT id, username, name, email, phone, bio, location, avatar_url,
+        followers_count, upcoming_events_count, description, role, is_verified
+       FROM users
+       WHERE id = ?
+       LIMIT 1`,
+      [userId],
+    );
     res.json({ profile: row || {} });
   } catch (error) {
     next(error);
@@ -354,45 +495,59 @@ app.get('/api/app-config', async (_req, res, next) => {
   }
 });
 
-app.get('/api/favorites', async (_req, res, next) => {
+app.get('/api/favorites', async (req, res, next) => {
   try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
     const passes = (await tableExists('pass_packages'))
       ? await query(
-          'SELECT id, title, description AS subtitle, price, NULL AS image, NULL AS date, NULL AS place, NULL AS city, "pass" AS type FROM pass_packages WHERE is_favorite = 1 ORDER BY sort_order ASC',
+          `SELECT p.id, p.title, p.description AS subtitle, p.price, NULL AS image, NULL AS date, NULL AS place, NULL AS city, "pass" AS type
+           FROM user_favorites uf
+           INNER JOIN pass_packages p ON p.id = uf.item_id
+           WHERE uf.user_id = ? AND uf.favorite_type = 'pass'
+           ORDER BY p.sort_order ASC`,
+          [userId],
         )
       : [];
     const events = (await tableExists('events'))
       ? await query(
           `SELECT
-            id,
-            title,
-            venue AS subtitle,
-            price,
-            image,
-            date_label AS date,
-            venue AS place,
-            city,
-            COALESCE(lineup, title) AS artist_name,
+            e.id,
+            e.title,
+            e.venue AS subtitle,
+            e.price,
+            e.image,
+            e.date_label AS date,
+            e.venue AS place,
+            e.city,
+            COALESCE(e.lineup, e.title) AS artist_name,
             "event" AS type
-           FROM events
-           WHERE is_favorite = 1
-           ORDER BY sort_order ASC`,
+           FROM user_favorites uf
+           INNER JOIN events e ON e.id = uf.item_id
+           WHERE uf.user_id = ? AND uf.favorite_type = 'event'
+           ORDER BY e.sort_order ASC`,
+          [userId],
         )
       : await query(
           `SELECT
-            id,
-            title,
-            place AS subtitle,
-            price,
-            image,
-            date_label AS date,
-            place,
-            city,
-            artist_name,
+            e.id,
+            e.title,
+            e.place AS subtitle,
+            e.price,
+            e.image,
+            e.date_label AS date,
+            e.place,
+            e.city,
+            e.artist_name,
             "event" AS type
-           FROM nearby_events
-           WHERE is_favorite = 1
-           ORDER BY sort_order ASC`,
+           FROM user_favorites uf
+           INNER JOIN nearby_events e ON e.id = uf.item_id
+           WHERE uf.user_id = ? AND uf.favorite_type = 'event'
+           ORDER BY e.sort_order ASC`,
+          [userId],
         );
 
     res.json({ data: [...passes, ...events] });
@@ -607,9 +762,32 @@ app.get('/api/nearby-events/:id/detail', async (req, res, next) => {
 
 app.post('/api/passes/:id/favorite', async (req, res, next) => {
   try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
     const passId = Number(req.params.id);
-    const isFavorite = req.body?.isFavorite ? 1 : 0;
-    await query('UPDATE pass_packages SET is_favorite = ? WHERE id = ?', [isFavorite, passId]);
+    const isFavorite = req.body?.isFavorite;
+
+    if (!passId) {
+      return res.status(400).json({ error: 'Invalid pass id' });
+    }
+
+    if (isFavorite) {
+      await query(
+        `INSERT INTO user_favorites (user_id, favorite_type, item_id)
+         VALUES (?, 'pass', ?)
+         ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
+        [userId, passId],
+      );
+    } else {
+      await query(
+        'DELETE FROM user_favorites WHERE user_id = ? AND favorite_type = ? AND item_id = ?',
+        [userId, 'pass', passId],
+      );
+    }
+
     res.json({ ok: true });
   } catch (error) {
     next(error);
@@ -618,10 +796,32 @@ app.post('/api/passes/:id/favorite', async (req, res, next) => {
 
 app.post('/api/nearby-events/:id/favorite', async (req, res, next) => {
   try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
     const eventId = Number(req.params.id);
-    const isFavorite = req.body?.isFavorite ? 1 : 0;
-    const tableName = (await tableExists('events')) ? 'events' : 'nearby_events';
-    await query(`UPDATE ${tableName} SET is_favorite = ? WHERE id = ?`, [isFavorite, eventId]);
+    const isFavorite = req.body?.isFavorite;
+
+    if (!eventId) {
+      return res.status(400).json({ error: 'Invalid event id' });
+    }
+
+    if (isFavorite) {
+      await query(
+        `INSERT INTO user_favorites (user_id, favorite_type, item_id)
+         VALUES (?, 'event', ?)
+         ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
+        [userId, eventId],
+      );
+    } else {
+      await query(
+        'DELETE FROM user_favorites WHERE user_id = ? AND favorite_type = ? AND item_id = ?',
+        [userId, 'event', eventId],
+      );
+    }
+
     res.json({ ok: true });
   } catch (error) {
     next(error);
@@ -632,6 +832,11 @@ app.post('/api/payments/checkout', async (req, res, next) => {
   const connection = await pool.getConnection();
 
   try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
     const eventId = Number(req.body?.eventId);
     const method = normalizePaymentMethod(req.body?.paymentMethod);
     const items = Array.isArray(req.body?.items) ? req.body.items : [];
@@ -706,9 +911,9 @@ app.post('/api/payments/checkout', async (req, res, next) => {
     const total = subtotal + serviceFee;
 
     const [orderResult] = await connection.execute(
-      `INSERT INTO payment_orders (event_id, payment_method, payment_status, subtotal, service_fee, total)
-       VALUES (?, ?, 'SUCCESS', ?, ?, ?)`,
-      [eventId, method, subtotal, serviceFee, total]
+      `INSERT INTO payment_orders (user_id, event_id, payment_method, payment_status, subtotal, service_fee, total)
+       VALUES (?, ?, ?, 'SUCCESS', ?, ?, ?)`,
+      [userId, eventId, method, subtotal, serviceFee, total]
     );
     const paymentOrderId = orderResult.insertId;
 
@@ -740,11 +945,12 @@ app.post('/api/payments/checkout', async (req, res, next) => {
         const seatLabel = String(((nextTicketId - 1) % 30) + 1).padStart(2, '0');
         await connection.execute(
           `INSERT INTO tickets (
-            id, title, image, date_label, time_label, venue, section, row_label, seat_label,
+            id, user_id, title, image, date_label, time_label, venue, section, row_label, seat_label,
             qr_data, ticket_type, ticket_status, sort_order
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UPCOMING', ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'UPCOMING', ?)`,
           [
             nextTicketId,
+            userId,
             event.title,
             event.image,
             event.date_label,

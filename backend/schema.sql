@@ -62,6 +62,16 @@ CREATE TABLE IF NOT EXISTS pass_packages (
     is_favorite TINYINT(1) NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS user_favorites (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    favorite_type ENUM('event', 'pass') NOT NULL,
+    item_id INT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_favorites_user_seed FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY uq_user_favorites_item (user_id, favorite_type, item_id)
+);
+
 CREATE TABLE IF NOT EXISTS event_ticket_types (
     id INT PRIMARY KEY AUTO_INCREMENT,
     event_id INT NOT NULL,
@@ -81,6 +91,7 @@ CREATE TABLE IF NOT EXISTS event_ticket_types (
 
 CREATE TABLE IF NOT EXISTS tickets (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NULL,
     title VARCHAR(200) NOT NULL,
     image TEXT NOT NULL,
     date_label VARCHAR(40) NOT NULL,
@@ -92,7 +103,8 @@ CREATE TABLE IF NOT EXISTS tickets (
     qr_data VARCHAR(255) NOT NULL,
     ticket_type VARCHAR(100) NOT NULL,
     ticket_status VARCHAR(50) NOT NULL DEFAULT 'UPCOMING',
-    sort_order INT NOT NULL
+    sort_order INT NOT NULL,
+    CONSTRAINT fk_tickets_user_seed FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exclusive_drops (
@@ -225,11 +237,20 @@ INSERT INTO event_ticket_types (id, event_id, name, badge, badge_color, descript
 ON DUPLICATE KEY UPDATE name=VALUES(name), price=VALUES(price);
 
 -- Seed Data Tickets Dompet User
-INSERT INTO tickets (id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, ticket_type, ticket_status, sort_order) VALUES
-(1, 'Laufey: Bewitched Tour', 'assets/events/laufey_jiexpo.webp', 'Jun 12,\n2026', '07:30 PM', 'JIExpo Theatre, Jakarta', 'VIP', 'CENTER', 'A-08', 'Eventra-Laufey-VIP-Center-A08', 'DAILY PASS', 'UPCOMING', 1),
-(2, 'DJAKARTA WAREHOUSE PROJECT', 'assets/events/featured_events/featured_dwp.jpg', 'Dec 11,\n2026', '05:00 PM', 'JIExpo Kemayoran, Jakarta', 'GA', 'FESTIVAL', 'Free', 'Eventra-DWP2026-GA-Festival-Free', 'VIP DECK', 'UPCOMING', 2),
-(3, 'Sheila On 7: Tunggu Aku Di Jakarta', 'assets/events/so7_gbk.webp', 'Dec 25,\n2026', '08:00 PM', 'Gelora Bung Karno Main Stadium', 'CAT 2', 'WEST', 'B-14', 'Eventra-SO7-GBK-CAT2-West-B14', '3-DAY PASS', 'UPCOMING', 3)
-ON DUPLICATE KEY UPDATE title=VALUES(title), venue=VALUES(venue);
+INSERT INTO tickets (id, user_id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, ticket_type, ticket_status, sort_order) VALUES
+(1, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'Laufey: Bewitched Tour', 'assets/events/laufey_jiexpo.webp', 'Jun 12,\n2026', '07:30 PM', 'JIExpo Theatre, Jakarta', 'VIP', 'CENTER', 'A-08', 'Eventra-Laufey-VIP-Center-A08', 'DAILY PASS', 'UPCOMING', 1),
+(2, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'DJAKARTA WAREHOUSE PROJECT', 'assets/events/featured_events/featured_dwp.jpg', 'Dec 11,\n2026', '05:00 PM', 'JIExpo Kemayoran, Jakarta', 'GA', 'FESTIVAL', 'Free', 'Eventra-DWP2026-GA-Festival-Free', 'VIP DECK', 'UPCOMING', 2),
+(3, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'Sheila On 7: Tunggu Aku Di Jakarta', 'assets/events/so7_gbk.webp', 'Dec 25,\n2026', '08:00 PM', 'Gelora Bung Karno Main Stadium', 'CAT 2', 'WEST', 'B-14', 'Eventra-SO7-GBK-CAT2-West-B14', '3-DAY PASS', 'UPCOMING', 3)
+ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), title=VALUES(title), venue=VALUES(venue);
+
+-- Seed User Favorites
+INSERT INTO user_favorites (user_id, favorite_type, item_id)
+SELECT id, 'event', 1 FROM users WHERE username = 'jessica01'
+UNION ALL
+SELECT id, 'event', 2 FROM users WHERE username = 'jessica01'
+UNION ALL
+SELECT id, 'pass', 1 FROM users WHERE username = 'jessica01'
+ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP;
 
 -- Seed Data Notifications
 INSERT INTO notifications (id, title, subtitle, sort_order) VALUES

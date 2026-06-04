@@ -1,5 +1,7 @@
 import 'package:eventra/data/app_config.dart';
+import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/data/tickets_notifier.dart';
+import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/favorites/favorites_page.dart';
 import 'package:eventra/features/explore/artists/trending_artists.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
@@ -43,6 +45,20 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    if (!EventraSession.instance.isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (route) => false,
+        );
+      });
+    }
+
     // HomeRepository → EventraDatabase → server.js → MySQL
     _homeController = HomeController(repository: const HomeRepository());
   }

@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
         password: _passwordController.text,
       );
 
-      EventraSession.instance.setUser(user);
+      await EventraSession.instance.setUser(user);
 
       if (!mounted) {
         return;

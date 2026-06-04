@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:eventra/data/eventra_session.dart';
 
 class EventraDatabase {
   EventraDatabase._();
@@ -13,10 +14,10 @@ class EventraDatabase {
   );
 
   Future<List<Map<String, dynamic>>> fetchFeaturedEvents() async =>
-      _getList('/home/featured-events');
+      _getList('/home/featured-events', requiresAuth: true);
 
   Future<List<Map<String, dynamic>>> fetchPasses() async =>
-      _getList('/home/passes');
+      _getList('/home/passes', requiresAuth: true);
 
   Future<List<Map<String, dynamic>>> fetchExclusiveDrops() async =>
       _getList('/home/exclusive-drops');
@@ -25,17 +26,17 @@ class EventraDatabase {
     final query = (location == null || location.trim().isEmpty)
         ? ''
         : '?location=${Uri.encodeQueryComponent(location.trim())}';
-    return _getList('/home/nearby-events$query');
+    return _getList('/home/nearby-events$query', requiresAuth: true);
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async =>
-      _getList('/tickets');
+      _getList('/tickets', requiresAuth: true);
 
   Future<List<Map<String, dynamic>>> fetchNotifications() async =>
       _getList('/notifications');
 
   Future<List<Map<String, dynamic>>> fetchFavorites() async =>
-      _getList('/favorites');
+      _getList('/favorites', requiresAuth: true);
 
   Future<List<Map<String, dynamic>>> fetchTicketTypes(int eventId) async =>
       _getList('/nearby-events/$eventId/ticket-types');
@@ -62,7 +63,10 @@ class EventraDatabase {
   }
 
   Future<Map<String, dynamic>> fetchProfile() async {
-    final response = await http.get(Uri.parse('$_baseUrl/profile'));
+    final response = await http.get(
+      Uri.parse('$_baseUrl/profile'),
+      headers: _authHeaders(),
+    );
     return _decodeMap(response, 'profile');
   }
 
@@ -73,7 +77,11 @@ class EventraDatabase {
     required int passId,
     required bool isFavorite,
   }) async {
-    await _postJson('/passes/$passId/favorite', {'isFavorite': isFavorite});
+    await _postJson(
+      '/passes/$passId/favorite',
+      {'isFavorite': isFavorite},
+      requiresAuth: true,
+    );
   }
 
   Future<void> setNearbyFavorite({
@@ -82,7 +90,7 @@ class EventraDatabase {
   }) async {
     await _postJson('/nearby-events/$eventId/favorite', {
       'isFavorite': isFavorite,
-    });
+    }, requiresAuth: true);
   }
 
   Future<Map<String, dynamic>> checkoutPayment({
@@ -93,7 +101,7 @@ class EventraDatabase {
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/payments/checkout'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(requiresAuth: true),
       body: jsonEncode({
         'eventId': eventId,
         'paymentMethod': paymentMethod,
@@ -138,51 +146,72 @@ class EventraDatabase {
     return _decodeMap(response, 'user');
   }
 
-  Future<List<Map<String, dynamic>>> _getList(String path) async {
-    try {
-      final response = await http.get(Uri.parse('$_baseUrl$path'));
-      final decoded = _decode(response);
-      final data = decoded['data'];
-
-      if (data is! List) {
-        return <Map<String, dynamic>>[];
-      }
-
-      return data
-          .whereType<Map>()
-          .map((item) => Map<String, dynamic>.from(item))
-          .toList();
-    } catch (_) {
-      return <Map<String, dynamic>>[];
-    }
-  }
-
   Future<Map<String, dynamic>> _decodeMap(
     http.Response response,
     String key,
   ) async {
-    try {
-      final decoded = _decode(response);
-      final data = decoded[key];
+    final decoded = _decode(response);
+    final data = decoded[key];
 
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
-    } catch (_) {
-      return <String, dynamic>{};
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
     }
 
     return <String, dynamic>{};
   }
 
-  Future<void> _postJson(String path, Map<String, dynamic> body) async {
+  Future<List<Map<String, dynamic>>> _getList(
+    String path, {
+    bool requiresAuth = false,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl$path'),
+      headers: requiresAuth ? _authHeaders() : null,
+    );
+    final decoded = _decode(response);
+    final data = decoded['data'];
+
+    if (data is! List) {
+      return <Map<String, dynamic>>[];
+    }
+
+    return data
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
+  Future<void> _postJson(
+    String path,
+    Map<String, dynamic> body, {
+    bool requiresAuth = false,
+  }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl$path'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: _jsonHeaders(requiresAuth: requiresAuth),
       body: jsonEncode(body),
     );
 
     _decode(response);
+  }
+
+  Map<String, String> _authHeaders() {
+    final userId = EventraSession.instance.userId;
+    if (userId == null) {
+      return const {};
+    }
+
+    return <String, String>{'x-user-id': userId.toString()};
+  }
+
+  Map<String, String> _jsonHeaders({bool requiresAuth = false}) {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+
+    if (requiresAuth) {
+      headers.addAll(_authHeaders());
+    }
+
+    return headers;
   }
 
   Map<String, dynamic> _decode(http.Response response) {
