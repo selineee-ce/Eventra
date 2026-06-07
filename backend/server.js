@@ -493,6 +493,52 @@ app.get('/api/profile', async (req, res, next) => {
   }
 });
 
+app.post('/api/profile/update', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
+    const { name, bio, location, avatar_url } = req.body || {};
+
+    const updates = [];
+    const params = [];
+
+    if (name !== undefined) {
+      updates.push('name = ?');
+      params.push(name);
+    }
+    if (bio !== undefined) {
+      updates.push('bio = ?');
+      params.push(bio);
+    }
+    if (location !== undefined) {
+      updates.push('location = ?');
+      params.push(location);
+    }
+    if (avatar_url !== undefined) {
+      updates.push('avatar_url = ?');
+      params.push(avatar_url);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    params.push(userId);
+
+    await query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      params,
+    );
+
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/app-config', async (_req, res, next) => {
   try {
     const rows = await query('SELECT config_key, config_value FROM app_config');

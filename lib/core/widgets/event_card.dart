@@ -183,8 +183,11 @@ class EventraEventCard extends StatelessWidget {
       );
     }
 
+    // Remove leading 'assets/' to avoid double prefixing (e.g. assets/assets/...)
+    final cleanPath = image.startsWith('assets/') ? image.substring(7) : image;
+
     return Image.asset(
-      image,
+      cleanPath,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => _buildImageFallback(),
     );

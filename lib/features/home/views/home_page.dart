@@ -589,8 +589,8 @@ class _EventraHomePageState extends State<EventraHomePage> {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return NetworkImage(path);
     }
-    return AssetImage(
-      path,
-    ); // untuk path lokal seperti 'assets/images/image1.jpeg'
+    // Remove leading 'assets/' to avoid double prefixing (e.g. assets/assets/...)
+    final cleanPath = path.startsWith('assets/') ? path.substring(7) : path;
+    return AssetImage(cleanPath);
   }
 }

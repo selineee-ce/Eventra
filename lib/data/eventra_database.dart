@@ -70,6 +70,10 @@ class EventraDatabase {
     return _decodeMap(response, 'profile');
   }
 
+  Future<void> updateProfile(Map<String, dynamic> data) async {
+    await _postJson('/profile/update', data, requiresAuth: true);
+  }
+
   Future<List<Map<String, dynamic>>> fetchTrendingArtists() async =>
       _getList('/artists', requiresAuth: true);
 

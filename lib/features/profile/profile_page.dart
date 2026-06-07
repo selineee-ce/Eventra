@@ -175,10 +175,14 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                   ),
                   showChevron: false,
                 ),
-                _buildSettingsItem(
-                  icon: Icons.location_on_outlined,
-                  title: "Location",
-                  isLast: true,
+                GestureDetector(
+                  onTap: () => _showLocationDialog(context),
+                  child: _buildSettingsItem(
+                    icon: Icons.location_on_outlined,
+                    title: "Location",
+                    statusText: profile['location'] as String? ?? 'Not set',
+                    isLast: true,
+                  ),
                 ),
 
                 const SizedBox(height: 25),
@@ -225,6 +229,84 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
               ),
       ),
     );
+  }
+
+  Future<void> _showLocationDialog(BuildContext context) async {
+    final TextEditingController locationController = TextEditingController(
+      text: profile['location'] as String? ?? '',
+    );
+
+    final String? newLocation = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1B1526),
+          title: Text(
+            'Change Location',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: locationController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter your city (e.g. Jakarta, Bali)',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white10),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFFD0BCFF)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              Wrap(
+                spacing: 8,
+                children: ['Jakarta', 'Tangerang', 'Bali'].map((city) {
+                  return ActionChip(
+                    label: Text(city),
+                    onPressed: () => locationController.text = city,
+                    backgroundColor: const Color(0xFF231A34),
+                    labelStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, locationController.text.trim()),
+              child: Text('SAVE', style: GoogleFonts.poppins(color: Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newLocation != null && newLocation.isNotEmpty) {
+      try {
+        await EventraDatabase.instance.updateProfile({'location': newLocation});
+        await _loadProfile();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update location: $e')),
+          );
+        }
+      }
+    }
   }
 
   // Widget Helper untuk Kartu Statistik

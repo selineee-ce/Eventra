@@ -274,6 +274,7 @@ class _MainScreenState extends State<MainScreen> {
         child: MainNavBar(
           currentIndex: _currentIndex > 4 ? 0 : _currentIndex,
           onTap: (index) {
+            final previousIndex = _currentIndex;
             setState(() {
               _currentIndex = index;
               _selectedEvent = null;
@@ -281,6 +282,11 @@ class _MainScreenState extends State<MainScreen> {
               _checkoutTickets = [];
               _paymentResult = null;
             });
+
+            // Reload home data if navigating back to home tab from elsewhere
+            if (index == 0 && previousIndex != 0) {
+              _homeController.loadAll();
+            }
           },
         ),
       ),
