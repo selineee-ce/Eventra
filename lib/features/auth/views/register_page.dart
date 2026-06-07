@@ -22,9 +22,31 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
+  String? _selectedLocation;
+  List<String> _cities = [];
+
   bool _isObscure = true;
   bool _isObscureConfirm = true;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCities();
+  }
+
+  Future<void> _loadCities() async {
+    try {
+      final cities = await EventraDatabase.instance.fetchCities();
+      if (mounted) {
+        setState(() {
+          _cities = cities;
+        });
+      }
+    } catch (_) {
+      // Ignore city loading errors
+    }
+  }
 
   @override
   void dispose() {
@@ -49,6 +71,7 @@ class _RegisterPageState extends State<RegisterPage> {
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         password: _passwordController.text,
+        location: _selectedLocation,
       );
 
       await EventraSession.instance.setUser(user);
@@ -197,6 +220,17 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           validator: (val) => InputValidator.validateConfirmPassword(val, _passwordController.text),
                         ),
+                        const SizedBox(height: 15),
+
+                        _buildLabel(AppConfig.instance.text('auth.register.location', 'Location')),
+                        _buildDropdownField(
+                          hint: AppConfig.instance.text('auth.register.location', 'Select Location'),
+                          icon: Icons.location_on_outlined,
+                          value: _selectedLocation,
+                          items: _cities,
+                          onChanged: (val) => setState(() => _selectedLocation = val),
+                          validator: (val) => val == null || val.isEmpty ? 'Please select a location' : null,
+                        ),
                         const SizedBox(height: 35),
 
                         // REGISTER BUTTON
@@ -307,6 +341,55 @@ class _RegisterPageState extends State<RegisterPage> {
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Color(0xFFD0BCFF), width: 1.5)),
         errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.redAccent)),
         focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+        errorStyle: const TextStyle(color: Colors.redAccent),
+      ),
+      validator: validator,
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String hint,
+    required IconData icon,
+    required String? value,
+    required List<String> items,
+    required void Function(String?) onChanged,
+    String? Function(String?)? validator,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      items: items.map((city) {
+        return DropdownMenuItem(
+          value: city,
+          child: Text(city, style: const TextStyle(color: Colors.white, fontSize: 14)),
+        );
+      }).toList(),
+      onChanged: onChanged,
+      dropdownColor: const Color(0xFF1B1526),
+      icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
+        prefixIcon: Icon(icon, color: Colors.white54, size: 20),
+        filled: true,
+        fillColor: const Color(0x33000000),
+        contentPadding: const EdgeInsets.symmetric(vertical: 18),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Colors.white12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Color(0xFFD0BCFF), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
         errorStyle: const TextStyle(color: Colors.redAccent),
       ),
       validator: validator,

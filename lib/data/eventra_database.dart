@@ -141,11 +141,22 @@ class EventraDatabase {
     return _decodeMap(response, 'user');
   }
 
+  Future<List<String>> fetchCities() async {
+    final response = await http.get(Uri.parse('$_baseUrl/cities'));
+    final decoded = _decode(response);
+    final data = decoded['data'];
+    if (data is List) {
+      return data.map((e) => e.toString()).toList();
+    }
+    return [];
+  }
+
   Future<Map<String, dynamic>> register({
     required String username,
     required String email,
     required String phone,
     required String password,
+    String? location,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/register'),
@@ -155,6 +166,7 @@ class EventraDatabase {
         'email': email,
         'phone': phone,
         'password': password,
+        'location': location,
       }),
     );
 

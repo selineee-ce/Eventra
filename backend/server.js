@@ -1100,9 +1100,19 @@ app.post('/api/payments/checkout', async (req, res, next) => {
   }
 });
 
+app.get('/api/cities', async (_req, res, next) => {
+  try {
+    const rows = await query('SELECT DISTINCT city FROM events ORDER BY city ASC');
+    const cities = rows.map((row) => row.city);
+    res.json({ data: cities });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/auth/register', async (req, res, next) => {
   try {
-    const { username, email, phone, password } = req.body || {};
+    const { username, email, phone, password, location } = req.body || {};
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -1111,8 +1121,8 @@ app.post('/api/auth/register', async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await pool.execute(
       `INSERT INTO users (username, name, email, phone, password_hash, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified, sort_order)
-       VALUES (?, ?, ?, ?, ?, 'Set your location', NULL, 0, 0, NULL, 'user', 1, 0)`,
-      [username, username, email, phone || null, passwordHash],
+       VALUES (?, ?, ?, ?, ?, ?, NULL, 0, 0, NULL, 'user', 1, 0)`,
+      [username, username, email, phone || null, passwordHash, location || 'Set your location'],
     );
 
     res.status(201).json({
@@ -1122,7 +1132,7 @@ app.post('/api/auth/register', async (req, res, next) => {
         name: username,
         email,
         phone: phone || null,
-        location: 'Set your location',
+        location: location || 'Set your location',
         avatar_url: null,
         followers_count: 0,
         upcoming_events_count: 0,
