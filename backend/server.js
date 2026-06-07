@@ -159,13 +159,25 @@ async function ensurePaymentTables() {
     CREATE TABLE IF NOT EXISTS user_favorites (
       id INT PRIMARY KEY AUTO_INCREMENT,
       user_id INT NOT NULL,
-      favorite_type ENUM('event','pass') NOT NULL,
+      favorite_type ENUM('event','pass','artist') NOT NULL,
       item_id INT NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_user_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       UNIQUE KEY uq_user_favorites_item (user_id, favorite_type, item_id)
     )
   `);
+
+  try {
+    const [favTypeCol] = await query(
+      "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_favorites' AND COLUMN_NAME = 'favorite_type'"
+    );
+    if (favTypeCol && !favTypeCol.COLUMN_TYPE.includes("'artist'")) {
+      console.log('Migrating user_favorites table: adding "artist" to favorite_type ENUM...');
+      await query("ALTER TABLE user_favorites MODIFY COLUMN favorite_type ENUM('event','pass','artist') NOT NULL");
+    }
+  } catch (err) {
+    console.error('Failed to migrate user_favorites enum:', err.message);
+  }
 
   if (await tableExists('tickets')) {
     const ticketsUserIdColumn = await query(
@@ -556,7 +568,7 @@ app.get('/api/favorites', async (req, res, next) => {
   }
 });
 
-app.get('/api/artists', async (_req, res, next) => {
+app.get('/api/artists', async (req, res, next) => {
   try {
     if (await tableExists('artists')) {
       const artists = await query(`
@@ -627,14 +639,32 @@ app.get('/api/artists', async (_req, res, next) => {
       return res.json({ data: responseData });
     }
 
+    const userId = getRequestUserId(req);
     const artists = await query(
-      `SELECT id, username, name, followers_count, description, genre, avatar_url
-        FROM users
-        WHERE role = ?
-        ORDER BY followers_count DESC
-        LIMIT 15
+      `SELECT
+        id,
+        username,
+        name,
+        followers_count,
+        description,
+        genre,
+        avatar_url,
+        CASE
+          WHEN ? IS NULL THEN 0
+          ELSE EXISTS(
+            SELECT 1
+            FROM user_favorites uf
+            WHERE uf.user_id = ?
+              AND uf.favorite_type = 'artist'
+              AND uf.item_id = users.id
+          )
+        END AS is_favorite
+       FROM users
+       WHERE role = ?
+       ORDER BY followers_count DESC
+       LIMIT 15
       `,
-      ['promoter'],
+      [userId, userId, 'promoter'],
     );
     const allEvents = (await tableExists('events'))
       ? await query(`
@@ -663,6 +693,7 @@ app.get('/api/artists', async (_req, res, next) => {
         description: artist.description,
         followers: formatCompactCount(artist.followers_count),
         followers_count: formatCompactCount(artist.followers_count),
+        is_favorite: !!artist.is_favorite,
         upcomingEvents: upcomingEvents.map(event => ({
           id: event.id,
           title: event.title,
@@ -678,6 +709,40 @@ app.get('/api/artists', async (_req, res, next) => {
 
     res.json({ data: responseData });
 
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/artists/:id/favorite', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
+    const artistId = Number(req.params.id);
+    const isFavorite = req.body?.isFavorite;
+
+    if (!artistId) {
+      return res.status(400).json({ error: 'Invalid artist id' });
+    }
+
+    if (isFavorite) {
+      await query(
+        `INSERT INTO user_favorites (user_id, favorite_type, item_id)
+         VALUES (?, 'artist', ?)
+         ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
+        [userId, artistId],
+      );
+    } else {
+      await query(
+        'DELETE FROM user_favorites WHERE user_id = ? AND favorite_type = ? AND item_id = ?',
+        [userId, 'artist', artistId],
+      );
+    }
+
+    res.json({ ok: true });
   } catch (error) {
     next(error);
   }

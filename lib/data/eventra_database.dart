@@ -71,7 +71,18 @@ class EventraDatabase {
   }
 
   Future<List<Map<String, dynamic>>> fetchTrendingArtists() async =>
-      _getList('/artists');
+      _getList('/artists', requiresAuth: true);
+
+  Future<void> setArtistFavorite({
+    required int artistId,
+    required bool isFavorite,
+  }) async {
+    await _postJson(
+      '/artists/$artistId/favorite',
+      {'isFavorite': isFavorite},
+      requiresAuth: true,
+    );
+  }
 
   Future<void> setPassFavorite({
     required int passId,

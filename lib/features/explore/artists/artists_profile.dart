@@ -1,32 +1,78 @@
 import 'package:eventra/core/widgets/event_card.dart';
+import 'package:eventra/data/eventra_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ArtistProfilePage extends StatelessWidget {
+class ArtistProfilePage extends StatefulWidget {
   const ArtistProfilePage({super.key, required this.artistData});
 
   final Map<String, dynamic> artistData;
 
   @override
+  State<ArtistProfilePage> createState() => _ArtistProfilePageState();
+}
+
+class _ArtistProfilePageState extends State<ArtistProfilePage> {
+  late bool _isFavorite;
+  bool _isToggling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = widget.artistData['is_favorite'] == true;
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_isToggling) return;
+
+    final int? artistId = widget.artistData['id'] as int?;
+    if (artistId == null) return;
+
+    setState(() => _isToggling = true);
+
+    try {
+      final newFavoriteStatus = !_isFavorite;
+      await EventraDatabase.instance.setArtistFavorite(
+        artistId: artistId,
+        isFavorite: newFavoriteStatus,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isFavorite = newFavoriteStatus;
+          _isToggling = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isToggling = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update favorite: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Ambil data dasar dari parameters
-    final imageUrl =
-        artistData['imageUrl'] as String? ??
-        artistData['avatar_url'] as String? ??
+    final imageUrl = widget.artistData['imageUrl'] as String? ??
+        widget.artistData['avatar_url'] as String? ??
         '';
-    final name = artistData['name'] as String? ?? 'Artist Profile';
+    final name = widget.artistData['name'] as String? ?? 'Artist Profile';
     final followers =
-        (artistData['followers'] ?? artistData['followers_count'])
-            ?.toString() ??
-        '0';
-    final description = artistData['description'] as String? ?? '';
-    final rank = artistData['rank'] as int? ?? 0;
+        (widget.artistData['followers'] ?? widget.artistData['followers_count'])
+                ?.toString() ??
+            '0';
+    final description = widget.artistData['description'] as String? ?? '';
+    final rank = widget.artistData['rank'] as int? ?? 0;
 
     // Ambil data konser yang sudah di-filter oleh server
-    final upcomingEvents = (artistData['upcomingEvents'] as List? ?? const [])
-        .whereType<Map>()
-        .map((event) => Map<String, dynamic>.from(event))
-        .toList();
+    final upcomingEvents =
+        (widget.artistData['upcomingEvents'] as List? ?? const [])
+            .whereType<Map>()
+            .map((event) => Map<String, dynamic>.from(event))
+            .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
@@ -57,6 +103,9 @@ class ArtistProfilePage extends StatelessWidget {
               followers: followers,
               eventsCount: upcomingEvents.length,
               rank: rank,
+              isFavorite: _isFavorite,
+              onFavoriteToggle: _toggleFavorite,
+              isToggling: _isToggling,
             ),
             const SizedBox(height: 14),
             _SectionPanel(
@@ -104,8 +153,7 @@ class ArtistProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: EventraEventCard(
                     compact: true,
-                    image:
-                        event['image'] as String? ??
+                    image: event['image'] as String? ??
                         event['image_url'] as String? ??
                         '',
                     dateLabel: _formatDate(
@@ -158,6 +206,9 @@ class _ArtistHero extends StatelessWidget {
     required this.followers,
     required this.eventsCount,
     required this.rank,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
+    required this.isToggling,
   });
 
   final String imageUrl;
@@ -165,6 +216,9 @@ class _ArtistHero extends StatelessWidget {
   final String followers;
   final int eventsCount;
   final int rank;
+  final bool isFavorite;
+  final VoidCallback onFavoriteToggle;
+  final bool isToggling;
 
   @override
   Widget build(BuildContext context) {
@@ -219,9 +273,13 @@ class _ArtistHero extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.favorite_border, size: 18),
-                    label: const Text('ADD TO FAVORITES'),
+                    onPressed: isToggling ? null : onFavoriteToggle,
+                    icon: Icon(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      size: 18,
+                      color: isFavorite ? Colors.redAccent : const Color(0xFF4D2B6C),
+                    ),
+                    label: Text(isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD0BCFF),
                       foregroundColor: const Color(0xFF4D2B6C),
