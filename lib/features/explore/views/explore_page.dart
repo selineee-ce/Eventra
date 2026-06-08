@@ -15,10 +15,37 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
+  final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _artists = [];
   List<NearbyEvent> _events = [];
   bool _loadingArtists = true;
   bool _loadingEvents = true;
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredArtists {
+    if (_searchQuery.isEmpty) return _artists;
+    final query = _searchQuery.toLowerCase();
+    return _artists.where((artist) {
+      final name = (artist['name'] as String? ?? '').toLowerCase();
+      return name.contains(query);
+    }).toList();
+  }
+
+  List<NearbyEvent> get _filteredEvents {
+    if (_searchQuery.isEmpty) return [];
+    final query = _searchQuery.toLowerCase();
+    return _events.where((event) {
+      final title = event.title.toLowerCase();
+      final artist = event.artistName.toLowerCase();
+      return title.contains(query) || artist.contains(query);
+    }).toList();
+  }
 
   List<_ExploreVenue> get _venues {
     final grouped = <String, List<NearbyEvent>>{};
@@ -95,82 +122,633 @@ class _ExplorePageState extends State<ExplorePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SearchField(),
+          _SearchField(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _searchQuery = value.trim()),
+          ),
           const SizedBox(height: 16),
-          if (_loadingEvents)
-            const SizedBox(
-              height: 238,
-              child: Center(
-                child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
-              ),
-            )
-          else if (_venues.isNotEmpty)
-            _MapPreview(totalEvents: _events.length, venue: _venues.first),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            title: 'Trending Artists',
-            action: 'VIEW ALL',
-            onActionTap: _openTrendingArtists,
-          ),
-          const SizedBox(height: 12),
-          _TrendingArtistStrip(
-            artists: _artists,
-            isLoading: _loadingArtists,
-            onArtistTap: _openTrendingArtists,
-          ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            title: 'Browse by Location',
-            action: '',
-            onActionTap: () {},
-          ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 520 ? 3 : 2;
-              if (_loadingEvents) {
-                return const SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
-                  ),
-                );
-              }
+          if (_searchQuery.isNotEmpty)
+            _buildSearchResults()
+          else ...[
+            if (_loadingEvents)
+              const SizedBox(
+                height: 238,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
+                ),
+              )
+            else if (_venues.isNotEmpty)
+              _MapPreview(totalEvents: _events.length, venue: _venues.first),
+            const SizedBox(height: 24),
+            _SectionHeader(
+              title: 'Trending Artists',
+              action: 'VIEW ALL',
+              onActionTap: _openTrendingArtists,
+            ),
+            const SizedBox(height: 12),
+            _TrendingArtistStrip(
+              artists: _artists,
+              isLoading: _loadingArtists,
+              onArtistTap: _openTrendingArtists,
+            ),
+            const SizedBox(height: 24),
+            _SectionHeader(
+              title: 'Browse by Location',
+              action: '',
+              onActionTap: () {},
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 520 ? 3 : 2;
+                if (_loadingEvents) {
+                  return const SizedBox(
+                    height: 120,
+                    child: Center(
+                      child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
+                    ),
+                  );
+                }
 
-              if (_venues.isEmpty) {
-                return Text(
-                  'No venues found yet',
+                if (_venues.isEmpty) {
+                  return Text(
+                    'No venues found yet',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white54,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _venues.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 18,
+                    mainAxisSpacing: 18,
+                    mainAxisExtent: 170,
+                  ),
+                  itemBuilder: (context, index) {
+                    final venue = _venues[index];
+                    return _VenueTile(
+                      venue: venue,
+                      featured: index == 0,
+                      onTap: () => _openVenue(venue),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    final artists = _filteredArtists;
+    final events = _filteredEvents;
+    final hasResults = artists.isNotEmpty || events.isNotEmpty;
+
+    if (!hasResults) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Center(
+          child: Text(
+            'Tidak ada hasil untuk "$_searchQuery"',
+            style: GoogleFonts.poppins(
+              color: Colors.white54,
+              fontSize: 15,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final topArtist = artists.isNotEmpty ? artists.first : null;
+    final topEvent = events.isNotEmpty ? events.first : null;
+    
+    // Spotify-like logic: prioritize artist if it starts with query
+    final topResult = topArtist != null && topEvent != null
+        ? (topArtist['name'].toString().toLowerCase().startsWith(_searchQuery.toLowerCase()) ? topArtist : topEvent)
+        : topArtist ?? topEvent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (topResult != null) ...[
+          Text(
+            'Top Result',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (topResult is Map<String, dynamic>)
+            _buildFeaturedArtistCard(topResult)
+          else
+            _buildFeaturedEventCard(topResult as NearbyEvent),
+          const SizedBox(height: 32),
+        ],
+        
+        Text(
+          'Artists & Events',
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...artists.where((a) => a != topResult).map((artist) {
+          final name = artist['name'] as String? ?? 'Unknown';
+          final image = (artist['imageUrl'] ?? artist['image_url'] ?? '') as String;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildCompactArtistCard(artist, name, image),
+          );
+        }),
+        ...events.where((e) => e != topResult).map((event) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildCompactEventCard(event),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedArtistCard(Map<String, dynamic> artist) {
+    final name = artist['name'] as String? ?? 'Unknown Artist';
+    final image = (artist['imageUrl'] ?? artist['image_url'] ?? '') as String;
+    final upcomingEvents = (artist['upcomingEvents'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .take(3)
+        .toList();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1526),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF2D243F),
+            const Color(0xFF1B1526),
+          ],
+        ),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left Side: Artist Info
+            Container(
+              width: 150,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFD0BCFF).withValues(alpha: 0.3), width: 2),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(80),
+                      child: _buildImage(image, 90, 90),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    name,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD0BCFF).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Artist',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFFD0BCFF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Right Side: Events as mini-cards
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Upcoming Events',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (upcomingEvents.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'No events found',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...upcomingEvents.map((event) {
+                        final title = event['title'] ?? event['lineup'] ?? 'Event';
+                        final date = event['date_label'] ?? '';
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.03),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD0BCFF).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    date.split(' ').isNotEmpty ? date.split(' ')[0].substring(0, 3).toUpperCase() : '',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFFD0BCFF),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      date,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white38,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturedEventCard(NearbyEvent event) {
+    // Find other events from the same artist to show next to it
+    final moreEvents = _events
+        .where((e) => e.artistName == event.artistName && e.id != event.id)
+        .take(3)
+        .toList();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1526),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF2D243F),
+            const Color(0xFF1B1526),
+          ],
+        ),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left Side: Main Event Info
+            Container(
+              width: 150,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  right: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: _buildImage(event.image, 110, 110),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    event.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    event.artistName,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFD0BCFF),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Right Side: More from Artist as mini-cards
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'More from Artist',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (moreEvents.isEmpty)
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'No other events',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...moreEvents.map((e) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.03),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                          ),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: _buildImage(e.image, 32, 32),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      e.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      e.dateLabel,
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white38,
+                                        fontSize: 9,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactArtistCard(
+    Map<String, dynamic> artist,
+    String name,
+    String image,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _buildImage(image, 72, 72),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Artist',
                   style: GoogleFonts.poppins(
                     color: Colors.white54,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
                   ),
-                );
-              }
-
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _venues.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  crossAxisSpacing: 18,
-                  mainAxisSpacing: 18,
-                  mainAxisExtent: 170,
                 ),
-                itemBuilder: (context, index) {
-                  final venue = _venues[index];
-                  return _VenueTile(
-                    venue: venue,
-                    featured: index == 0,
-                    onTap: () => _openVenue(venue),
-                  );
-                },
-              );
-            },
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.white24,
+            size: 16,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCompactEventCard(NearbyEvent event) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: _buildImage(event.image, 72, 72),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  event.artistName.isEmpty ? 'Event' : event.artistName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.white24,
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImage(String path, double w, double h) {
+    if (path.isEmpty) {
+      return Container(
+        width: w,
+        height: h,
+        color: const Color(0xFF1E142A),
+        child: const Icon(Icons.music_note, color: Colors.white24),
+      );
+    }
+    if (path.startsWith('http')) {
+      return Image.network(
+        path,
+        width: w,
+        height: h,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildImage('', w, h),
+      );
+    }
+    return Image.asset(
+      path,
+      width: w,
+      height: h,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _buildImage('', w, h),
     );
   }
 
@@ -195,27 +773,53 @@ class _ExplorePageState extends State<ExplorePage> {
 }
 
 class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 42,
+      height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: const Color(0xFF1B1526),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.search, color: Colors.white54, size: 18),
-          const SizedBox(width: 10),
+          const Icon(Icons.search, color: Colors.white54, size: 20),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Search events, artists, or venues',
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13),
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search events, artists, or venues',
+                hintStyle: GoogleFonts.poppins(
+                  color: Colors.white38,
+                  fontSize: 14,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                controller.clear();
+                onChanged('');
+              },
+              child: const Icon(Icons.close, color: Colors.white54, size: 20),
+            ),
         ],
       ),
     );
