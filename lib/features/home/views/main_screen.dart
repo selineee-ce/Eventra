@@ -3,7 +3,7 @@ import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/data/tickets_notifier.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/favorites/favorites_page.dart';
-import 'package:eventra/features/explore/artists/trending_artists.dart';
+import 'package:eventra/features/explore/views/explore_page.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/ticket_type.dart';
@@ -166,7 +166,7 @@ class _MainScreenState extends State<MainScreen> {
         controller: _homeController,
         onEventTap: openBuyTicketPage,
       ),
-      const TrendingArtistsPage(),
+      const ExplorePage(),
       const EventraTicketsPage(),
       EventraFavoritesPage(
         controller: _homeController,

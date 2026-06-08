@@ -12,6 +12,7 @@ class EventraApi {
         '$baseUrl/home/featured-events',
       ),
     );
+    print(response.body);
 
     final body =
         jsonDecode(response.body);

@@ -44,19 +44,35 @@ class HomeRepository {
 
   Future<String?> _currentLocation() async {
     final sessionLocation = EventraSession.instance.currentUser?['location'];
-    if (sessionLocation != null &&
-        sessionLocation.toString().trim().isNotEmpty) {
-      return sessionLocation.toString();
+    final normalizedSessionLocation = _usableLocation(sessionLocation);
+    if (normalizedSessionLocation != null) {
+      return normalizedSessionLocation;
     }
 
     final profile = await EventraDatabase.instance.fetchProfile();
     final profileLocation = profile['location'];
-    if (profileLocation != null &&
-        profileLocation.toString().trim().isNotEmpty) {
-      return profileLocation.toString();
+    final normalizedProfileLocation = _usableLocation(profileLocation);
+    if (normalizedProfileLocation != null) {
+      return normalizedProfileLocation;
     }
 
     return null;
+  }
+
+  String? _usableLocation(Object? value) {
+    final location = value?.toString().trim();
+    if (location == null || location.isEmpty) {
+      return null;
+    }
+
+    final lowered = location.toLowerCase();
+    if (lowered == 'set your location' ||
+        lowered == 'unknown' ||
+        lowered == '-') {
+      return null;
+    }
+
+    return location.split(',').first.trim();
   }
 
   Future<List<ExclusiveDrop>> fetchExclusiveDrops() async {

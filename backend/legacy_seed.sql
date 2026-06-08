@@ -45,7 +45,7 @@ INSERT INTO artist_events (id, artist_id, title, lineup, venue, location, date_l
 (1, 1, 'Taylor Swift: The Eras Tour Extended', 'Taylor Swift', 'Jakarta International Stadium', 'Jakarta, Indonesia', '2026-10-15', 1, 'assets/events/taylor_eras.webp'),
 (2, 2, 'Coldplay: Music Of The Spheres Jakarta', 'Coldplay', 'Gelora Bung Karno Stadium', 'Jakarta, Indonesia', '2026-11-15', 2, 'assets/events/featured_events/featured_coldplay.jpg'),
 (3, 3, 'Billie Eilish: HIT ME HARD AND SOFT Tour', 'Billie Eilish', 'ICE BSD', 'Tangerang, Indonesia', '2026-11-05', 3, 'assets/events/billie_ice.jpg'),
-(4, 4, 'Sabrina Carpenter: Short n Sweet Tour', 'Sabrina Carpenter', 'ICE BSD', 'Tangerang, Indonesia', '2026-06-18', 4, 'assets/events/sabrina_ice.avif'),
+(4, 4, 'Sabrina Carpenter: Short n Sweet Tour', 'Sabrina Carpenter', 'ICE BSD', 'Tangerang, Indonesia', '2026-06-18', 4, 'assets/events/featured_events/featured_sabrina.jpg'),
 (5, 5, 'Ed Sheeran: Mathematics Tour Plus', 'Ed Sheeran', 'Stadion Utama Gelora Bung Karno', 'Jakarta, Indonesia', '2026-08-12', 5, 'assets/events/ed_gbk.webp'),
 (6, 6, 'Bruno Mars: Live in Jakarta 2026', 'Bruno Mars', 'Jakarta International Stadium', 'Jakarta, Indonesia', '2026-07-24', 6, 'assets/events/bruno_jis.webp'),
 (7, 7, 'Djakarta Warehouse Project 2026', 'Alan Walker, Martin Garrix, Hardwell', 'GWK Cultural Park', 'Bali, Indonesia', '2026-12-31', 7, 'assets/events/featured_events/featured_dwp.jpg'),
@@ -60,7 +60,7 @@ INSERT INTO artist_events (id, artist_id, title, lineup, venue, location, date_l
 
 DELETE FROM featured_events;
 INSERT INTO featured_events (id, title, subtitle, image, venue, city, event_date, tag1, tag2, button, price_start, is_limited, remaining_seats, sort_order, is_favorite) VALUES
-(1, 'Sabrina Carpenter: Short n Sweet Tour', 'Pop spectacle at ICE BSD with limited access packages.', 'assets/events/sabrina_ice.avif', 'ICE BSD', 'Tangerang', '2026-06-18', 'POP', 'WORLD TOUR', 'GET TICKETS', 'Rp1.250.000', 1, 25, 1, 0),
+(1, 'Sabrina Carpenter: Short n Sweet Tour', 'Pop spectacle at ICE BSD with limited access packages.', 'assets/events/featured_events/featured_sabrina.jpg', 'ICE BSD', 'Tangerang', '2026-06-18', 'POP', 'WORLD TOUR', 'GET TICKETS', 'Rp1.250.000', 1, 25, 1, 0),
 (2, 'Bruno Mars: Live in Jakarta 2026', '24K Magic returns with a stadium-scale funk and pop show.', 'assets/events/bruno_jis.webp', 'Jakarta International Stadium', 'Jakarta', '2026-07-24', 'FUNK / POP', 'STADIUM SHOW', 'BUY TICKETS', 'Rp1.500.000', 0, 350, 2, 1),
 (3, 'Taylor Swift: The Eras Tour Extended', 'Additional CAT 1 tickets released for the Jakarta stadium date.', 'assets/events/taylor_eras.webp', 'Jakarta International Stadium', 'Jakarta', '2026-10-15', 'POP', 'STADIUM TOUR', 'BUY TICKETS', 'Rp2.100.000', 1, 5, 3, 1),
 (4, 'Djakarta Warehouse Project 2026', 'Experience Southeast Asias biggest electronic dance music festival.', 'assets/events/featured_events/featured_dwp.jpg', 'GWK Cultural Park', 'Bali', '2026-12-31', 'EDM FESTIVAL', 'YEAR END', 'EXPLORE', 'Rp1.200.000', 1, 80, 4, 0);

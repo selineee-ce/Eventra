@@ -159,7 +159,7 @@ async function ensurePaymentTables() {
     CREATE TABLE IF NOT EXISTS user_favorites (
       id INT PRIMARY KEY AUTO_INCREMENT,
       user_id INT NOT NULL,
-      favorite_type ENUM('event','pass','artist') NOT NULL,
+      favorite_type ENUM('event','pass') NOT NULL,
       item_id INT NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_user_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -255,6 +255,169 @@ function normalizeTitle(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '')
     .trim();
+}
+
+function normalizeCityFilter(value) {
+  const location = String(value || '').trim();
+  const lowered = location.toLowerCase();
+
+  if (!location || lowered === 'set your location' || lowered === 'unknown' || lowered === '-') {
+    return '';
+  }
+
+  return location.includes(',') ? location.split(',')[0].trim() : location;
+}
+
+function parseTicketPrice(value, fallback = 850000) {
+  const text = String(value || '').toLowerCase();
+  const digits = text.replace(/[^0-9]/g, '');
+  const amount = Number(digits);
+
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return fallback;
+  }
+
+  if (text.includes('k')) {
+    return amount * 1000;
+  }
+
+  return amount;
+}
+
+function roundTicketPrice(value) {
+  return Math.max(150000, Math.round(value / 50000) * 50000);
+}
+
+function defaultTicketRowsForEvent(event) {
+  const title = String(event?.title || '');
+  const venue = String(event?.venue || event?.place || '');
+  const layout = String(event?.venue_layout || '');
+  const haystack = `${title} ${venue} ${layout}`.toLowerCase();
+  const basePrice = parseTicketPrice(event?.price);
+  const venueLabel = venue || 'venue layout';
+
+  const row = (name, badge, badgeColor, description, priceMultiplier, stock, maxPerOrder, sortOrder) => ({
+    name,
+    badge,
+    badgeColor,
+    description,
+    bullet1: `${name} section based on ${venueLabel}`,
+    bullet2: badge === 'VIP' || badge === 'Ultimate' ? 'Priority entrance lane' : 'Digital QR ticket entry',
+    bullet3: 'Official Eventra ticket verification',
+    price: roundTicketPrice(basePrice * priceMultiplier),
+    stockRemaining: stock,
+    maxPerOrder,
+    sortOrder,
+  });
+
+  if (
+    haystack.includes('festival') ||
+    haystack.includes('pestapora') ||
+    haystack.includes('warehouse') ||
+    haystack.includes('we the fest') ||
+    haystack.includes('dwp')
+  ) {
+    return [
+      row('Daily Pass', 'Regular', 'purple', `Single-day access for ${title}.`, 1, 180, 6, 1),
+      row('VIP Pass', 'VIP', 'orange', `Premium festival access with better entry flow at ${venueLabel}.`, 1.85, 70, 4, 2),
+      row('3-Day Pass', 'Best Value', 'red', `Full multi-day access for ${title}.`, 2.35, 55, 4, 3),
+    ];
+  }
+
+  if (
+    haystack.includes('atlas') ||
+    haystack.includes('beach') ||
+    haystack.includes('gwk') ||
+    haystack.includes('club')
+  ) {
+    return [
+      row('VIP Deck', 'VIP', 'red', `Elevated premium viewing deck at ${venueLabel}.`, 2.3, 24, 2, 1),
+      row('VIP Table', 'Premium', 'orange', `Premium table-area access for ${title}.`, 1.75, 40, 2, 2),
+      row('GA', 'Standard', 'purple', `General admission access at ${venueLabel}.`, 1, 140, 6, 3),
+      row('Beach Zone', 'Standard', 'purple', `Open-view zone with wider venue access.`, 0.72, 180, 6, 4),
+    ];
+  }
+
+  if (
+    haystack.includes('stadium') ||
+    haystack.includes('stadion') ||
+    haystack.includes('gbk') ||
+    haystack.includes('jis')
+  ) {
+    return [
+      row('VIP Floor', 'VIP', 'red', `Closest floor category for ${title}.`, 2.4, 28, 2, 1),
+      row('Festival Floor', 'Premium', 'orange', `Main floor category behind VIP at ${venueLabel}.`, 1.75, 80, 4, 2),
+      row('CAT 1', 'Premium', 'orange', `Side-front reserved category with strong stage sightline.`, 1.35, 120, 4, 3),
+      row('CAT 2', 'Standard', 'purple', `Middle reserved category based on stadium layout.`, 1, 160, 6, 4),
+      row('CAT 3', 'Standard', 'purple', `Outer lower category for regular access.`, 0.72, 210, 6, 5),
+      row('CAT 4 Upper', 'Standard', 'purple', `Upper category with wide stadium view.`, 0.55, 260, 6, 6),
+    ];
+  }
+
+  return [
+    row('VIP', 'VIP', 'red', `Closest category in front of the stage for ${title}.`, 2, 30, 2, 1),
+    row('CAT 1', 'Premium', 'orange', `Front-middle category with strong stage sightline.`, 1.45, 80, 4, 2),
+    row('CAT 2', 'Standard', 'purple', `Middle category based on ${venueLabel}.`, 1, 140, 6, 3),
+    row('CAT 3', 'Standard', 'purple', `Rear and side category for regular access.`, 0.72, 200, 6, 4),
+  ];
+}
+
+async function eventTicketTypeColumn() {
+  return (await columnExists('event_ticket_types', 'event_id'))
+    ? 'event_id'
+    : 'nearby_event_id';
+}
+
+async function ensureTicketTypesForEvent(eventId) {
+  const eventColumn = await eventTicketTypeColumn();
+  const existingRows = await query(
+    `SELECT id FROM event_ticket_types WHERE ${eventColumn} = ? LIMIT 1`,
+    [eventId],
+  );
+
+  if (existingRows.length > 0) {
+    return eventColumn;
+  }
+
+  const [event] = await query(
+    `SELECT id, title, venue, city, price, venue_layout
+     FROM events
+     WHERE id = ?
+     LIMIT 1`,
+    [eventId],
+  );
+
+  if (!event) {
+    return eventColumn;
+  }
+
+  const ticketRows = defaultTicketRowsForEvent(event);
+
+  for (const ticket of ticketRows) {
+    await query(
+      `INSERT IGNORE INTO event_ticket_types (
+        id, ${eventColumn}, name, badge, badge_color, description,
+        bullet1, bullet2, bullet3, price, stock_remaining, max_per_order, sort_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        eventId * 100 + ticket.sortOrder,
+        eventId,
+        ticket.name,
+        ticket.badge,
+        ticket.badgeColor,
+        ticket.description,
+        ticket.bullet1,
+        ticket.bullet2,
+        ticket.bullet3,
+        ticket.price,
+        ticket.stockRemaining,
+        ticket.maxPerOrder,
+        ticket.sortOrder,
+      ],
+    );
+  }
+
+  return eventColumn;
 }
 
 function getRequestUserId(req) {
@@ -614,7 +777,7 @@ app.get('/api/favorites', async (req, res, next) => {
   }
 });
 
-app.get('/api/artists', async (req, res, next) => {
+app.get('/api/artists', async (_req, res, next) => {
   try {
     if (await tableExists('artists')) {
       const artists = await query(`
@@ -631,22 +794,34 @@ app.get('/api/artists', async (req, res, next) => {
           ORDER BY sort_order ASC
         `)
         : [];
+      const eventRows = (await tableExists('events'))
+        ? await query(`
+          SELECT id, title, image, city, venue, price, sort_order
+          FROM events
+        `)
+        : [];
       const nearbyEvents = (await tableExists('nearby_events'))
         ? await query(`
-          SELECT title, image, city, place AS venue
+          SELECT id, title, image, city, place AS venue
           FROM nearby_events
         `)
         : [];
       const featuredEvents = (await tableExists('featured_events'))
         ? await query(`
-          SELECT title, image, city, venue
+          SELECT id, title, image, city, venue
           FROM featured_events
         `)
         : [];
       const eventImageByTitle = new Map(
-        [...nearbyEvents, ...featuredEvents].map((event) => [
+        [...eventRows, ...nearbyEvents, ...featuredEvents].map((event) => [
           normalizeTitle(event.title),
           event,
+        ]),
+      );
+      const eventIdByTitle = new Map(
+        [...eventRows, ...nearbyEvents, ...featuredEvents].map((event) => [
+          normalizeTitle(event.title),
+          event.id,
         ]),
       );
 
@@ -671,12 +846,15 @@ app.get('/api/artists', async (req, res, next) => {
               .map((part) => part.trim());
             return {
               id: event.id,
+              event_id: eventIdByTitle.get(normalizeTitle(event.title)) || null,
               title: event.title,
               lineup: event.lineup,
               venue: matchedEvent?.venue || event.venue || locationParts[0] || event.location,
               city: matchedEvent?.city || locationParts[0] || '',
               date_label: event.date_label,
               image: event.image || matchedEvent?.image || artist.image_url,
+              price: matchedEvent?.price || '',
+              sort_order: matchedEvent?.sort_order || event.sort_order,
               is_favorite: 0,
             };
           }),
@@ -685,32 +863,14 @@ app.get('/api/artists', async (req, res, next) => {
       return res.json({ data: responseData });
     }
 
-    const userId = getRequestUserId(req);
     const artists = await query(
-      `SELECT
-        id,
-        username,
-        name,
-        followers_count,
-        description,
-        genre,
-        avatar_url,
-        CASE
-          WHEN ? IS NULL THEN 0
-          ELSE EXISTS(
-            SELECT 1
-            FROM user_favorites uf
-            WHERE uf.user_id = ?
-              AND uf.favorite_type = 'artist'
-              AND uf.item_id = users.id
-          )
-        END AS is_favorite
-       FROM users
-       WHERE role = ?
-       ORDER BY followers_count DESC
-       LIMIT 15
+      `SELECT id, username, name, followers_count, description, genre, avatar_url
+        FROM users
+        WHERE role = ?
+        ORDER BY followers_count DESC
+        LIMIT 15
       `,
-      [userId, userId, 'promoter'],
+      ['promoter'],
     );
     const allEvents = (await tableExists('events'))
       ? await query(`
@@ -739,7 +899,6 @@ app.get('/api/artists', async (req, res, next) => {
         description: artist.description,
         followers: formatCompactCount(artist.followers_count),
         followers_count: formatCompactCount(artist.followers_count),
-        is_favorite: !!artist.is_favorite,
         upcomingEvents: upcomingEvents.map(event => ({
           id: event.id,
           title: event.title,
@@ -760,45 +919,31 @@ app.get('/api/artists', async (req, res, next) => {
   }
 });
 
-app.post('/api/artists/:id/favorite', async (req, res, next) => {
-  try {
-    const userId = requireUserId(req, res);
-    if (!userId) {
-      return;
-    }
-
-    const artistId = Number(req.params.id);
-    const isFavorite = req.body?.isFavorite;
-
-    if (!artistId) {
-      return res.status(400).json({ error: 'Invalid artist id' });
-    }
-
-    if (isFavorite) {
-      await query(
-        `INSERT INTO user_favorites (user_id, favorite_type, item_id)
-         VALUES (?, 'artist', ?)
-         ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
-        [userId, artistId],
-      );
-    } else {
-      await query(
-        'DELETE FROM user_favorites WHERE user_id = ? AND favorite_type = ? AND item_id = ?',
-        [userId, 'artist', artistId],
-      );
-    }
-
-    res.json({ ok: true });
-  } catch (error) {
-    next(error);
-  }
-});
-
 app.get('/api/home/exclusive-drops', async (_req, res, next) => {
   try {
-    const rows = await query(
-      'SELECT id, title, badge, description, type, image, countdown_seconds, sort_order FROM exclusive_drops WHERE is_active = 1 ORDER BY sort_order ASC'
-    );
+    const rows = (await tableExists('events'))
+      ? await query(`
+        SELECT
+          id,
+          title,
+          COALESCE(tag1, 'EVENT') AS badge,
+          COALESCE(description, CONCAT('Live at ', venue, ', ', city)) AS description,
+          'ticket' AS type,
+          image,
+          CASE id
+            WHEN 9 THEN 9912
+            WHEN 10 THEN 45000
+            ELSE 75000
+          END AS countdown_seconds,
+          sort_order
+        FROM events
+        WHERE is_featured = 0
+          AND id IN (9, 10, 30)
+        ORDER BY FIELD(id, 9, 10, 30)
+      `)
+      : await query(
+          'SELECT id, title, badge, description, type, image, countdown_seconds, sort_order FROM exclusive_drops WHERE is_active = 1 ORDER BY sort_order ASC'
+        );
     res.json({ data: rows });
   } catch (error) {
     next(error);
@@ -808,9 +953,7 @@ app.get('/api/home/exclusive-drops', async (_req, res, next) => {
 app.get('/api/nearby-events/:id/ticket-types', async (req, res, next) => {
   try {
     const eventId = Number(req.params.id);
-    const eventColumn = (await columnExists('event_ticket_types', 'event_id'))
-      ? 'event_id'
-      : 'nearby_event_id';
+    const eventColumn = await ensureTicketTypesForEvent(eventId);
     const rows = await query(
       `SELECT id, name, badge, badge_color, description, bullet1, bullet2, bullet3, price, stock_remaining, max_per_order FROM event_ticket_types WHERE ${eventColumn} = ? ORDER BY sort_order ASC`,
       [eventId]
@@ -957,6 +1100,8 @@ app.post('/api/payments/checkout', async (req, res, next) => {
       return res.status(400).json({ error: 'Event, payment method, and ticket items are required' });
     }
 
+    const eventColumn = await ensureTicketTypesForEvent(eventId);
+
     if (method === 'visa') {
       const last4 = maskCardNumber(card.cardNumber);
       if (!card.cardHolder || !card.expiry || !card.cvv || last4.length !== 4) {
@@ -985,7 +1130,7 @@ app.post('/api/payments/checkout', async (req, res, next) => {
 
     const placeholders = ticketIds.map(() => '?').join(',');
     const [ticketTypes] = await connection.execute(
-      `SELECT id, name, price, stock_remaining, max_per_order FROM event_ticket_types WHERE event_id = ? AND id IN (${placeholders}) FOR UPDATE`,
+      `SELECT id, name, price, stock_remaining, max_per_order FROM event_ticket_types WHERE ${eventColumn} = ? AND id IN (${placeholders}) FOR UPDATE`,
       [eventId, ...ticketIds]
     );
     const ticketMap = new Map(ticketTypes.map((ticket) => [Number(ticket.id), ticket]));

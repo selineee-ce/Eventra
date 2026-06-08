@@ -27,19 +27,32 @@ class NearbyEvent {
     required this.isFavorite,
   });
 
-  factory NearbyEvent.fromJson(Map<String, dynamic> json){
+  factory NearbyEvent.fromJson(Map<String, dynamic> json) {
     return NearbyEvent(
-      id: json['id'] as int? ?? 0,
-      title: json['title'] as String? ?? '',
-      place: (json['venue'] ?? json['place']) as String? ?? '',
-      city: json['city'] as String? ?? '',
-      artistName: (json['lineup'] ?? json['artist_name']) as String? ?? '',
-      dateLabel: (json['date_label'] ?? json['date']) as String? ?? '',
-      price: json['price'] as String? ?? '',
-      image: json['image'] as String? ?? '',
-      sortOrder: json['sort_order'] as int? ?? 0,
-      isFavorite: (json['is_favorite'] as int? ?? 0) == 1,
+      id: _asInt(json['id']),
+      title: json['title']?.toString() ?? '',
+      place: (json['venue'] ?? json['place'])?.toString() ?? '',
+      city: json['city']?.toString() ?? '',
+      artistName: (json['lineup'] ?? json['artist_name'])?.toString() ?? '',
+      dateLabel: (json['date_label'] ?? json['date'])?.toString() ?? '',
+      price: json['price']?.toString() ?? '',
+      image: json['image']?.toString() ?? '',
+      sortOrder: _asInt(json['sort_order']),
+      isFavorite: _asBool(json['is_favorite']),
     );
+  }
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static bool _asBool(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == '1' || text == 'true';
   }
 
   NearbyEvent copyWith({

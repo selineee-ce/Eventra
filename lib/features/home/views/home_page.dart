@@ -357,33 +357,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: drop.image != null
-                ? Image.network(
-                    drop.image!,
-                    width: 72,
-                    height: 72,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 72,
-                      height: 72,
-                      color: const Color(0xFF5C4B7A),
-                      child: const Icon(
-                        Icons.image_not_supported,
-                        color: Colors.white24,
-                        size: 28,
-                      ),
-                    ),
-                  )
-                : Container(
-                    width: 72,
-                    height: 72,
-                    color: const Color(0xFF5C4B7A),
-                    child: const Icon(
-                      Icons.event,
-                      color: Colors.white24,
-                      size: 28,
-                    ),
-                  ),
+            child: _buildDropImage(drop.image),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -469,6 +443,45 @@ class _EventraHomePageState extends State<EventraHomePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDropImage(String? image) {
+    const size = 72.0;
+
+    if (image == null || image.isEmpty) {
+      return _buildDropImageFallback(Icons.event);
+    }
+
+    final isRemote =
+        image.startsWith('http://') || image.startsWith('https://');
+    if (isRemote) {
+      return Image.network(
+        image,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            _buildDropImageFallback(Icons.image_not_supported),
+      );
+    }
+
+    return Image.asset(
+      image,
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          _buildDropImageFallback(Icons.image_not_supported),
+    );
+  }
+
+  Widget _buildDropImageFallback(IconData icon) {
+    return Container(
+      width: 72,
+      height: 72,
+      color: const Color(0xFF5C4B7A),
+      child: Icon(icon, color: Colors.white24, size: 28),
     );
   }
 

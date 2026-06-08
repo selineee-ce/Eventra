@@ -28,16 +28,22 @@ class TicketType {
   });
 
   factory TicketType.fromJson(Map<String, dynamic> json) => TicketType(
-    id: json['id'] as int,
-    name: json['name'] as String? ?? '',
-    badge: json['badge'] as String?,
-    badgeColor: json['badge_color'] as String?,
-    description: json['description'] as String?,
-    bullet1: json['bullet1'] as String?,
-    bullet2: json['bullet2'] as String?,
-    bullet3: json['bullet3'] as String?,
-    price: json['price'] as int? ?? 0,
-    stockRemaining: json['stock_remaining'] as int? ?? 0,
-    maxPerOrder: json['max_per_order'] as int? ?? 4,
+    id: _asInt(json['id']),
+    name: json['name']?.toString() ?? '',
+    badge: json['badge']?.toString(),
+    badgeColor: json['badge_color']?.toString(),
+    description: json['description']?.toString(),
+    bullet1: json['bullet1']?.toString(),
+    bullet2: json['bullet2']?.toString(),
+    bullet3: json['bullet3']?.toString(),
+    price: _asInt(json['price']),
+    stockRemaining: _asInt(json['stock_remaining']),
+    maxPerOrder: _asInt(json['max_per_order'], fallback: 4),
   );
+
+  static int _asInt(Object? value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? fallback;
+  }
 }

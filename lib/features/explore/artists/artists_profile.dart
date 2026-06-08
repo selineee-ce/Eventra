@@ -1,78 +1,35 @@
-import 'package:eventra/core/widgets/event_card.dart';
-import 'package:eventra/data/eventra_database.dart';
+﻿import 'package:eventra/core/widgets/event_card.dart';
+import 'package:eventra/features/home/models/nearby_event.dart';
+import 'package:eventra/features/ticket/buy_ticket_page.dart';
+import 'package:eventra/features/ticket/payment_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ArtistProfilePage extends StatefulWidget {
+class ArtistProfilePage extends StatelessWidget {
   const ArtistProfilePage({super.key, required this.artistData});
 
   final Map<String, dynamic> artistData;
 
   @override
-  State<ArtistProfilePage> createState() => _ArtistProfilePageState();
-}
-
-class _ArtistProfilePageState extends State<ArtistProfilePage> {
-  late bool _isFavorite;
-  bool _isToggling = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _isFavorite = widget.artistData['is_favorite'] == true;
-  }
-
-  Future<void> _toggleFavorite() async {
-    if (_isToggling) return;
-
-    final int? artistId = widget.artistData['id'] as int?;
-    if (artistId == null) return;
-
-    setState(() => _isToggling = true);
-
-    try {
-      final newFavoriteStatus = !_isFavorite;
-      await EventraDatabase.instance.setArtistFavorite(
-        artistId: artistId,
-        isFavorite: newFavoriteStatus,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isFavorite = newFavoriteStatus;
-          _isToggling = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isToggling = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update favorite: $e')),
-        );
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     // Ambil data dasar dari parameters
-    final imageUrl = widget.artistData['imageUrl'] as String? ??
-        widget.artistData['avatar_url'] as String? ??
+    final imageUrl =
+        artistData['imageUrl'] as String? ??
+        artistData['avatar_url'] as String? ??
         '';
-    final name = widget.artistData['name'] as String? ?? 'Artist Profile';
+    final name = artistData['name'] as String? ?? 'Artist Profile';
     final followers =
-        (widget.artistData['followers'] ?? widget.artistData['followers_count'])
-                ?.toString() ??
-            '0';
-    final description = widget.artistData['description'] as String? ?? '';
-    final rank = widget.artistData['rank'] as int? ?? 0;
+        (artistData['followers'] ?? artistData['followers_count'])
+            ?.toString() ??
+        '0';
+    final description = artistData['description'] as String? ?? '';
+    final rank = artistData['rank'] as int? ?? 0;
 
     // Ambil data konser yang sudah di-filter oleh server
-    final upcomingEvents =
-        (widget.artistData['upcomingEvents'] as List? ?? const [])
-            .whereType<Map>()
-            .map((event) => Map<String, dynamic>.from(event))
-            .toList();
+    final upcomingEvents = (artistData['upcomingEvents'] as List? ?? const [])
+        .whereType<Map>()
+        .map((event) => Map<String, dynamic>.from(event))
+        .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
@@ -103,9 +60,6 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
               followers: followers,
               eventsCount: upcomingEvents.length,
               rank: rank,
-              isFavorite: _isFavorite,
-              onFavoriteToggle: _toggleFavorite,
-              isToggling: _isToggling,
             ),
             const SizedBox(height: 14),
             _SectionPanel(
@@ -131,8 +85,6 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // Render list konser
             if (upcomingEvents.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
@@ -147,13 +99,35 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
                   ),
                 ),
               )
-            else ...[
-              ...upcomingEvents.map((event) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: EventraEventCard(
-                    compact: true,
-                    image: event['image'] as String? ??
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: upcomingEvents.length,
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 350,
+                  crossAxisSpacing: 18,
+                  mainAxisSpacing: 18,
+                  mainAxisExtent: 340,
+                ),
+                itemBuilder: (context, index) {
+                  final event = upcomingEvents[index];
+                  final nearbyEvent = NearbyEvent(
+                    id: _asInt(event['event_id'] ?? event['id']),
+                    title: event['title']?.toString() ?? '',
+                    dateLabel: event['date_label']?.toString() ?? '',
+                    place: event['venue']?.toString() ?? '',
+                    city: event['city']?.toString() ?? '',
+                    artistName: event['lineup']?.toString() ?? name,
+                    price: event['price']?.toString() ?? '',
+                    image: event['image']?.toString() ?? '',
+                    sortOrder: _asInt(event['sort_order']),
+                    isFavorite: _asBool(event['is_favorite']),
+                  );
+
+                  return EventraEventCard(
+                    image:
+                        event['image'] as String? ??
                         event['image_url'] as String? ??
                         '',
                     dateLabel: _formatDate(
@@ -163,11 +137,12 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
                     subtitle: event['lineup'] as String? ?? name,
                     venueLabel:
                         '${event['venue'] ?? ''}, ${event['city'] ?? ''}',
-                    isFavorite: (event['is_favorite'] as int? ?? 0) == 1,
-                  ),
-                );
-              }),
-            ],
+                    isFavorite: nearbyEvent.isFavorite,
+                    onTap: () => _openEvent(context, nearbyEvent),
+                    onActionTap: () => _openEvent(context, nearbyEvent),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -196,6 +171,49 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
 
     return '${months[parsed.month - 1]} ${parsed.day}';
   }
+
+  int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  bool _asBool(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == '1' || text == 'true';
+  }
+
+  void _openEvent(BuildContext context, NearbyEvent event) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BuyTicketPage(
+          event: event,
+          onBack: () => Navigator.pop(context),
+          onCheckout: (event, tickets) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PaymentPage(
+                  event: event,
+                  tickets: tickets,
+                  onBack: () => Navigator.pop(context),
+                  onPaymentComplete: (payment) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Payment completed')),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 // ============== SUB-COMPONENTS WIDGETS ==============
@@ -206,9 +224,6 @@ class _ArtistHero extends StatelessWidget {
     required this.followers,
     required this.eventsCount,
     required this.rank,
-    required this.isFavorite,
-    required this.onFavoriteToggle,
-    required this.isToggling,
   });
 
   final String imageUrl;
@@ -216,16 +231,13 @@ class _ArtistHero extends StatelessWidget {
   final String followers;
   final int eventsCount;
   final int rank;
-  final bool isFavorite;
-  final VoidCallback onFavoriteToggle;
-  final bool isToggling;
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: SizedBox(
-        height: 320,
+        height: 390,
         width: double.infinity,
         child: Stack(
           fit: StackFit.expand,
@@ -258,9 +270,9 @@ class _ArtistHero extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 32,
+                      fontSize: 36,
                       height: 0.95,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -273,13 +285,9 @@ class _ArtistHero extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
-                    onPressed: isToggling ? null : onFavoriteToggle,
-                    icon: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      size: 18,
-                      color: isFavorite ? Colors.redAccent : const Color(0xFF4D2B6C),
-                    ),
-                    label: Text(isFavorite ? 'FAVORITED' : 'ADD TO FAVORITES'),
+                    onPressed: () {},
+                    icon: const Icon(Icons.favorite_border, size: 18),
+                    label: const Text('ADD TO FAVORITES'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD0BCFF),
                       foregroundColor: const Color(0xFF4D2B6C),
