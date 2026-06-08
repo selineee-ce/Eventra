@@ -643,7 +643,7 @@ app.get('/api/profile', async (req, res, next) => {
     }
 
     const [row] = await query(
-      `SELECT id, username, name, email, phone, bio, location, avatar_url,
+      `SELECT id, username, name, email, phone, location, avatar_url,
         followers_count, upcoming_events_count, description, role, is_verified
        FROM users
        WHERE id = ?
@@ -663,7 +663,7 @@ app.post('/api/profile/update', async (req, res, next) => {
       return;
     }
 
-    const { name, bio, location, avatar_url } = req.body || {};
+    const { name, location, avatar_url, description } = req.body || {};
 
     const updates = [];
     const params = [];
@@ -671,10 +671,6 @@ app.post('/api/profile/update', async (req, res, next) => {
     if (name !== undefined) {
       updates.push('name = ?');
       params.push(name);
-    }
-    if (bio !== undefined) {
-      updates.push('bio = ?');
-      params.push(bio);
     }
     if (location !== undefined) {
       updates.push('location = ?');
@@ -684,10 +680,17 @@ app.post('/api/profile/update', async (req, res, next) => {
       updates.push('avatar_url = ?');
       params.push(avatar_url);
     }
+    if (description !== undefined) {
+      updates.push('description = ?');
+      params.push(description);
+    }
 
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
+
+    // Fetch old data to know who we're updating in the artists table
+    const [oldUser] = await query('SELECT role, name FROM users WHERE id = ?', [userId]);
 
     params.push(userId);
 
@@ -695,6 +698,38 @@ app.post('/api/profile/update', async (req, res, next) => {
       `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
       params,
     );
+
+    // If description was updated, also update bio for backward compatibility within users table
+    if (description !== undefined) {
+      await query('UPDATE users SET bio = ? WHERE id = ?', [description, userId]);
+    }
+
+    // If the user is a promoter, also update the artists table if it exists
+    if (oldUser && oldUser.role === 'promoter' && (await tableExists('artists'))) {
+      const artistUpdates = [];
+      const artistParams = [];
+
+      if (name !== undefined) {
+        artistUpdates.push('name = ?');
+        artistParams.push(name);
+      }
+      if (avatar_url !== undefined) {
+        artistUpdates.push('image_url = ?');
+        artistParams.push(avatar_url);
+      }
+      if (description !== undefined) {
+        artistUpdates.push('description = ?');
+        artistParams.push(description);
+      }
+
+      if (artistUpdates.length > 0) {
+        artistParams.push(oldUser.name); // Match by the OLD name
+        await query(
+          `UPDATE artists SET ${artistUpdates.join(', ')} WHERE name = ?`,
+          artistParams,
+        );
+      }
+    }
 
     res.json({ ok: true });
   } catch (error) {
@@ -780,11 +815,26 @@ app.get('/api/favorites', async (req, res, next) => {
 app.get('/api/artists', async (_req, res, next) => {
   try {
     if (await tableExists('artists')) {
+      // Join with users table to get the latest profile info (source of truth)
+      // We match by name for seeded artists
       const artists = await query(`
-        SELECT id, name, followers, monthly_listeners, events_count, genre,
-          description, image_url, sort_order
-        FROM artists
-        ORDER BY sort_order ASC
+        SELECT 
+          a.id AS artist_id,
+          COALESCE(u.id, a.id) AS id,
+          COALESCE(u.name, a.name) AS name,
+          u.username,
+          COALESCE(u.avatar_url, a.image_url) AS avatar_url,
+          COALESCE(u.avatar_url, a.image_url) AS imageUrl,
+          COALESCE(u.description, a.description) AS description,
+          a.followers,
+          a.followers AS followers_count,
+          a.monthly_listeners,
+          a.events_count,
+          a.genre,
+          a.sort_order
+        FROM artists a
+        LEFT JOIN users u ON u.name = a.name AND u.role = 'promoter'
+        ORDER BY a.sort_order ASC
         LIMIT 15
       `);
       const allEvents = (await tableExists('artist_events'))
@@ -828,9 +878,9 @@ app.get('/api/artists', async (_req, res, next) => {
       const responseData = artists.map((artist) => ({
         id: artist.id,
         name: artist.name,
-        username: null,
-        avatar_url: artist.image_url,
-        imageUrl: artist.image_url,
+        username: artist.username,
+        avatar_url: artist.avatar_url,
+        imageUrl: artist.imageUrl,
         genre: artist.genre,
         description: artist.description,
         followers: artist.followers,
@@ -838,7 +888,7 @@ app.get('/api/artists', async (_req, res, next) => {
         monthly_listeners: artist.monthly_listeners,
         events_count: artist.events_count,
         upcomingEvents: allEvents
-          .filter((event) => Number(event.artist_id) === Number(artist.id))
+          .filter((event) => Number(event.artist_id) === Number(artist.artist_id))
           .map((event) => {
             const matchedEvent = eventImageByTitle.get(normalizeTitle(event.title));
             const locationParts = String(event.location || '')
@@ -852,7 +902,7 @@ app.get('/api/artists', async (_req, res, next) => {
               venue: matchedEvent?.venue || event.venue || locationParts[0] || event.location,
               city: matchedEvent?.city || locationParts[0] || '',
               date_label: event.date_label,
-              image: event.image || matchedEvent?.image || artist.image_url,
+              image: event.image || matchedEvent?.image || artist.avatar_url,
               price: matchedEvent?.price || '',
               sort_order: matchedEvent?.sort_order || event.sort_order,
               is_favorite: 0,

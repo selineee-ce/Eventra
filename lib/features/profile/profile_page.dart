@@ -84,8 +84,8 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  ((profile['bio'] as String?)?.isNotEmpty ?? false)
-                      ? profile['bio'] as String
+                  (profile['description']?.toString().isNotEmpty == true)
+                      ? profile['description'] as String
                       : 'No bio yet.',
                   style: GoogleFonts.poppins(
                     color: Colors.white60,
@@ -100,7 +100,7 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                 SizedBox(
                   width: 160,
                   child: ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _showEditProfileModal(context),
                     icon: const Icon(Icons.edit, size: 18, color: Color(0xFF4D2B6C)),
                     label: Text(
                       AppConfig.instance.text('profile.edit', 'EDIT PROFILE'),
@@ -231,6 +231,122 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
     );
   }
 
+  Future<void> _showEditProfileModal(BuildContext context) async {
+    final TextEditingController nameController = TextEditingController(
+      text: profile['name'] as String? ?? '',
+    );
+    final TextEditingController aboutController = TextEditingController(
+      text: profile['description'] as String? ?? '',
+    );
+    final TextEditingController avatarController = TextEditingController(
+      text: profile['avatar_url'] as String? ?? '',
+    );
+
+    final bool? saved = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1B1526),
+          title: Text(
+            'Edit Profile',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTextField(
+                  controller: nameController,
+                  label: 'Name',
+                  hint: 'Enter your name',
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: aboutController,
+                  label: 'About',
+                  hint: 'Enter your about info',
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: avatarController,
+                  label: 'Avatar URL',
+                  hint: 'Enter image URL',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('SAVE', style: GoogleFonts.poppins(color: Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (saved == true) {
+      try {
+        await EventraDatabase.instance.updateProfile({
+          'name': nameController.text.trim(),
+          'description': aboutController.text.trim(),
+          'avatar_url': avatarController.text.trim(),
+        });
+        await _loadProfile();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update profile: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white38),
+            filled: true,
+            fillColor: const Color(0xFF231A34),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _showLocationDialog(BuildContext context) async {
     final TextEditingController locationController = TextEditingController(
       text: profile['location'] as String? ?? '',
@@ -356,10 +472,17 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
       );
     }
 
+    ImageProvider imageProvider;
+    if (avatarUrl.startsWith('http')) {
+      imageProvider = NetworkImage(avatarUrl);
+    } else {
+      imageProvider = AssetImage(avatarUrl);
+    }
+
     return CircleAvatar(
       radius: 55,
       backgroundColor: Colors.white10,
-      backgroundImage: NetworkImage(avatarUrl),
+      backgroundImage: imageProvider,
     );
   }
 
