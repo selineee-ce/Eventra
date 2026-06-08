@@ -699,7 +699,7 @@ app.post('/api/profile/update', async (req, res, next) => {
       params,
     );
 
-    // If description was updated, also update bio for backward compatibility within users table
+    // Always sync bio and description in users table if description was updated
     if (description !== undefined) {
       await query('UPDATE users SET bio = ? WHERE id = ?', [description, userId]);
     }
@@ -723,9 +723,9 @@ app.post('/api/profile/update', async (req, res, next) => {
       }
 
       if (artistUpdates.length > 0) {
-        artistParams.push(oldUser.name); // Match by the OLD name
+        artistParams.push(oldUser.name.trim());
         await query(
-          `UPDATE artists SET ${artistUpdates.join(', ')} WHERE name = ?`,
+          `UPDATE artists SET ${artistUpdates.join(', ')} WHERE LOWER(TRIM(name)) = LOWER(?)`,
           artistParams,
         );
       }
@@ -833,7 +833,7 @@ app.get('/api/artists', async (_req, res, next) => {
           a.genre,
           a.sort_order
         FROM artists a
-        LEFT JOIN users u ON u.name = a.name AND u.role = 'promoter'
+        LEFT JOIN users u ON LOWER(TRIM(u.name)) = LOWER(TRIM(a.name)) AND u.role = 'promoter'
         ORDER BY a.sort_order ASC
         LIMIT 15
       `);
