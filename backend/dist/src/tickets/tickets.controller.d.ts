@@ -1,0 +1,131 @@
+import { TicketsService } from './tickets.service';
+import { CreateTicketDto } from './dto/create-ticket.dto';
+import { UpdateTicketDto } from './dto/update-ticket.dto';
+export declare class TicketsController {
+    private readonly ticketsService;
+    constructor(ticketsService: TicketsService);
+    create(dto: CreateTicketDto): Promise<{
+        id: number;
+        sort_order: number;
+        title: string;
+        venue: string;
+        date_label: string;
+        image: string;
+        user_id: number | null;
+        time_label: string;
+        section: string;
+        row_label: string;
+        seat_label: string;
+        qr_data: string;
+        ticket_type: string;
+        ticket_status: string;
+    }>;
+    findAll(userId?: string): Promise<{
+        data: ({
+            users: {
+                username: string;
+                phone: string | null;
+                email: string;
+                location: string | null;
+                id: number;
+                name: string;
+                password_hash: string;
+                bio: string | null;
+                avatar_url: string | null;
+                followers_count: number;
+                events_count: number;
+                upcoming_events_count: number;
+                genre: string | null;
+                description: string | null;
+                role: string;
+                is_verified: boolean;
+                sort_order: number;
+                created_at: Date;
+            } | null;
+        } & {
+            id: number;
+            sort_order: number;
+            title: string;
+            venue: string;
+            date_label: string;
+            image: string;
+            user_id: number | null;
+            time_label: string;
+            section: string;
+            row_label: string;
+            seat_label: string;
+            qr_data: string;
+            ticket_type: string;
+            ticket_status: string;
+        })[];
+    }>;
+    findOne(id: string): Promise<{
+        users: {
+            username: string;
+            phone: string | null;
+            email: string;
+            location: string | null;
+            id: number;
+            name: string;
+            password_hash: string;
+            bio: string | null;
+            avatar_url: string | null;
+            followers_count: number;
+            events_count: number;
+            upcoming_events_count: number;
+            genre: string | null;
+            description: string | null;
+            role: string;
+            is_verified: boolean;
+            sort_order: number;
+            created_at: Date;
+        } | null;
+    } & {
+        id: number;
+        sort_order: number;
+        title: string;
+        venue: string;
+        date_label: string;
+        image: string;
+        user_id: number | null;
+        time_label: string;
+        section: string;
+        row_label: string;
+        seat_label: string;
+        qr_data: string;
+        ticket_type: string;
+        ticket_status: string;
+    }>;
+    update(id: string, dto: UpdateTicketDto): Promise<{
+        id: number;
+        sort_order: number;
+        title: string;
+        venue: string;
+        date_label: string;
+        image: string;
+        user_id: number | null;
+        time_label: string;
+        section: string;
+        row_label: string;
+        seat_label: string;
+        qr_data: string;
+        ticket_type: string;
+        ticket_status: string;
+    }>;
+    remove(id: string): Promise<{
+        id: number;
+        sort_order: number;
+        title: string;
+        venue: string;
+        date_label: string;
+        image: string;
+        user_id: number | null;
+        time_label: string;
+        section: string;
+        row_label: string;
+        seat_label: string;
+        qr_data: string;
+        ticket_type: string;
+        ticket_status: string;
+    }>;
+}
