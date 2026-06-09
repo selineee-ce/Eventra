@@ -92,11 +92,9 @@ class EventraDatabase {
     required int passId,
     required bool isFavorite,
   }) async {
-    await _postJson(
-      '/passes/$passId/favorite',
-      {'isFavorite': isFavorite},
-      requiresAuth: true,
-    );
+    await _postJson('/passes/$passId/favorite', {
+      'isFavorite': isFavorite,
+    }, requiresAuth: true);
   }
 
   Future<void> setNearbyFavorite({

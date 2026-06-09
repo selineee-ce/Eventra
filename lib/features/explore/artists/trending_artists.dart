@@ -1,4 +1,4 @@
-﻿import 'package:eventra/data/app_config.dart';
+import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/explore/artists/artists_profile.dart';
 import 'package:flutter/material.dart';

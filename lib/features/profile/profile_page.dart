@@ -575,9 +575,7 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
               ],
             ),
           ),
-          if (trailingWidget != null) ...[
-            trailingWidget,
-          ],
+          if (trailingWidget != null) ...[trailingWidget],
           // Panah chevron ini hanya dirender jika showChevron bernilai true
           if (showChevron) ...[
             const SizedBox(width: 12),

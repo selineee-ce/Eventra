@@ -167,6 +167,7 @@ async function ensurePaymentTables() {
     )
   `);
 
+<<<<<<< HEAD
   try {
     const [favTypeCol] = await query(
       "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'user_favorites' AND COLUMN_NAME = 'favorite_type'"
@@ -179,6 +180,8 @@ async function ensurePaymentTables() {
     console.error('Failed to migrate user_favorites enum:', err.message);
   }
 
+=======
+>>>>>>> backup-edwin
   if (await tableExists('tickets')) {
     const ticketsUserIdColumn = await query(
       `SELECT COLUMN_NAME
@@ -538,10 +541,14 @@ app.get('/api/home/passes', async (req, res, next) => {
 app.get('/api/home/nearby-events', async (req, res, next) => {
   try {
     const userId = getRequestUserId(req);
+<<<<<<< HEAD
     const userLocation = String(req.query.location || '').trim();
     const city = userLocation.includes(',')
       ? userLocation.split(',')[0].trim()
       : userLocation;
+=======
+    const city = normalizeCityFilter(req.query.location);
+>>>>>>> backup-edwin
 
     const rows = (await tableExists('events'))
       ? await query(`
@@ -643,7 +650,11 @@ app.get('/api/profile', async (req, res, next) => {
     }
 
     const [row] = await query(
+<<<<<<< HEAD
       `SELECT id, username, name, email, phone, location, avatar_url,
+=======
+      `SELECT id, username, name, email, phone, bio, location, avatar_url,
+>>>>>>> backup-edwin
         followers_count, upcoming_events_count, description, role, is_verified
        FROM users
        WHERE id = ?
@@ -656,6 +667,7 @@ app.get('/api/profile', async (req, res, next) => {
   }
 });
 
+<<<<<<< HEAD
 app.post('/api/profile/update', async (req, res, next) => {
   try {
     const userId = requireUserId(req, res);
@@ -737,6 +749,8 @@ app.post('/api/profile/update', async (req, res, next) => {
   }
 });
 
+=======
+>>>>>>> backup-edwin
 app.get('/api/app-config', async (_req, res, next) => {
   try {
     const rows = await query('SELECT config_key, config_value FROM app_config');
@@ -815,6 +829,7 @@ app.get('/api/favorites', async (req, res, next) => {
 app.get('/api/artists', async (_req, res, next) => {
   try {
     if (await tableExists('artists')) {
+<<<<<<< HEAD
       // Join with users table to get the latest profile info (source of truth)
       // We match by name for seeded artists
       const artists = await query(`
@@ -835,6 +850,13 @@ app.get('/api/artists', async (_req, res, next) => {
         FROM artists a
         LEFT JOIN users u ON LOWER(TRIM(u.name)) = LOWER(TRIM(a.name)) AND u.role = 'promoter'
         ORDER BY a.sort_order ASC
+=======
+      const artists = await query(`
+        SELECT id, name, followers, monthly_listeners, events_count, genre,
+          description, image_url, sort_order
+        FROM artists
+        ORDER BY sort_order ASC
+>>>>>>> backup-edwin
         LIMIT 15
       `);
       const allEvents = (await tableExists('artist_events'))
@@ -878,9 +900,15 @@ app.get('/api/artists', async (_req, res, next) => {
       const responseData = artists.map((artist) => ({
         id: artist.id,
         name: artist.name,
+<<<<<<< HEAD
         username: artist.username,
         avatar_url: artist.avatar_url,
         imageUrl: artist.imageUrl,
+=======
+        username: null,
+        avatar_url: artist.image_url,
+        imageUrl: artist.image_url,
+>>>>>>> backup-edwin
         genre: artist.genre,
         description: artist.description,
         followers: artist.followers,
@@ -888,7 +916,11 @@ app.get('/api/artists', async (_req, res, next) => {
         monthly_listeners: artist.monthly_listeners,
         events_count: artist.events_count,
         upcomingEvents: allEvents
+<<<<<<< HEAD
           .filter((event) => Number(event.artist_id) === Number(artist.artist_id))
+=======
+          .filter((event) => Number(event.artist_id) === Number(artist.id))
+>>>>>>> backup-edwin
           .map((event) => {
             const matchedEvent = eventImageByTitle.get(normalizeTitle(event.title));
             const locationParts = String(event.location || '')
@@ -902,7 +934,11 @@ app.get('/api/artists', async (_req, res, next) => {
               venue: matchedEvent?.venue || event.venue || locationParts[0] || event.location,
               city: matchedEvent?.city || locationParts[0] || '',
               date_label: event.date_label,
+<<<<<<< HEAD
               image: event.image || matchedEvent?.image || artist.avatar_url,
+=======
+              image: event.image || matchedEvent?.image || artist.image_url,
+>>>>>>> backup-edwin
               price: matchedEvent?.price || '',
               sort_order: matchedEvent?.sort_order || event.sort_order,
               is_favorite: 0,
@@ -1295,6 +1331,7 @@ app.post('/api/payments/checkout', async (req, res, next) => {
   }
 });
 
+<<<<<<< HEAD
 app.get('/api/cities', async (_req, res, next) => {
   try {
     const rows = await query('SELECT DISTINCT city FROM events ORDER BY city ASC');
@@ -1308,6 +1345,11 @@ app.get('/api/cities', async (_req, res, next) => {
 app.post('/api/auth/register', async (req, res, next) => {
   try {
     const { username, email, phone, password, location } = req.body || {};
+=======
+app.post('/api/auth/register', async (req, res, next) => {
+  try {
+    const { username, email, phone, password } = req.body || {};
+>>>>>>> backup-edwin
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -1316,8 +1358,13 @@ app.post('/api/auth/register', async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const [result] = await pool.execute(
       `INSERT INTO users (username, name, email, phone, password_hash, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified, sort_order)
+<<<<<<< HEAD
        VALUES (?, ?, ?, ?, ?, ?, NULL, 0, 0, NULL, 'user', 1, 0)`,
       [username, username, email, phone || null, passwordHash, location || 'Set your location'],
+=======
+       VALUES (?, ?, ?, ?, ?, 'Set your location', NULL, 0, 0, NULL, 'user', 1, 0)`,
+      [username, username, email, phone || null, passwordHash],
+>>>>>>> backup-edwin
     );
 
     res.status(201).json({
@@ -1327,7 +1374,11 @@ app.post('/api/auth/register', async (req, res, next) => {
         name: username,
         email,
         phone: phone || null,
+<<<<<<< HEAD
         location: location || 'Set your location',
+=======
+        location: 'Set your location',
+>>>>>>> backup-edwin
         avatar_url: null,
         followers_count: 0,
         upcoming_events_count: 0,

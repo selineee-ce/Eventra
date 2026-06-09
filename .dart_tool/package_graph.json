@@ -107,7 +107,11 @@
     },
     {
       "name": "meta",
+<<<<<<< HEAD
       "version": "1.18.0",
+=======
+      "version": "1.17.0",
+>>>>>>> backup-edwin
       "dependencies": []
     },
     {
@@ -169,7 +173,11 @@
     },
     {
       "name": "test_api",
+<<<<<<< HEAD
       "version": "0.7.11",
+=======
+      "version": "0.7.10",
+>>>>>>> backup-edwin
       "dependencies": [
         "async",
         "boolean_selector",
@@ -234,7 +242,11 @@
     },
     {
       "name": "shared_preferences_android",
+<<<<<<< HEAD
       "version": "2.4.25",
+=======
+      "version": "2.4.23",
+>>>>>>> backup-edwin
       "dependencies": [
         "flutter",
         "shared_preferences_platform_interface"
