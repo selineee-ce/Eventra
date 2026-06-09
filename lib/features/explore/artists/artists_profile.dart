@@ -1,35 +1,88 @@
 import 'package:eventra/core/widgets/event_card.dart';
+import 'package:eventra/data/eventra_database.dart';
+import 'package:eventra/data/favorites_notifier.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:eventra/features/ticket/buy_ticket_page.dart';
 import 'package:eventra/features/ticket/payment_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ArtistProfilePage extends StatelessWidget {
+class ArtistProfilePage extends StatefulWidget {
   const ArtistProfilePage({super.key, required this.artistData});
 
   final Map<String, dynamic> artistData;
 
   @override
+  State<ArtistProfilePage> createState() => _ArtistProfilePageState();
+}
+
+class _ArtistProfilePageState extends State<ArtistProfilePage> {
+  late bool _isFavorite;
+  bool _isSavingFavorite = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isFavorite = _asBool(widget.artistData['is_favorite']);
+  }
+
+  Future<void> _toggleArtistFavorite() async {
+    if (_isSavingFavorite) return;
+    final artistId = _asInt(
+      widget.artistData['id'] ?? widget.artistData['artist_id'],
+    );
+    if (artistId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Artist data is not ready yet')),
+      );
+      return;
+    }
+    final next = !_isFavorite;
+    setState(() {
+      _isFavorite = next;
+      _isSavingFavorite = true;
+    });
+    try {
+      await EventraDatabase.instance.setArtistFavorite(
+        artistId: artistId,
+        isFavorite: next,
+      );
+      FavoritesNotifier.instance.notify();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isFavorite = !next);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSavingFavorite = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Ambil data dasar dari parameters
     final imageUrl =
-        artistData['imageUrl'] as String? ??
-        artistData['avatar_url'] as String? ??
+        widget.artistData['imageUrl'] as String? ??
+        widget.artistData['avatar_url'] as String? ??
         '';
-    final name = artistData['name'] as String? ?? 'Artist Profile';
+    final name = widget.artistData['name'] as String? ?? 'Artist Profile';
     final followers =
-        (artistData['followers'] ?? artistData['followers_count'])
+        (widget.artistData['followers'] ?? widget.artistData['followers_count'])
             ?.toString() ??
         '0';
-    final description = artistData['description'] as String? ?? '';
-    final rank = artistData['rank'] as int? ?? 0;
+    final description = widget.artistData['description'] as String? ?? '';
+    final rank = widget.artistData['rank'] as int? ?? 0;
 
     // Ambil data konser yang sudah di-filter oleh server
-    final upcomingEvents = (artistData['upcomingEvents'] as List? ?? const [])
-        .whereType<Map>()
-        .map((event) => Map<String, dynamic>.from(event))
-        .toList();
+    final upcomingEvents =
+        (widget.artistData['upcomingEvents'] as List? ?? const [])
+            .whereType<Map>()
+            .map((event) => Map<String, dynamic>.from(event))
+            .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
@@ -60,6 +113,9 @@ class ArtistProfilePage extends StatelessWidget {
               followers: followers,
               eventsCount: upcomingEvents.length,
               rank: rank,
+              isFavorite: _isFavorite,
+              isSavingFavorite: _isSavingFavorite,
+              onFavoriteTap: _toggleArtistFavorite,
             ),
             const SizedBox(height: 14),
             _SectionPanel(
@@ -125,21 +181,39 @@ class ArtistProfilePage extends StatelessWidget {
                     isFavorite: _asBool(event['is_favorite']),
                   );
 
-                  return EventraEventCard(
-                    image:
-                        event['image'] as String? ??
-                        event['image_url'] as String? ??
-                        '',
-                    dateLabel: _formatDate(
-                      event['date_label'] as String? ?? '',
-                    ),
-                    title: event['title'] as String? ?? '',
-                    subtitle: event['lineup'] as String? ?? name,
-                    venueLabel:
-                        '${event['venue'] ?? ''}, ${event['city'] ?? ''}',
-                    isFavorite: nearbyEvent.isFavorite,
-                    onTap: () => _openEvent(context, nearbyEvent),
-                    onActionTap: () => _openEvent(context, nearbyEvent),
+                  var isFavorite = nearbyEvent.isFavorite;
+                  return StatefulBuilder(
+                    builder: (context, setCardState) {
+                      return EventraEventCard(
+                        image:
+                            event['image'] as String? ??
+                            event['image_url'] as String? ??
+                            '',
+                        dateLabel: _formatDate(
+                          event['date_label'] as String? ?? '',
+                        ),
+                        title: event['title'] as String? ?? '',
+                        subtitle: event['lineup'] as String? ?? name,
+                        venueLabel:
+                            '${event['venue'] ?? ''}, ${event['city'] ?? ''}',
+                        isFavorite: isFavorite,
+                        onTap: () => _openEvent(context, nearbyEvent),
+                        onActionTap: () => _openEvent(context, nearbyEvent),
+                        onFavoriteTap: () async {
+                          final next = !isFavorite;
+                          setCardState(() => isFavorite = next);
+                          try {
+                            await EventraDatabase.instance.setNearbyFavorite(
+                              eventId: nearbyEvent.id,
+                              isFavorite: next,
+                            );
+                            FavoritesNotifier.instance.notify();
+                          } catch (_) {
+                            setCardState(() => isFavorite = !next);
+                          }
+                        },
+                      );
+                    },
                   );
                 },
               ),
@@ -189,27 +263,33 @@ class ArtistProfilePage extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => BuyTicketPage(
-          event: event,
-          onBack: () => Navigator.pop(context),
-          onCheckout: (event, tickets) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => PaymentPage(
-                  event: event,
-                  tickets: tickets,
-                  onBack: () => Navigator.pop(context),
-                  onPaymentComplete: (payment) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Payment completed')),
-                    );
-                  },
+        builder: (_) => EventraSubpageShell(
+          currentIndex: 1,
+          child: BuyTicketPage(
+            event: event,
+            onBack: () => Navigator.pop(context),
+            onCheckout: (event, tickets) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EventraSubpageShell(
+                    currentIndex: 1,
+                    child: PaymentPage(
+                      event: event,
+                      tickets: tickets,
+                      onBack: () => Navigator.pop(context),
+                      onPaymentComplete: (payment) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Payment completed')),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -224,6 +304,9 @@ class _ArtistHero extends StatelessWidget {
     required this.followers,
     required this.eventsCount,
     required this.rank,
+    required this.isFavorite,
+    required this.isSavingFavorite,
+    required this.onFavoriteTap,
   });
 
   final String imageUrl;
@@ -231,6 +314,9 @@ class _ArtistHero extends StatelessWidget {
   final String followers;
   final int eventsCount;
   final int rank;
+  final bool isFavorite;
+  final bool isSavingFavorite;
+  final VoidCallback onFavoriteTap;
 
   @override
   Widget build(BuildContext context) {
@@ -285,9 +371,20 @@ class _ArtistHero extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.favorite_border, size: 18),
-                    label: const Text('ADD TO FAVORITES'),
+                    onPressed: isSavingFavorite ? null : onFavoriteTap,
+                    icon: isSavingFavorite
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                            size: 18,
+                          ),
+                    label: Text(
+                      isFavorite ? 'SAVED ARTIST' : 'ADD TO FAVORITES',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD0BCFF),
                       foregroundColor: const Color(0xFF4D2B6C),

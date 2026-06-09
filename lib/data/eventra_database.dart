@@ -26,7 +26,7 @@ class EventraDatabase {
     final query = (location == null || location.trim().isEmpty)
         ? ''
         : '?location=${Uri.encodeQueryComponent(location.trim())}';
-    return _getList('/home/nearby-events$query');
+    return _getList('/home/nearby-events$query', requiresAuth: true);
   }
 
   Future<List<Map<String, dynamic>>> fetchTickets() async =>
@@ -71,7 +71,7 @@ class EventraDatabase {
   }
 
   Future<List<Map<String, dynamic>>> fetchTrendingArtists() async =>
-      _getList('/artists');
+      _getList('/artists', requiresAuth: true);
 
   Future<void> setPassFavorite({
     required int passId,
@@ -89,6 +89,26 @@ class EventraDatabase {
     await _postJson('/nearby-events/$eventId/favorite', {
       'isFavorite': isFavorite,
     }, requiresAuth: true);
+  }
+
+  Future<void> setArtistFavorite({
+    required int artistId,
+    required bool isFavorite,
+  }) async {
+    try {
+      await _postJson('/artists/$artistId/favorite', {
+        'isFavorite': isFavorite,
+      }, requiresAuth: true);
+    } catch (error) {
+      if (!error.toString().contains('404') || !isFavorite) {
+        rethrow;
+      }
+
+      await _postJson('/favorites', {
+        'favorite_type': 'artist',
+        'item_id': artistId,
+      }, requiresAuth: true);
+    }
   }
 
   Future<Map<String, dynamic>> checkoutPayment({
@@ -129,6 +149,7 @@ class EventraDatabase {
     required String email,
     required String phone,
     required String password,
+    String? location,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/auth/register'),
@@ -138,6 +159,7 @@ class EventraDatabase {
         'email': email,
         'phone': phone,
         'password': password,
+        'location': location,
       }),
     );
 

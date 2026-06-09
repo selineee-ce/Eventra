@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS pass_packages (
 CREATE TABLE IF NOT EXISTS user_favorites (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    favorite_type ENUM('event', 'pass') NOT NULL,
+    favorite_type ENUM('event', 'pass', 'artist') NOT NULL,
     item_id INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_favorites_user_seed FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

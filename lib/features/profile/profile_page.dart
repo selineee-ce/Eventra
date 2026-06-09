@@ -1,6 +1,7 @@
 import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/eventra_session.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/home/views/notification_page.dart';
 import 'package:flutter/material.dart';
@@ -282,7 +283,12 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const NotificationPage()),
+              MaterialPageRoute(
+                builder: (context) => const EventraSubpageShell(
+                  currentIndex: 4,
+                  child: NotificationPage(),
+                ),
+              ),
             );
           },
           icon: const Icon(Icons.notifications_none, color: Colors.white),
