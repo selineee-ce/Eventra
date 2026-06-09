@@ -104,14 +104,18 @@ class EventraDatabase {
         'isFavorite': isFavorite,
       }, requiresAuth: true);
     } catch (error) {
-      if (!error.toString().contains('404') || !isFavorite) {
-        rethrow;
-      }
+      final msg = error.toString();
 
-      await _postJson('/favorites', {
-        'favorite_type': 'artist',
-        'item_id': artistId,
-      }, requiresAuth: true);
+    final isNotFound = msg.contains('404');
+
+    if (!isNotFound) rethrow;
+
+    // fallback ONLY kalau backend tidak punya endpoint
+    await _postJson('/favorites', {
+      'favorite_type': 'artist',
+      'item_id': artistId,
+      'is_favorite': isFavorite,
+    }, requiresAuth: true);
     }
   }
 
