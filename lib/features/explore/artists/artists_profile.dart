@@ -364,7 +364,7 @@ class _ArtistHero extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      _HeroStat(label: 'FOLLOWER', value: followers),
+                      _HeroStat(label: 'FOLLOWERS', value: followers),
                       const SizedBox(width: 22),
                       _HeroStat(label: 'EVENTS', value: '$eventsCount'),
                     ],
