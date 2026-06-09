@@ -1,0 +1,75 @@
+import { UsersService } from './users.service';
+import { UpdateUserDto } from './dto/update-user.dto';
+export declare class UsersController {
+    private readonly usersService;
+    constructor(usersService: UsersService);
+    findAll(): Promise<{
+        username: string;
+        phone: string | null;
+        email: string;
+        id: number;
+        name: string;
+        role: string;
+        is_verified: boolean;
+    }[]>;
+    findOne(id: string): Promise<{
+        username: string;
+        phone: string | null;
+        email: string;
+        location: string | null;
+        id: number;
+        name: string;
+        password_hash: string;
+        bio: string | null;
+        avatar_url: string | null;
+        followers_count: number;
+        events_count: number;
+        upcoming_events_count: number;
+        genre: string | null;
+        description: string | null;
+        role: string;
+        is_verified: boolean;
+        sort_order: number;
+        created_at: Date;
+    }>;
+    update(id: string, dto: UpdateUserDto): Promise<{
+        username: string;
+        phone: string | null;
+        email: string;
+        location: string | null;
+        id: number;
+        name: string;
+        password_hash: string;
+        bio: string | null;
+        avatar_url: string | null;
+        followers_count: number;
+        events_count: number;
+        upcoming_events_count: number;
+        genre: string | null;
+        description: string | null;
+        role: string;
+        is_verified: boolean;
+        sort_order: number;
+        created_at: Date;
+    }>;
+    remove(id: string): Promise<{
+        username: string;
+        phone: string | null;
+        email: string;
+        location: string | null;
+        id: number;
+        name: string;
+        password_hash: string;
+        bio: string | null;
+        avatar_url: string | null;
+        followers_count: number;
+        events_count: number;
+        upcoming_events_count: number;
+        genre: string | null;
+        description: string | null;
+        role: string;
+        is_verified: boolean;
+        sort_order: number;
+        created_at: Date;
+    }>;
+}
