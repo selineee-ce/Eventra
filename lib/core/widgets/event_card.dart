@@ -237,6 +237,7 @@ class EventraEventCard extends StatelessWidget {
 
   Widget _buildFavoriteButton(double scale) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onFavoriteTap,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),

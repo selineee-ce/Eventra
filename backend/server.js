@@ -159,7 +159,7 @@ async function ensurePaymentTables() {
     CREATE TABLE IF NOT EXISTS user_favorites (
       id INT PRIMARY KEY AUTO_INCREMENT,
       user_id INT NOT NULL,
-      favorite_type ENUM('event','pass') NOT NULL,
+      favorite_type ENUM('event','pass','artist') NOT NULL,
       item_id INT NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT fk_user_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -167,6 +167,7 @@ async function ensurePaymentTables() {
     )
   `);
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   try {
     const [favTypeCol] = await query(
@@ -182,6 +183,13 @@ async function ensurePaymentTables() {
 
 =======
 >>>>>>> backup-edwin
+=======
+  await query(`
+    ALTER TABLE user_favorites
+    MODIFY favorite_type ENUM('event','pass','artist') NOT NULL
+  `);
+
+>>>>>>> 2ccf80f (Eventra update)
   if (await tableExists('tickets')) {
     const ticketsUserIdColumn = await query(
       `SELECT COLUMN_NAME
@@ -820,14 +828,84 @@ app.get('/api/favorites', async (req, res, next) => {
           [userId],
         );
 
-    res.json({ data: [...passes, ...events] });
+    const artists = (await tableExists('artists'))
+      ? await query(
+          `SELECT
+            a.id,
+            a.name AS title,
+            a.genre AS subtitle,
+            NULL AS price,
+            a.image_url AS image,
+            NULL AS date,
+            NULL AS place,
+            NULL AS city,
+            a.followers,
+            a.genre,
+            a.description,
+            "artist" AS type
+           FROM user_favorites uf
+           INNER JOIN artists a ON a.id = uf.item_id
+           WHERE uf.user_id = ? AND uf.favorite_type = 'artist'
+           ORDER BY a.sort_order ASC`,
+          [userId],
+        )
+      : await query(
+          `SELECT
+            u.id,
+            u.name AS title,
+            u.genre AS subtitle,
+            NULL AS price,
+            u.avatar_url AS image,
+            NULL AS date,
+            NULL AS place,
+            u.location AS city,
+            u.followers_count AS followers,
+            u.genre,
+            u.description,
+            "artist" AS type
+           FROM user_favorites uf
+           INNER JOIN users u ON u.id = uf.item_id
+           WHERE uf.user_id = ? AND uf.favorite_type = 'artist'
+           ORDER BY u.followers_count DESC`,
+          [userId],
+        );
+
+    res.json({ data: [...artists, ...events] });
   } catch (error) {
     next(error);
   }
 });
 
-app.get('/api/artists', async (_req, res, next) => {
+app.post('/api/favorites', async (req, res, next) => {
   try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
+    const favoriteType = String(req.body?.favorite_type || req.body?.type || '');
+    const itemId = Number(req.body?.item_id || req.body?.id);
+
+    if (!['event', 'pass', 'artist'].includes(favoriteType) || !itemId) {
+      return res.status(400).json({ error: 'Invalid favorite data' });
+    }
+
+    await query(
+      `INSERT INTO user_favorites (user_id, favorite_type, item_id)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
+      [userId, favoriteType, itemId],
+    );
+
+    res.status(201).json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/artists', async (req, res, next) => {
+  try {
+    const userId = getRequestUserId(req);
     if (await tableExists('artists')) {
 <<<<<<< HEAD
       // Join with users table to get the latest profile info (source of truth)
@@ -853,12 +931,21 @@ app.get('/api/artists', async (_req, res, next) => {
 =======
       const artists = await query(`
         SELECT id, name, followers, monthly_listeners, events_count, genre,
-          description, image_url, sort_order
+          description, image_url, sort_order,
+          CASE
+            WHEN ? IS NULL THEN 0
+            ELSE EXISTS(
+              SELECT 1 FROM user_favorites uf
+              WHERE uf.user_id = ?
+                AND uf.favorite_type = 'artist'
+                AND uf.item_id = artists.id
+            )
+          END AS is_favorite
         FROM artists
         ORDER BY sort_order ASC
 >>>>>>> backup-edwin
         LIMIT 15
-      `);
+      `, [userId, userId]);
       const allEvents = (await tableExists('artist_events'))
         ? await query(`
           SELECT id, artist_id, title, lineup, venue, location, date_label, image, sort_order
@@ -868,9 +955,18 @@ app.get('/api/artists', async (_req, res, next) => {
         : [];
       const eventRows = (await tableExists('events'))
         ? await query(`
-          SELECT id, title, image, city, venue, price, sort_order
+          SELECT id, title, image, city, venue, price, sort_order,
+            CASE
+              WHEN ? IS NULL THEN is_favorite
+              ELSE EXISTS(
+                SELECT 1 FROM user_favorites uf
+                WHERE uf.user_id = ?
+                  AND uf.favorite_type = 'event'
+                  AND uf.item_id = events.id
+              )
+            END AS is_favorite
           FROM events
-        `)
+        `, [userId, userId])
         : [];
       const nearbyEvents = (await tableExists('nearby_events'))
         ? await query(`
@@ -915,6 +1011,7 @@ app.get('/api/artists', async (_req, res, next) => {
         followers_count: artist.followers,
         monthly_listeners: artist.monthly_listeners,
         events_count: artist.events_count,
+        is_favorite: artist.is_favorite,
         upcomingEvents: allEvents
 <<<<<<< HEAD
           .filter((event) => Number(event.artist_id) === Number(artist.artist_id))
@@ -941,7 +1038,7 @@ app.get('/api/artists', async (_req, res, next) => {
 >>>>>>> backup-edwin
               price: matchedEvent?.price || '',
               sort_order: matchedEvent?.sort_order || event.sort_order,
-              is_favorite: 0,
+              is_favorite: matchedEvent?.is_favorite || 0,
             };
           }),
       }));
@@ -950,20 +1047,38 @@ app.get('/api/artists', async (_req, res, next) => {
     }
 
     const artists = await query(
-      `SELECT id, username, name, followers_count, description, genre, avatar_url
+      `SELECT id, username, name, followers_count, description, genre, avatar_url,
+        CASE
+          WHEN ? IS NULL THEN 0
+          ELSE EXISTS(
+            SELECT 1 FROM user_favorites uf
+            WHERE uf.user_id = ?
+              AND uf.favorite_type = 'artist'
+              AND uf.item_id = users.id
+          )
+        END AS is_favorite
         FROM users
         WHERE role = ?
         ORDER BY followers_count DESC
         LIMIT 15
       `,
-      ['promoter'],
+      [userId, userId, 'promoter'],
     );
     const allEvents = (await tableExists('events'))
       ? await query(`
-        SELECT id, user_id, title, lineup, venue, city, date_label, image, is_favorite
+        SELECT id, user_id, title, lineup, venue, city, date_label, image,
+          CASE
+            WHEN ? IS NULL THEN is_favorite
+            ELSE EXISTS(
+              SELECT 1 FROM user_favorites uf
+              WHERE uf.user_id = ?
+                AND uf.favorite_type = 'event'
+                AND uf.item_id = events.id
+            )
+          END AS is_favorite
         FROM events
         ORDER BY sort_order ASC
-      `)
+      `, [userId, userId])
       : [];
 
     const responseData = artists.map(artist => {
@@ -985,6 +1100,7 @@ app.get('/api/artists', async (_req, res, next) => {
         description: artist.description,
         followers: formatCompactCount(artist.followers_count),
         followers_count: formatCompactCount(artist.followers_count),
+        is_favorite: artist.is_favorite,
         upcomingEvents: upcomingEvents.map(event => ({
           id: event.id,
           title: event.title,
@@ -1159,6 +1275,40 @@ app.post('/api/nearby-events/:id/favorite', async (req, res, next) => {
       await query(
         'DELETE FROM user_favorites WHERE user_id = ? AND favorite_type = ? AND item_id = ?',
         [userId, 'event', eventId],
+      );
+    }
+
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/artists/:id/favorite', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) {
+      return;
+    }
+
+    const artistId = Number(req.params.id);
+    const isFavorite = req.body?.isFavorite;
+
+    if (!artistId) {
+      return res.status(400).json({ error: 'Invalid artist id' });
+    }
+
+    if (isFavorite) {
+      await query(
+        `INSERT INTO user_favorites (user_id, favorite_type, item_id)
+         VALUES (?, 'artist', ?)
+         ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
+        [userId, artistId],
+      );
+    } else {
+      await query(
+        'DELETE FROM user_favorites WHERE user_id = ? AND favorite_type = ? AND item_id = ?',
+        [userId, 'artist', artistId],
       );
     }
 
@@ -1348,8 +1498,13 @@ app.post('/api/auth/register', async (req, res, next) => {
 =======
 app.post('/api/auth/register', async (req, res, next) => {
   try {
+<<<<<<< HEAD
     const { username, email, phone, password } = req.body || {};
 >>>>>>> backup-edwin
+=======
+    const { username, email, phone, password, location } = req.body || {};
+    const userLocation = normalizeCityFilter(location) || 'Set your location';
+>>>>>>> 2ccf80f (Eventra update)
 
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Username, email, and password are required' });
@@ -1359,12 +1514,17 @@ app.post('/api/auth/register', async (req, res, next) => {
     const [result] = await pool.execute(
       `INSERT INTO users (username, name, email, phone, password_hash, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified, sort_order)
 <<<<<<< HEAD
+<<<<<<< HEAD
        VALUES (?, ?, ?, ?, ?, ?, NULL, 0, 0, NULL, 'user', 1, 0)`,
       [username, username, email, phone || null, passwordHash, location || 'Set your location'],
 =======
        VALUES (?, ?, ?, ?, ?, 'Set your location', NULL, 0, 0, NULL, 'user', 1, 0)`,
       [username, username, email, phone || null, passwordHash],
 >>>>>>> backup-edwin
+=======
+       VALUES (?, ?, ?, ?, ?, ?, NULL, 0, 0, NULL, 'user', 1, 0)`,
+      [username, username, email, phone || null, passwordHash, userLocation],
+>>>>>>> 2ccf80f (Eventra update)
     );
 
     res.status(201).json({
@@ -1375,10 +1535,14 @@ app.post('/api/auth/register', async (req, res, next) => {
         email,
         phone: phone || null,
 <<<<<<< HEAD
+<<<<<<< HEAD
         location: location || 'Set your location',
 =======
         location: 'Set your location',
 >>>>>>> backup-edwin
+=======
+        location: userLocation,
+>>>>>>> 2ccf80f (Eventra update)
         avatar_url: null,
         followers_count: 0,
         upcoming_events_count: 0,

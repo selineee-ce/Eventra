@@ -24,9 +24,12 @@ import 'package:eventra/features/profile/profile_page.dart';
 //Import Widget
 import 'package:eventra/core/widgets/topbar.dart';
 import 'package:eventra/core/widgets/navbar.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  const MainScreen({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -37,14 +40,16 @@ class _MainScreenState extends State<MainScreen> {
   // di-recreate setiap rebuild, dan bisa di-dispose dengan benar.
   late final HomeController _homeController;
 
-  int _currentIndex = 0;
+  late int _currentIndex;
   bool _isSearchDropdownActive = false;
+  String _searchQuery = '';
 
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex.clamp(0, 4);
     if (!EventraSession.instance.isLoggedIn) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) {
@@ -75,6 +80,7 @@ class _MainScreenState extends State<MainScreen> {
       _isSearchDropdownActive = !_isSearchDropdownActive;
       if (!_isSearchDropdownActive) {
         _searchController.clear();
+        _searchQuery = '';
       }
     });
   }
@@ -82,7 +88,12 @@ class _MainScreenState extends State<MainScreen> {
   void openNotificationPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const NotificationPage()),
+      MaterialPageRoute(
+        builder: (context) => EventraSubpageShell(
+          currentIndex: _currentIndex > 4 ? 0 : _currentIndex,
+          child: const NotificationPage(),
+        ),
+      ),
     );
   }
 
@@ -165,12 +176,14 @@ class _MainScreenState extends State<MainScreen> {
       EventraHomePage(
         controller: _homeController,
         onEventTap: openBuyTicketPage,
+        searchQuery: _searchQuery,
       ),
-      const ExplorePage(),
-      const EventraTicketsPage(),
+      ExplorePage(searchQuery: _searchQuery),
+      EventraTicketsPage(searchQuery: _searchQuery),
       EventraFavoritesPage(
         controller: _homeController,
         onEventTap: openBuyTicketPage,
+        searchQuery: _searchQuery,
       ),
       const EventraProfilePage(),
       if (_selectedEvent != null)
@@ -247,7 +260,14 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                             ),
                           ),
-                          onChanged: (value) {},
+                          onChanged: (value) {
+                            setState(() => _searchQuery = value);
+                          },
+                          onSubmitted: (_) {
+                            if (_currentIndex > 4) {
+                              setState(() => _currentIndex = 0);
+                            }
+                          },
                         ),
                       )
                     : const SizedBox(),

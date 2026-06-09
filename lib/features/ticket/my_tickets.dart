@@ -1,20 +1,46 @@
 import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/tickets_notifier.dart';
+import 'package:eventra/core/utils/search_match.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:eventra/features/ticket/ticket_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EventraTicketsPage extends StatefulWidget {
-  const EventraTicketsPage({super.key});
+  const EventraTicketsPage({super.key, this.searchQuery = ''});
+
+  final String searchQuery;
 
   @override
   State<EventraTicketsPage> createState() => _EventraTicketsPageState();
 }
 
 class _EventraTicketsPageState extends State<EventraTicketsPage> {
+  final TextEditingController _searchController = TextEditingController();
+
   List<Map<String, dynamic>> _ticketList = [];
   bool _isLoading = true;
+  String _localSearchQuery = '';
+
+  String get _effectiveSearchQuery =>
+      normalizeSearchText(_localSearchQuery).isNotEmpty
+      ? _localSearchQuery
+      : widget.searchQuery;
+
+  List<Map<String, dynamic>> get _filteredTickets => _ticketList
+      .where(
+        (ticket) => matchesSearchQuery(_effectiveSearchQuery, [
+          ticket['title'],
+          ticket['venue'],
+          ticket['date_label'],
+          ticket['time_label'],
+          ticket['section'],
+          ticket['row_label'],
+          ticket['seat_label'],
+        ]),
+      )
+      .toList();
 
   String _cleanLabel(dynamic value, String prefix) {
     return value
@@ -33,6 +59,7 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
   @override
   void dispose() {
     TicketsNotifier.instance.removeListener(_loadTickets);
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -51,6 +78,8 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final filteredTickets = _filteredTickets;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
       body: SafeArea(
@@ -89,6 +118,11 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                     ),
                     const SizedBox(height: 20),
                     TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() => _localSearchQuery = value);
+                      },
+                      textInputAction: TextInputAction.search,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         hintText: AppConfig.instance.text(
@@ -105,11 +139,25 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                           horizontal: 16,
                           vertical: 12,
                         ),
-                        suffixIcon: const Icon(
+                        prefixIcon: const Icon(
                           Icons.search,
                           color: Colors.white38,
                           size: 20,
                         ),
+                        suffixIcon: _localSearchQuery.isEmpty
+                            ? null
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.white54,
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _localSearchQuery = '');
+                                },
+                              ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(color: Colors.white10),
@@ -121,12 +169,15 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                       ),
                     ),
                     const SizedBox(height: 25),
-                    ..._ticketList.map((ticket) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
-                        child: _buildTicketCard(context, ticket: ticket),
-                      );
-                    }),
+                    if (filteredTickets.isEmpty)
+                      _buildEmptySearchState()
+                    else
+                      ...filteredTickets.map((ticket) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 18),
+                          child: _buildTicketCard(context, ticket: ticket),
+                        );
+                      }),
                     const SizedBox(height: 20),
                     Center(
                       child: Column(
@@ -257,16 +308,19 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => TicketDetailPage(
-                    title: ticket['title'] as String,
-                    imageUrl: ticket['image'] as String,
-                    venue: ticket['venue'] as String,
-                    date: ticket['date_label'] as String,
-                    time: ticket['time_label'] as String,
-                    section: ticket['section'] as String,
-                    row: _cleanLabel(ticket['row_label'], 'ROW'),
-                    seat: _cleanLabel(ticket['seat_label'], 'SEAT'),
-                    qrData: ticket['qr_data'] as String,
+                  builder: (context) => EventraSubpageShell(
+                    currentIndex: 2,
+                    child: TicketDetailPage(
+                      title: ticket['title'] as String,
+                      imageUrl: ticket['image'] as String,
+                      venue: ticket['venue'] as String,
+                      date: ticket['date_label'] as String,
+                      time: ticket['time_label'] as String,
+                      section: ticket['section'] as String,
+                      row: _cleanLabel(ticket['row_label'], 'ROW'),
+                      seat: _cleanLabel(ticket['seat_label'], 'SEAT'),
+                      qrData: ticket['qr_data'] as String,
+                    ),
                   ),
                 ),
               );
@@ -321,6 +375,33 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
       child: Text(
         text,
         style: GoogleFonts.poppins(color: Colors.white38, fontSize: 11),
+      ),
+    );
+  }
+
+  Widget _buildEmptySearchState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 30),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1526),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.search_off, color: Color(0xFFD0BCFF), size: 34),
+          const SizedBox(height: 12),
+          Text(
+            'No tickets match your search.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }

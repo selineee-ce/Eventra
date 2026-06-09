@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:eventra/data/app_config.dart';
+import 'package:eventra/core/utils/search_match.dart';
 import 'package:eventra/core/widgets/event_card.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
 import 'package:eventra/features/home/models/featured_event.dart';
@@ -14,10 +15,12 @@ class EventraHomePage extends StatefulWidget {
     super.key,
     required this.controller,
     required this.onEventTap,
+    this.searchQuery = '',
   });
 
   final HomeController controller;
   final void Function(NearbyEvent) onEventTap;
+  final String searchQuery;
 
   @override
   State<EventraHomePage> createState() => _EventraHomePageState();
@@ -51,6 +54,10 @@ class _EventraHomePageState extends State<EventraHomePage> {
         // ← tambah ini
         _dropCountdowns.updateAll((id, secs) => secs > 0 ? secs - 1 : 0);
 
+        if (normalizeSearchText(widget.searchQuery).isNotEmpty) {
+          return;
+        }
+
         carouselTick++;
         final events = _ctrl.state.featuredEvents;
         if (carouselTick >= 5 && events.isNotEmpty && _pageController.hasClients) {
@@ -74,6 +81,18 @@ class _EventraHomePageState extends State<EventraHomePage> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant EventraHomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.searchQuery != widget.searchQuery) {
+      currentPage = 0;
+      carouselTick = 0;
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
+    }
+  }
+
   void _onStateChange() {
     final drops = _ctrl.state.exclusiveDrops;
     for (final drop in drops) {
@@ -94,6 +113,41 @@ class _EventraHomePageState extends State<EventraHomePage> {
   @override
   Widget build(BuildContext context) {
     final state = _ctrl.state;
+    final query = widget.searchQuery;
+    final isSearching = normalizeSearchText(query).isNotEmpty;
+    final featuredEvents = state.featuredEvents
+        .where(
+          (event) => matchesSearchQuery(query, [
+            event.title,
+            event.subtitle,
+            event.tag1,
+            event.tag2,
+          ]),
+        )
+        .toList();
+    final exclusiveDrops = state.exclusiveDrops
+        .where(
+          (drop) => matchesSearchQuery(query, [
+            drop.title,
+            drop.badge,
+            drop.description,
+            drop.type,
+          ]),
+        )
+        .toList();
+    final nearbyEvents =
+        (isSearching ? state.nearbyEvents : state.visibleNearbyEvents)
+            .where(
+              (event) => matchesSearchQuery(query, [
+                event.title,
+                event.artistName,
+                event.place,
+                event.city,
+                event.dateLabel,
+                event.price,
+              ]),
+            )
+            .toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
@@ -118,7 +172,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
                         const SizedBox(height: 12),
 
                         // data dari tabel `featured_events`
-                        buildFeaturedCarousel(state.featuredEvents),
+                        buildFeaturedCarousel(featuredEvents),
 
                         const SizedBox(height: 22),
 
@@ -128,17 +182,17 @@ class _EventraHomePageState extends State<EventraHomePage> {
                         const SizedBox(height: 18),
 
                         // data dari tabel `pass_packages`
-                        buildExclusiveDrop(state.exclusiveDrops),
+                        buildExclusiveDrop(exclusiveDrops),
 
                         const SizedBox(height: 18),
 
                         // teks dari tabel `app_config`
-                        buildNearYouHeader(),
+                        buildNearYouHeader(isSearching: isSearching),
 
                         const SizedBox(height: 12),
 
                         // data dari tabel `nearby_events`
-                        buildNearbyEvents(state.visibleNearbyEvents),
+                        buildNearbyEvents(nearbyEvents),
 
                         const SizedBox(height: 100),
                       ],
@@ -197,6 +251,10 @@ class _EventraHomePageState extends State<EventraHomePage> {
   // ── Carousel — tabel `featured_events` ────────────────────
   // field: image, tag1, tag2, title, subtitle, button
   Widget buildFeaturedCarousel(List<FeaturedEvent> events) {
+    if (events.isEmpty) {
+      return _buildSearchEmptyState('No featured events match your search.');
+    }
+
     return SizedBox(
       height: 340,
       child: PageView.builder(
@@ -339,6 +397,10 @@ class _EventraHomePageState extends State<EventraHomePage> {
   // ── Pass Cards — tabel `pass_packages` ────────────────────
   // field: title, description (alias desc di API), price, is_favorite
   Widget buildExclusiveDrop(List<ExclusiveDrop> drops) {
+    if (drops.isEmpty) {
+      return _buildSearchEmptyState('No exclusive drops match your search.');
+    }
+
     return Column(
       children: drops.map((drop) => buildExclusiveDropCard(drop)).toList(),
     );
@@ -486,7 +548,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
   }
 
   // ── Near You Header — teks dari `app_config` ──────────────
-  Widget buildNearYouHeader() {
+  Widget buildNearYouHeader({bool isSearching = false}) {
     final nearbyCount = _ctrl.state.nearbyEvents.length;
     final isShowingAll = _ctrl.state.visibleNearbyCount >= nearbyCount;
     return LayoutBuilder(
@@ -513,25 +575,26 @@ class _EventraHomePageState extends State<EventraHomePage> {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: () {
-                if (isShowingAll) {
-                  _ctrl.resetNearbyEvents(); // ← tambah method ini
-                } else {
-                  _ctrl.showAllNearbyEvents();
-                }
-              },
-              child: Text(
-                isShowingAll
-                    ? 'SHOW LESS'
-                    : AppConfig.instance.text('home.view_all', 'VIEW ALL'),
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13 * scale,
+            if (!isSearching && nearbyCount > 4)
+              TextButton(
+                onPressed: () {
+                  if (isShowingAll) {
+                    _ctrl.resetNearbyEvents();
+                  } else {
+                    _ctrl.showAllNearbyEvents();
+                  }
+                },
+                child: Text(
+                  isShowingAll
+                      ? 'SHOW LESS'
+                      : AppConfig.instance.text('home.view_all', 'VIEW ALL'),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13 * scale,
+                  ),
                 ),
               ),
-            ),
           ],
         );
       },
@@ -541,6 +604,10 @@ class _EventraHomePageState extends State<EventraHomePage> {
   // ── Nearby Grid — tabel `nearby_events` ───────────────────
   // field: image, date_label (API: date), title, place, price, is_favorite
   Widget buildNearbyEvents(List<NearbyEvent> events) {
+    if (events.isEmpty) {
+      return _buildSearchEmptyState('No nearby events match your search.');
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -602,8 +669,27 @@ class _EventraHomePageState extends State<EventraHomePage> {
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return NetworkImage(path);
     }
-    // Remove leading 'assets/' to avoid double prefixing (e.g. assets/assets/...)
-    final cleanPath = path.startsWith('assets/') ? path.substring(7) : path;
-    return AssetImage(cleanPath);
+    return AssetImage(path);
+  }
+
+  Widget _buildSearchEmptyState(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B1526),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: GoogleFonts.poppins(
+          color: Colors.white54,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 }

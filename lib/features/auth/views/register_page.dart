@@ -18,9 +18,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   String? _selectedLocation;
   List<String> _cities = [];
@@ -52,6 +54,7 @@ class _RegisterPageState extends State<RegisterPage> {
   void dispose() {
     _usernameController.dispose();
     _phoneController.dispose();
+    _locationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -82,9 +85,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (context) => const MainScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const MainScreen()),
         (route) => false,
       );
     } catch (error) {
@@ -93,7 +94,9 @@ class _RegisterPageState extends State<RegisterPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) {
@@ -108,9 +111,7 @@ class _RegisterPageState extends State<RegisterPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.mainAppBackground,
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.mainAppBackground),
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
@@ -134,7 +135,10 @@ class _RegisterPageState extends State<RegisterPage> {
                           child: Column(
                             children: [
                               Text(
-                                AppConfig.instance.text('brand.name', 'EVENTRA'),
+                                AppConfig.instance.text(
+                                  'brand.name',
+                                  'EVENTRA',
+                                ),
                                 style: const TextStyle(
                                   color: Color(0xFFD0BCFF),
                                   fontSize: 35,
@@ -158,7 +162,10 @@ class _RegisterPageState extends State<RegisterPage> {
                                   'auth.register.subtitle',
                                   'Explore the best upcoming events!',
                                 ),
-                                style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
                               ),
                               const SizedBox(height: 30),
                             ],
@@ -166,18 +173,34 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
 
                         // Input Fields
-                        _buildLabel(AppConfig.instance.text('auth.register.username', 'Username')),
+                        _buildLabel(
+                          AppConfig.instance.text(
+                            'auth.register.username',
+                            'Username',
+                          ),
+                        ),
                         _buildTextField(
-                          hint: AppConfig.instance.text('auth.register.username', 'Username'),
+                          hint: AppConfig.instance.text(
+                            'auth.register.username',
+                            'Username',
+                          ),
                           icon: Icons.person_outline,
                           controller: _usernameController,
                           validator: InputValidator.validateUsername,
                         ),
                         const SizedBox(height: 15),
 
-                        _buildLabel(AppConfig.instance.text('auth.register.phone', 'Phone Number')),
+                        _buildLabel(
+                          AppConfig.instance.text(
+                            'auth.register.phone',
+                            'Phone Number',
+                          ),
+                        ),
                         _buildTextField(
-                          hint: AppConfig.instance.text('auth.register.phone', 'Phone Number'),
+                          hint: AppConfig.instance.text(
+                            'auth.register.phone',
+                            'Phone Number',
+                          ),
                           icon: Icons.phone_outlined,
                           controller: _phoneController,
                           keyboardType: TextInputType.number,
@@ -185,40 +208,96 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                         const SizedBox(height: 15),
 
-                        _buildLabel(AppConfig.instance.text('auth.register.email', 'Email')),
+                        _buildLabel('City'),
                         _buildTextField(
-                          hint: AppConfig.instance.text('auth.register.email', 'Email'),
+                          hint: 'Jakarta, Bandung, Surabaya...',
+                          icon: Icons.location_on_outlined,
+                          controller: _locationController,
+                          textInputAction: TextInputAction.next,
+                          validator: (val) {
+                            final value = val?.trim() ?? '';
+                            if (value.isEmpty) return 'City is required';
+                            if (value.length < 3) return 'Enter a valid city';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 15),
+
+                        _buildLabel(
+                          AppConfig.instance.text(
+                            'auth.register.email',
+                            'Email',
+                          ),
+                        ),
+                        _buildTextField(
+                          hint: AppConfig.instance.text(
+                            'auth.register.email',
+                            'Email',
+                          ),
                           icon: Icons.email_outlined,
                           controller: _emailController,
                           validator: InputValidator.validateEmail,
                         ),
                         const SizedBox(height: 15),
 
-                        _buildLabel(AppConfig.instance.text('auth.register.password', 'Password')),
+                        _buildLabel(
+                          AppConfig.instance.text(
+                            'auth.register.password',
+                            'Password',
+                          ),
+                        ),
                         _buildTextField(
-                          hint: AppConfig.instance.text('auth.register.password', 'Password'),
+                          hint: AppConfig.instance.text(
+                            'auth.register.password',
+                            'Password',
+                          ),
                           icon: Icons.lock_outline,
                           controller: _passwordController,
                           obscureText: _isObscure,
                           suffixIcon: IconButton(
-                            icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
-                            onPressed: () => setState(() => _isObscure = !_isObscure),
+                            icon: Icon(
+                              _isObscure
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.white54,
+                            ),
+                            onPressed: () =>
+                                setState(() => _isObscure = !_isObscure),
                           ),
                           validator: InputValidator.validatePassword,
                         ),
                         const SizedBox(height: 15),
 
-                        _buildLabel(AppConfig.instance.text('auth.register.confirm_password', 'Confirm Password')),
+                        _buildLabel(
+                          AppConfig.instance.text(
+                            'auth.register.confirm_password',
+                            'Confirm Password',
+                          ),
+                        ),
                         _buildTextField(
-                          hint: AppConfig.instance.text('auth.register.confirm_password', 'Confirm Password'),
+                          hint: AppConfig.instance.text(
+                            'auth.register.confirm_password',
+                            'Confirm Password',
+                          ),
                           icon: Icons.lock_outline,
                           controller: _confirmPasswordController,
                           obscureText: _isObscureConfirm,
                           suffixIcon: IconButton(
-                            icon: Icon(_isObscureConfirm ? Icons.visibility_off : Icons.visibility, color: Colors.white54),
-                            onPressed: () => setState(() => _isObscureConfirm = !_isObscureConfirm),
+                            icon: Icon(
+                              _isObscureConfirm
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.white54,
+                            ),
+                            onPressed: () => setState(
+                              () => _isObscureConfirm = !_isObscureConfirm,
+                            ),
                           ),
-                          validator: (val) => InputValidator.validateConfirmPassword(val, _passwordController.text),
+                          validator: (val) =>
+                              InputValidator.validateConfirmPassword(
+                                val,
+                                _passwordController.text,
+                              ),
                         ),
                         const SizedBox(height: 15),
 
@@ -241,7 +320,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             onPressed: _isSubmitting ? null : _register,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFD0BCFF),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
                             ),
                             child: _isSubmitting
                                 ? const SizedBox(
@@ -253,16 +334,16 @@ class _RegisterPageState extends State<RegisterPage> {
                                     ),
                                   )
                                 : Text(
-                              AppConfig.instance.text(
-                                'auth.register.submit',
-                                'Register',
-                              ),
-                              style: const TextStyle(
-                                color: Color(0xFF4D2B6C),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
+                                    AppConfig.instance.text(
+                                      'auth.register.submit',
+                                      'Register',
+                                    ),
+                                    style: const TextStyle(
+                                      color: Color(0xFF4D2B6C),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 25),
@@ -276,12 +357,17 @@ class _RegisterPageState extends State<RegisterPage> {
                                 'auth.register.login_prompt',
                                 'Already have an account? ',
                               ),
-                              style: const TextStyle(color: Colors.white70, fontSize: 15),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 15,
+                              ),
                             ),
                             GestureDetector(
                               onTap: () => Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (context) => const LoginPage()),
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginPage(),
+                                ),
                               ),
                               child: Text(
                                 AppConfig.instance.text(
@@ -291,7 +377,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 style: const TextStyle(
                                   color: Color(0xFFD0BCFF),
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16
+                                  fontSize: 16,
                                 ),
                               ),
                             ),
@@ -319,15 +405,32 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
-  Widget _buildTextField({required String hint, required IconData icon, TextEditingController? controller, bool obscureText = false, Widget? suffixIcon, TextInputType? keyboardType, String? Function(String?)? validator}) {
+  Widget _buildTextField({
+    required String hint,
+    required IconData icon,
+    TextEditingController? controller,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    String? Function(String?)? validator,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      textInputAction: textInputAction,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
@@ -337,10 +440,22 @@ class _RegisterPageState extends State<RegisterPage> {
         filled: true,
         fillColor: Color(0x33000000),
         contentPadding: const EdgeInsets.symmetric(vertical: 18),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.white12)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Color(0xFFD0BCFF), width: 1.5)),
-        errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.redAccent)),
-        focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Colors.white12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Color(0xFFD0BCFF), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(15),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
         errorStyle: const TextStyle(color: Colors.redAccent),
       ),
       validator: validator,

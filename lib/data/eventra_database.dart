@@ -77,17 +77,6 @@ class EventraDatabase {
   Future<List<Map<String, dynamic>>> fetchTrendingArtists() async =>
       _getList('/artists', requiresAuth: true);
 
-  Future<void> setArtistFavorite({
-    required int artistId,
-    required bool isFavorite,
-  }) async {
-    await _postJson(
-      '/artists/$artistId/favorite',
-      {'isFavorite': isFavorite},
-      requiresAuth: true,
-    );
-  }
-
   Future<void> setPassFavorite({
     required int passId,
     required bool isFavorite,
@@ -104,6 +93,26 @@ class EventraDatabase {
     await _postJson('/nearby-events/$eventId/favorite', {
       'isFavorite': isFavorite,
     }, requiresAuth: true);
+  }
+
+  Future<void> setArtistFavorite({
+    required int artistId,
+    required bool isFavorite,
+  }) async {
+    try {
+      await _postJson('/artists/$artistId/favorite', {
+        'isFavorite': isFavorite,
+      }, requiresAuth: true);
+    } catch (error) {
+      if (!error.toString().contains('404') || !isFavorite) {
+        rethrow;
+      }
+
+      await _postJson('/favorites', {
+        'favorite_type': 'artist',
+        'item_id': artistId,
+      }, requiresAuth: true);
+    }
   }
 
   Future<Map<String, dynamic>> checkoutPayment({
