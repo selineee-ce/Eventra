@@ -141,7 +141,8 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
 
     final detailImage =
         _detail['detail_image'] as String? ?? widget.event.image;
-    final artistName = _detail['lineup'] as String? ?? widget.event.title;
+    final eventName = _detail['title'] as String? ?? widget.event.title;
+    final artistName = _detail['lineup'] as String? ?? widget.event.artistName;
     final dateLabel =
         _detail['date_label'] as String? ?? widget.event.dateLabel;
     final showTime = _detail['show_time'] as String? ?? '';
@@ -229,7 +230,7 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  artistName,
+                  eventName,
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontSize: 22,
@@ -237,7 +238,17 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height:6),
+                Text(
+                  artistName,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
