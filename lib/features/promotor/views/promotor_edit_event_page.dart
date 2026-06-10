@@ -811,7 +811,6 @@ class _PromotorEditEventPageState extends State<PromotorEditEventPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Add more tickets
                         GestureDetector(
                           onTap: () => _openTicketModal(),
                           child: Container(
@@ -843,7 +842,6 @@ class _PromotorEditEventPageState extends State<PromotorEditEventPage> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Ticket cards
                         ..._tickets.asMap().entries.map((e) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _buildTicketCard(e.value, e.key),
@@ -851,7 +849,6 @@ class _PromotorEditEventPageState extends State<PromotorEditEventPage> {
 
                         const SizedBox(height: 16),
 
-                        // Save as Draft + Publish buttons
                         Row(
                           children: [
                             Expanded(

@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:convert';
 import 'package:eventra/core/utils/search_match.dart';
 import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:eventra/data/eventra_database.dart';
@@ -459,6 +459,15 @@ class _ExplorePageState extends State<ExplorePage> {
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _buildImage('', w, h),
       );
+    }
+    if (path.startsWith('data:image')) {
+      try {
+        final base64Str = path.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(bytes, width: w, height: h, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildImage('', w, h));
+      } catch (_) {
+        return _buildImage('', w, h);
+      }
     }
     return Image.asset(
       path,
@@ -2275,6 +2284,19 @@ class _ExploreImage extends StatelessWidget {
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _fallback(),
       );
+    }
+    if (path.startsWith('data:image')) {
+      try {
+        final base64Str = path.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _fallback(),
+        );
+      } catch (_) {
+        return _fallback();
+      }
     }
     if (path.startsWith('assets/')) {
       return Image.asset(

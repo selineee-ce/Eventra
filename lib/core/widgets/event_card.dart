@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
 
 class EventraEventCard extends StatelessWidget {
   const EventraEventCard({
@@ -183,7 +184,20 @@ class EventraEventCard extends StatelessWidget {
       );
     }
 
-    // Remove leading 'assets/' to avoid double prefixing (e.g. assets/assets/...)
+    if (image.startsWith('data:image')) {
+      try {
+        final base64Str = image.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImageFallback(),
+        );
+      } catch (_) {
+        return _buildImageFallback();
+      }
+    }
+
     final cleanPath = image.startsWith('assets/') ? image.substring(7) : image;
 
     return Image.asset(
