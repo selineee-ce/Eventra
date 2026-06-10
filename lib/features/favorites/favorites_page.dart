@@ -338,7 +338,7 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
     }
 
     return SizedBox(
-      height: 118,
+      height: 80,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -407,60 +407,93 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
 
   Widget _favoriteArtistCard(Map<String, dynamic> artist) {
     final image =
-        artist['image']?.toString() ?? artist['avatar_url']?.toString() ?? '';
+        artist['image']?.toString() ??
+        artist['avatar_url']?.toString() ??
+        '';
+
+    final title =
+        artist['title']?.toString() ??
+        artist['name']?.toString() ??
+        'Saved artist';
+
+    final subtitle =
+        artist['subtitle']?.toString() ??
+        artist['genre']?.toString() ??
+        '';
+
     return GestureDetector(
       onTap: () => _openArtistProfile(artist),
       child: Container(
-        width: 230,
-        padding: const EdgeInsets.all(16),
+        width: 260,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF1B1526),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: Colors.white10),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // IMAGE
             Container(
               width: 54,
               height: 54,
               decoration: BoxDecoration(
-                color: const Color(0xFFD0BCFF).withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFFD0BCFF).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
               ),
+              clipBehavior: Clip.antiAlias,
               child: _artistImage(image),
             ),
-            const SizedBox(width: 14),
+
+            const SizedBox(width: 12),
+
+            // TEXT AREA
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    artist['title']?.toString() ??
-                        artist['name']?.toString() ??
-                        'Saved artist',
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      height: 1.1,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
-                    artist['subtitle']?.toString() ??
-                        artist['genre']?.toString() ??
-                        '',
-                    maxLines: 2,
+                    subtitle,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       color: Colors.white54,
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.1,
                     ),
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(width: 8),
+
+            // HEART BUTTON
             IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              splashRadius: 18,
               onPressed: () => _removeArtist(artist),
-              icon: const Icon(Icons.favorite, color: Color(0xFFD0BCFF)),
+              icon: const Icon(
+                Icons.favorite,
+                color: Color(0xFFD0BCFF),
+                size: 20,
+              ),
             ),
           ],
         ),
