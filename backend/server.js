@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 const port = Number(process.env.PORT || 3000);
 
@@ -93,6 +93,17 @@ async function ensurePaymentTables() {
 
     if (venueLayoutColumn.length === 0) {
       await query('ALTER TABLE events ADD COLUMN venue_layout VARCHAR(160) NULL AFTER detail_image');
+    }
+  }
+
+  if (await tableExists('events')) {
+    const imageColumnType = await query(
+      `SELECT DATA_TYPE FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'events' AND COLUMN_NAME = 'image'`
+    );
+    if (imageColumnType[0]?.DATA_TYPE === 'text') {
+      console.log('Migrating events table: image column to LONGTEXT...');
+      await query('ALTER TABLE events MODIFY COLUMN image LONGTEXT NULL');
     }
   }
 
@@ -692,7 +703,6 @@ app.post('/api/profile/update', async (req, res, next) => {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    // Fetch old data to know who we're updating in the artists table
     const [oldUser] = await query('SELECT role, name FROM users WHERE id = ?', [userId]);
 
     params.push(userId);
@@ -702,12 +712,10 @@ app.post('/api/profile/update', async (req, res, next) => {
       params,
     );
 
-    // Always sync bio and description in users table if description was updated
     if (description !== undefined) {
       await query('UPDATE users SET bio = ? WHERE id = ?', [description, userId]);
     }
 
-    // If the user is a promoter, also update the artists table if it exists
     if (oldUser && oldUser.role === 'promoter' && (await tableExists('artists'))) {
       const artistUpdates = [];
       const artistParams = [];
@@ -1484,6 +1492,408 @@ app.post('/api/auth/login', async (req, res, next) => {
 
     delete user.password_hash;
     res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/promotor/register', async (req, res, next) => {
+  try {
+    const { organization_name, contact_email, portfolio_link } = req.body || {};
+
+    if (!organization_name || !contact_email || !portfolio_link) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    const [result] = await pool.execute(
+      `INSERT INTO promotor_applications (organization_name, contact_email, portfolio_link)
+       VALUES (?, ?, ?)`,
+      [organization_name, contact_email, portfolio_link]
+    );
+
+    res.status(201).json({
+      ok: true,
+      application: {
+        id: result.insertId,
+        organization_name,
+        contact_email,
+        portfolio_link,
+        status: 'pending',
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/promotor/dashboard', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const events = await query(
+      `SELECT id, status FROM promotor_events WHERE user_id = ?`,
+      [userId]
+    );
+
+    const eventIds = events.map(e => e.id);
+    const activeEvents = events.filter(e => e.status === 'live').length;
+
+    let totalRevenue = 0;
+    let ticketSold = 0;
+
+    if (eventIds.length > 0) {
+      const placeholders = eventIds.map(() => '?').join(',');
+      const revenueRows = await query(
+        `SELECT COALESCE(SUM(pt.price * pt.sold), 0) AS total_revenue,
+                COALESCE(SUM(pt.sold), 0) AS ticket_sold
+         FROM promotor_ticket_types pt
+         WHERE pt.promotor_event_id IN (${placeholders})`,
+        eventIds
+      );
+      totalRevenue = revenueRows[0]?.total_revenue || 0;
+      ticketSold = revenueRows[0]?.ticket_sold || 0;
+    }
+
+    res.json({
+      dashboard: {
+        total_revenue: totalRevenue,
+        ticket_sold: ticketSold,
+        active_events: activeEvents,
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/promotor/events', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const events = await query(
+      `SELECT pe.id, pe.title, pe.artist_name, pe.venue, pe.image, pe.description, pe.location, pe.event_date,
+              pe.event_time, pe.status, pe.created_at,
+              COALESCE(SUM(pt.sold), 0) AS ticket_sold,
+              COALESCE(SUM(pt.available), 0) AS ticket_total,
+              COALESCE(SUM(pt.price * pt.sold), 0) AS revenue
+       FROM promotor_events pe
+       LEFT JOIN promotor_ticket_types pt ON pt.promotor_event_id = pe.id
+       WHERE pe.user_id = ?
+       GROUP BY pe.id
+       ORDER BY pe.created_at DESC`,
+      [userId]
+    );
+
+    const eventIds = events.map(e => e.id);
+    let ticketTypes = [];
+    if (eventIds.length > 0) {
+      const placeholders = eventIds.map(() => '?').join(',');
+      ticketTypes = await query(
+        `SELECT * FROM promotor_ticket_types WHERE promotor_event_id IN (${placeholders})`,
+        eventIds
+      );
+    }
+
+    const data = events.map(event => ({
+      ...event,
+      tickets: ticketTypes.filter(t => t.promotor_event_id === event.id),
+    }));
+
+    res.json({ data });
+  } catch (error) {
+    next(error);
+  }
+});
+
+async function syncPromotorEventToPublic(connection, promotorEventId) {
+  const [rows] = await connection.execute(
+    `SELECT * FROM promotor_events WHERE id = ? LIMIT 1`,
+    [promotorEventId]
+  );
+  const event = rows[0];
+  if (!event || event.status !== 'live') return;
+
+  const dateLabel = event.event_date instanceof Date
+    ? event.event_date.toISOString().split('T')[0]
+    : String(event.event_date);
+
+  const showTime = `${event.event_time} WIB`;
+
+  const [ticketRows] = await connection.execute(
+    `SELECT MIN(price) AS min_price FROM promotor_ticket_types WHERE promotor_event_id = ?`,
+    [promotorEventId]
+  );
+  const minPrice = ticketRows[0]?.min_price;
+  const priceLabel = minPrice ? `Rp${Number(minPrice).toLocaleString('id-ID')}` : null;
+
+  const sourceMarker = `promotor:${promotorEventId}`;
+  const [existing] = await connection.execute(
+    `SELECT id FROM events WHERE source_url = ? LIMIT 1`,
+    [sourceMarker]
+  );
+
+  if (existing.length > 0) {
+    await connection.execute(
+      `UPDATE events
+       SET title = ?, lineup = ?, venue = ?, city = ?, date_label = ?, show_time = ?,
+           price = ?, image = ?, description = ?
+       WHERE id = ?`,
+      [
+        event.title,
+        event.artist_name || event.title,
+        event.venue || event.location,
+        event.location,
+        dateLabel,
+        showTime,
+        priceLabel,
+        event.image,
+        event.description,
+        existing[0].id,
+      ]
+    );
+  } else {
+    const [maxSort] = await connection.execute(`SELECT COALESCE(MAX(sort_order), 0) AS max_sort FROM events`);
+    const nextSort = (maxSort[0]?.max_sort || 0) + 1;
+
+    await connection.execute(
+      `INSERT INTO events (title, lineup, venue, city, date_label, show_time, price, image, description,
+                            tag1, tag2, button, is_featured, is_limited, remaining_seats, sort_order, is_favorite, source_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'EVENT', 'PROMOTOR', 'GET TICKETS', 0, 0, 0, ?, 0, ?)`,
+      [
+        event.title,
+        event.artist_name || event.title,
+        event.venue || event.location,
+        event.location,
+        dateLabel,
+        showTime,
+        priceLabel,
+        event.image,
+        event.description,
+        nextSort,
+        sourceMarker,
+      ]
+    );
+  }
+}
+
+app.post('/api/promotor/events', async (req, res, next) => {
+  const connection = await pool.getConnection();
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const { title, artist_name, venue, description, location, event_date, event_time, image, status, tickets } = req.body || {};
+
+    if (!title || !location || !event_date || !event_time) {
+      return res.status(400).json({ error: 'Title, location, date, and time are required' });
+    }
+
+    const eventStatus = status === 'live' ? 'live' : 'draft';
+
+    await connection.beginTransaction();
+
+    const [result] = await connection.execute(
+      `INSERT INTO promotor_events (user_id, title, artist_name, venue, description, location, event_date, event_time, image, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, title, artist_name || null, venue || null, description || null, location, event_date, event_time, image || null, eventStatus]
+    );
+
+    const eventId = result.insertId;
+
+    if (Array.isArray(tickets) && tickets.length > 0) {
+      for (const ticket of tickets) {
+        await connection.execute(
+          `INSERT INTO promotor_ticket_types (promotor_event_id, type, price, available, sales_end_date, sales_end_time)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            eventId,
+            ticket.type,
+            Number(ticket.price) || 0,
+            Number(ticket.available) || 0,
+            ticket.sales_end_date || null,
+            ticket.sales_end_time || null,
+          ]
+        );
+      }
+    }
+    if (Array.isArray(tickets) && tickets.length > 0) {
+      for (const ticket of tickets) {
+        await connection.execute(
+          `INSERT INTO promotor_ticket_types (promotor_event_id, type, price, available, sales_end_date, sales_end_time)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            eventId,
+            ticket.type,
+            Number(ticket.price) || 0,
+            Number(ticket.available) || 0,
+            ticket.sales_end_date || null,
+            ticket.sales_end_time || null,
+          ]
+        );
+      }
+    }
+
+    if (eventStatus === 'live') {
+      await syncPromotorEventToPublic(connection, eventId);
+    }
+
+    await connection.commit();
+
+    res.status(201).json({
+      ok: true,
+      event: { id: eventId, title, status: eventStatus }
+    });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+app.put('/api/promotor/events/:id', async (req, res, next) => {
+  const connection = await pool.getConnection();
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const eventId = Number(req.params.id);
+    const { title, artist_name, venue, description, location, event_date, event_time, image, status, tickets } = req.body || {};
+
+    const [existing] = await query(
+      `SELECT id FROM promotor_events WHERE id = ? AND user_id = ? LIMIT 1`,
+      [eventId, userId]
+    );
+    if (!existing) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    await connection.beginTransaction();
+
+    await connection.execute(
+      `UPDATE promotor_events
+       SET title = COALESCE(?, title),
+           artist_name = COALESCE(?, artist_name),
+           venue = COALESCE(?, venue),
+           description = COALESCE(?, description),
+           location = COALESCE(?, location),
+           event_date = COALESCE(?, event_date),
+           event_time = COALESCE(?, event_time),
+           image = COALESCE(?, image),
+           status = COALESCE(?, status)
+       WHERE id = ?`,
+      [title, artist_name, venue, description, location, event_date, event_time, image, status, eventId]
+    );
+
+    if (Array.isArray(tickets)) {
+      await connection.execute(
+        `DELETE FROM promotor_ticket_types WHERE promotor_event_id = ?`,
+        [eventId]
+      );
+      for (const ticket of tickets) {
+        await connection.execute(
+          `INSERT INTO promotor_ticket_types (promotor_event_id, type, price, available, sales_end_date, sales_end_time)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            eventId,
+            ticket.type,
+            Number(ticket.price) || 0,
+            Number(ticket.available) || 0,
+            ticket.sales_end_date || null,
+            ticket.sales_end_time || null,
+          ]
+        );
+      }
+    }
+
+    if (Array.isArray(tickets)) {
+      await connection.execute(
+        `DELETE FROM promotor_ticket_types WHERE promotor_event_id = ?`,
+        [eventId]
+      );
+      for (const ticket of tickets) {
+        await connection.execute(
+          `INSERT INTO promotor_ticket_types (promotor_event_id, type, price, available, sales_end_date, sales_end_time)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            eventId,
+            ticket.type,
+            Number(ticket.price) || 0,
+            Number(ticket.available) || 0,
+            ticket.sales_end_date || null,
+            ticket.sales_end_time || null,
+          ]
+        );
+      }
+    }
+
+    const [finalRow] = await connection.execute(`SELECT status FROM promotor_events WHERE id = ?`, [eventId]);
+    if (finalRow[0]?.status === 'live') {
+      await syncPromotorEventToPublic(connection, eventId);
+    }
+
+    await connection.commit();
+    res.json({ ok: true });
+  } catch (error) {
+    await connection.rollback();
+    next(error);
+  } finally {
+    connection.release();
+  }
+});
+
+app.delete('/api/promotor/events/:id', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const eventId = Number(req.params.id);
+
+    const [existing] = await query(
+      `SELECT id FROM promotor_events WHERE id = ? AND user_id = ? LIMIT 1`,
+      [eventId, userId]
+    );
+    if (!existing) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    await query(`DELETE FROM promotor_events WHERE id = ?`, [eventId]);
+    res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/promotor/application-status', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const [user] = await query(
+      `SELECT email, role FROM users WHERE id = ? LIMIT 1`,
+      [userId]
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.role === 'promoter') {
+      return res.json({ status: 'approved' });
+    }
+
+    const [application] = await query(
+      `SELECT status FROM promotor_applications WHERE contact_email = ? ORDER BY created_at DESC LIMIT 1`,
+      [user.email]
+    );
+
+    if (application) {
+      return res.json({ status: application.status }); 
+    }
+
+    return res.json({ status: 'none' });
   } catch (error) {
     next(error);
   }

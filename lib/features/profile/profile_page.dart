@@ -6,6 +6,9 @@ import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/home/views/notification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:eventra/data/promotor_api.dart';
+import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
+import 'package:eventra/features/promotor/views/promotor_register_page.dart';
 
 class EventraProfilePage extends StatefulWidget {
   const EventraProfilePage({super.key});
@@ -17,6 +20,9 @@ class EventraProfilePage extends StatefulWidget {
 class _EventraProfilePageState extends State<EventraProfilePage> {
   Map<String, dynamic> profile = {};
   bool _isLoading = true;
+  String _promotorStatus = 'none';
+
+  
 
   @override
   void initState() {
@@ -37,8 +43,18 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
         _isLoading = false;
       });
 
-      // Update session with fresh data from database
       await EventraSession.instance.setUser(loadedProfile);
+
+      final userId = EventraSession.instance.userId;
+      if (userId != null) {
+        try {
+          final status = await PromotorApi.instance.checkApplicationStatus(userId);
+          if (mounted) {
+            setState(() => _promotorStatus = status);
+          }
+        } catch (_) {
+        }
+      }
     } catch (_) {
       if (!mounted) {
         return;
@@ -118,7 +134,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
 
                 const SizedBox(height: 30),
 
-                //STATS CARDS
                 Row(
                   children: [
                     _buildStatCard(
@@ -140,7 +155,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                 ),
                 const SizedBox(height: 25),
 
-                //ACCOUNT SETTINGS LABEL
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -157,24 +171,50 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                 ),
                 const SizedBox(height: 12),
 
-                //ACCOUNT SETTINGS LIST
-                _buildSettingsItem(
-                  icon: Icons.campaign_outlined,
-                  title: "Promoter Roles",
-                  statusText: "• PENDING APPROVAL",
-                  statusColor: const Color(0xFF4FA7FF),
-                  trailingWidget: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        "SWITCH",
-                        style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w400),
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(Icons.loop, color: Colors.white38, size: 14),
-                    ],
+                GestureDetector(
+                  onTap: () {
+                    switch (_promotorStatus) {
+                      case 'approved':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PromotorDashboard()),
+                        );
+                        break;
+                      case 'pending':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Your promoter application is still pending approval.')),
+                        );
+                        break;
+                      case 'rejected':
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Your promoter application was rejected.')),
+                        );
+                        break;
+                      default: // 'none'
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PromotorRegisterPage()),
+                        );
+                    }
+                  },
+                  child: _buildSettingsItem(
+                    icon: Icons.campaign_outlined,
+                    title: "Promoter Roles",
+                    statusText: _promotorStatusLabel(),
+                    statusColor: _promotorStatusColor(),
+                    trailingWidget: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "SWITCH",
+                          style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w400),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.loop, color: Colors.white38, size: 14),
+                      ],
+                    ),
+                    showChevron: false,
                   ),
-                  showChevron: false,
                 ),
                 GestureDetector(
                   onTap: () => _showLocationDialog(context),
@@ -188,7 +228,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
 
                 const SizedBox(height: 25),
 
-                // --- LOGOUT BUTTON ---
                 GestureDetector(
                   onTap: () async {
                     await EventraSession.instance.clear();
@@ -426,7 +465,32 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
     }
   }
 
-  // Widget Helper untuk Kartu Statistik
+  String _promotorStatusLabel() {
+    switch (_promotorStatus) {
+      case 'approved':
+        return '• APPROVED';
+      case 'pending':
+        return '• PENDING APPROVAL';
+      case 'rejected':
+        return '• REJECTED';
+      default:
+        return '• NOT APPLIED';
+    }
+  }
+
+  Color _promotorStatusColor() {
+    switch (_promotorStatus) {
+      case 'approved':
+        return const Color(0xFF2ECC71);
+      case 'pending':
+        return const Color(0xFF4FA7FF);
+      case 'rejected':
+        return const Color(0xFFF47A7A);
+      default:
+        return Colors.white38;
+    }
+  }
+
   String _displayCount(dynamic value) {
     if (value == null) {
       return '0';
@@ -580,7 +644,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
             ),
           ),
           if (trailingWidget != null) ...[trailingWidget],
-          // Panah chevron ini hanya dirender jika showChevron bernilai true
           if (showChevron) ...[
             const SizedBox(width: 12),
             const Icon(Icons.chevron_right, color: Colors.white38, size: 18),

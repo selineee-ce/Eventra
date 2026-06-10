@@ -94,40 +94,40 @@ class PromotorApi {
   }
 
   Future<Map<String, dynamic>> updateEvent({
-    required int userId,
-    required int eventId,
-    required String title,
-    String? artistName,
-    String? venue,
-    required String description,
-    required String location,
-    required String eventDate,
-    required String eventTime,
-    String? image,
-    String? status,
-    required List<Map<String, dynamic>> tickets,
-  }) async {
-    final response = await http.put(
-      Uri.parse('$_baseUrl/promotor/events/$eventId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId.toString(),
-      },
-      body: jsonEncode({
-        'title': title,
-        'artist_name': artistName,
-        'venue': venue,
-        'description': description,
-        'location': location,
-        'event_date': eventDate,
-        'event_time': eventTime,
-        'image': image,
-        'status': status,
-        'tickets': tickets,
-      }),
-    );
-    return _decode(response);
-  }
+  required int userId,
+  required int eventId,
+  required String title,
+  String? artistName,
+  String? venue,
+  required String description,
+  required String location,
+  required String eventDate,
+  required String eventTime,
+  String? image,
+  String? status,
+  required List<Map<String, dynamic>> tickets,
+}) async {
+  final response = await http.put(
+    Uri.parse('$_baseUrl/promotor/events/$eventId'),
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': userId.toString(),
+    },
+    body: jsonEncode({
+      'title': title,
+      'artist_name': artistName,
+      'venue': venue,
+      'description': description,
+      'location': location,
+      'event_date': eventDate,
+      'event_time': eventTime,
+      'image': image,
+      'status': status,
+      'tickets': tickets,
+    }),
+  );
+  return _decode(response);
+}
 
   Future<void> deleteEvent({required int userId, required int eventId}) async {
     final response = await http.delete(

@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS events (
     date_label VARCHAR(40) NOT NULL,
     show_time VARCHAR(80) NULL,
     price VARCHAR(40) NULL,
-    image TEXT NULL,
+    image LONGTEXT NULL,
     detail_image TEXT NULL,
     venue_layout VARCHAR(160) NULL,
     description TEXT NULL,
@@ -273,6 +273,50 @@ INSERT INTO exclusive_drops (id, title, badge, description, image, venue, city, 
 (2, 'SEVENTEEN: Right Here World Tour Jakarta', 'K-POP', 'General Sales for SEVENTEEN: Right Here World Tour Jakarta starts in 30 minutes. Get ready!', 'assets/events/seventeen_concert.jpeg', 'Jakarta International Stadium', 'Jakarta', '2026-09-15', 'ticket', 45000, 500, 1, 2),
 (3, 'Hindia: Lagipula Hidup Akan Berakhir', 'INDIE', 'Official Hindia: Lagipula Hidup Akan Berakhir merchandise is now available for pre-order.', 'assets/events/hindia_tennis_indoor.jpeg', 'Tennis Indoor Senayan', 'Jakarta', '2027-02-14', 'ticket', 75000, 140, 1, 3)
 ON DUPLICATE KEY UPDATE title = VALUES(title), badge = VALUES(badge), description = VALUES(description), image = VALUES(image), event_date = VALUES(event_date), type = VALUES(type), countdown_seconds = VALUES(countdown_seconds), remaining_seats = VALUES(remaining_seats);
+
+-- Promotor Applications Table
+CREATE TABLE IF NOT EXISTS promotor_applications (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    organization_name VARCHAR(200) NOT NULL,
+    contact_email VARCHAR(255) NOT NULL,
+    portfolio_link TEXT NOT NULL,
+    status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    user_id INT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_promotor_app_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Promotor Events Table
+CREATE TABLE IF NOT EXISTS promotor_events (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    artist_name VARCHAR(200) NULL,
+    venue VARCHAR(200) NULL,
+    description TEXT NULL,
+    location VARCHAR(120) NOT NULL,
+    event_date DATE NOT NULL,
+    event_time VARCHAR(40) NOT NULL,
+    image LONGTEXT NULL,
+    status ENUM('draft', 'live', 'completed') NOT NULL DEFAULT 'draft',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_promotor_events_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Promotor Ticket Types Table
+CREATE TABLE IF NOT EXISTS promotor_ticket_types (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    promotor_event_id INT NOT NULL,
+    type ENUM('General Admission', 'VIP Access', 'Backstage Pass') NOT NULL,
+    price INT NOT NULL,
+    available INT NOT NULL DEFAULT 0,
+    sold INT NOT NULL DEFAULT 0,
+    sales_end_date DATE NULL,
+    sales_end_time VARCHAR(20) NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_promotor_ticket_event FOREIGN KEY (promotor_event_id) REFERENCES promotor_events(id) ON DELETE CASCADE
+);
 
 -- Seed Data App Config
 INSERT INTO app_config (config_key, config_value) VALUES

@@ -184,20 +184,7 @@ class EventraEventCard extends StatelessWidget {
       );
     }
 
-    if (image.startsWith('data:image')) {
-      try {
-        final base64Str = image.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildImageFallback(),
-        );
-      } catch (_) {
-        return _buildImageFallback();
-      }
-    }
-
+    // Remove leading 'assets/' to avoid double prefixing (e.g. assets/assets/...)
     final cleanPath = image.startsWith('assets/') ? image.substring(7) : image;
 
     return Image.asset(

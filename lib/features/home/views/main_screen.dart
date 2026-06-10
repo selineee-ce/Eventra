@@ -36,8 +36,6 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  // HomeController dibuat di sini (bukan di dalam build) agar tidak
-  // di-recreate setiap rebuild, dan bisa di-dispose dengan benar.
   late final HomeController _homeController;
 
   late int _currentIndex;

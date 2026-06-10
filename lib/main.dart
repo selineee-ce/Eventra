@@ -2,6 +2,8 @@ import 'package:eventra/data/app_config.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/home/views/main_screen.dart';
+import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
+import 'package:eventra/features/promotor/views/promotor_register_page.dart';
 import 'package:flutter/material.dart';
 
 Future<void> main() async {
@@ -28,6 +30,7 @@ class MyApp extends StatelessWidget {
       home: EventraSession.instance.isLoggedIn
           ? const MainScreen()
           : const LoginPage(),
+      // home: const PromotorDashboard(),
     );
   }
 }
