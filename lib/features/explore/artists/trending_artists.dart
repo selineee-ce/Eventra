@@ -27,18 +27,37 @@ class _TrendingArtistsPageState extends State<TrendingArtistsPage> {
       ? _localSearchQuery
       : widget.searchQuery;
 
-  List<Map<String, dynamic>> get _filteredArtists => artistsData
-      .where(
-        (artist) => matchesSearchQuery(_effectiveSearchQuery, [
-          artist['name'],
-          artist['followers'],
-          artist['location'],
-          artist['description'],
-          artist['genre'],
-          artist['upcomingEvents'],
-        ]),
-      )
-      .toList();
+  List<Map<String, dynamic>> get _filteredArtists {
+    final query = _effectiveSearchQuery;
+    final filtered = artistsData
+        .where((artist) => matchesSearchQuery(query, _artistSearchValues(artist)))
+        .toList();
+
+    if (normalizeSearchText(query).isEmpty) {
+      return filtered.take(15).toList();
+    }
+
+    filtered.sort((a, b) {
+      final aScore = searchMatchScore(query, [
+        a['name'],
+        a['genre'],
+        a['description'],
+        ...flattenSearchValues(a['upcomingEvents']),
+      ]);
+      final bScore = searchMatchScore(query, [
+        b['name'],
+        b['genre'],
+        b['description'],
+        ...flattenSearchValues(b['upcomingEvents']),
+      ]);
+      if (aScore != bScore) return bScore.compareTo(aScore);
+      return _asInt(a['sort_order'] ?? a['rank']).compareTo(
+        _asInt(b['sort_order'] ?? b['rank']),
+      );
+    });
+
+    return filtered;
+  }
 
   @override
   void initState() {
@@ -331,6 +350,19 @@ class _TrendingArtistsPageState extends State<TrendingArtistsPage> {
         ),
       ),
     );
+  }
+
+  int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  List<Object?> _artistSearchValues(Map<String, dynamic> artist) {
+    return [
+      ...flattenSearchValues(artist),
+      ...flattenSearchValues(artist['upcomingEvents']),
+    ];
   }
 
   Widget _buildSearchField() {

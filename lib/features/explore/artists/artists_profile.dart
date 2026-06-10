@@ -3,8 +3,11 @@ import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/favorites_notifier.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/core/widgets/subpage_shell.dart';
+import 'package:eventra/data/tickets_notifier.dart';
 import 'package:eventra/features/ticket/buy_ticket_page.dart';
+import 'package:eventra/features/ticket/my_tickets.dart';
 import 'package:eventra/features/ticket/payment_page.dart';
+import 'package:eventra/features/ticket/payment_status_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -30,7 +33,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
   Future<void> _toggleArtistFavorite() async {
     if (_isSavingFavorite) return;
     final artistId = _asInt(
-      widget.artistData['id'] ?? widget.artistData['artist_id'],
+      widget.artistData['artist_id'] ?? widget.artistData['id'],
     );
     if (artistId <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -279,9 +282,35 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
                       tickets: tickets,
                       onBack: () => Navigator.pop(context),
                       onPaymentComplete: (payment) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Payment completed')),
+                        TicketsNotifier.instance.notify();
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EventraSubpageShell(
+                              currentIndex: 2,
+                              child: PaymentStatusPage(
+                                payment: payment,
+                                onViewTickets: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const EventraSubpageShell(
+                                            currentIndex: 2,
+                                            child: EventraTicketsPage(),
+                                          ),
+                                    ),
+                                  );
+                                },
+                                onBackHome: () {
+                                  Navigator.popUntil(
+                                    context,
+                                    (route) => route.isFirst,
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         );
                       },
                     ),

@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EventraTicketsPage extends StatefulWidget {
-  const EventraTicketsPage({super.key, this.searchQuery = ''});
+  const EventraTicketsPage({super.key, this.searchQuery = '', this.onBuyMore});
 
   final String searchQuery;
+  final VoidCallback? onBuyMore;
 
   @override
   State<EventraTicketsPage> createState() => _EventraTicketsPageState();
@@ -180,26 +181,36 @@ class _EventraTicketsPageState extends State<EventraTicketsPage> {
                       }),
                     const SizedBox(height: 20),
                     Center(
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.add_circle_outline,
-                            color: Color(0xFF8A51F2),
-                            size: 40,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: widget.onBuyMore,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            AppConfig.instance.text(
-                              'tickets.buy_more',
-                              'Buy More Tickets',
-                            ),
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.add_circle_outline,
+                                color: Color(0xFF8A51F2),
+                                size: 40,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                AppConfig.instance.text(
+                                  'tickets.buy_more',
+                                  'Buy More Tickets',
+                                ),
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 40),

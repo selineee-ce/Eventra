@@ -877,11 +877,19 @@ app.get('/api/artists', async (req, res, next) => {
           a.monthly_listeners,
           a.events_count,
           a.genre,
-          a.sort_order
+          a.sort_order,
+          CASE
+            WHEN ? IS NULL THEN 0
+            ELSE EXISTS(
+              SELECT 1 FROM user_favorites uf
+              WHERE uf.user_id = ?
+                AND uf.favorite_type = 'artist'
+                AND uf.item_id = a.id
+            )
+          END AS is_favorite
         FROM artists a
         LEFT JOIN users u ON LOWER(TRIM(u.name)) = LOWER(TRIM(a.name)) AND u.role = 'promoter'
         ORDER BY a.sort_order ASC
-        LIMIT 15
       `, [userId, userId]);
       const allEvents = (await tableExists('artist_events'))
         ? await query(`
@@ -932,6 +940,7 @@ app.get('/api/artists', async (req, res, next) => {
 
       const responseData = artists.map((artist) => ({
         id: artist.id,
+        artist_id: artist.artist_id,
         name: artist.name,
         username: null,
         avatar_url: artist.image_url,
@@ -944,7 +953,7 @@ app.get('/api/artists', async (req, res, next) => {
         events_count: artist.events_count,
         is_favorite: artist.is_favorite,
         upcomingEvents: allEvents
-          .filter((event) => Number(event.artist_id) === Number(artist.id))
+          .filter((event) => Number(event.artist_id) === Number(artist.artist_id))
           .map((event) => {
             const matchedEvent = eventImageByTitle.get(normalizeTitle(event.title));
             const locationParts = String(event.location || '')
@@ -983,7 +992,6 @@ app.get('/api/artists', async (req, res, next) => {
         FROM users
         WHERE role = ?
         ORDER BY followers_count DESC
-        LIMIT 15
       `,
       [userId, userId, 'promoter'],
     );

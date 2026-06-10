@@ -179,7 +179,18 @@ class _MainScreenState extends State<MainScreen> {
         searchQuery: _searchQuery,
       ),
       ExplorePage(searchQuery: _searchQuery),
-      EventraTicketsPage(searchQuery: _searchQuery),
+      EventraTicketsPage(
+        searchQuery: _searchQuery,
+        onBuyMore: () {
+          setState(() {
+            _currentIndex = 1;
+            _selectedEvent = null;
+            _checkoutEvent = null;
+            _checkoutTickets = [];
+            _paymentResult = null;
+          });
+        },
+      ),
       EventraFavoritesPage(
         controller: _homeController,
         onEventTap: openBuyTicketPage,

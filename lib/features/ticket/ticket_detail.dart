@@ -94,7 +94,7 @@ class TicketDetailPage extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _buildGridInfo('DATE', date.replaceAll('\n', ' ')),
+                        _buildGridInfo('DATE', _formatLongDate(date)),
                         _buildGridInfo('TIME', time),
                       ],
                     ),
@@ -221,6 +221,36 @@ class TicketDetailPage extends StatelessWidget {
       ),
     );
   }
+
+  String _formatLongDate(String date) {
+    final dt = DateTime.parse(date);
+    const weekdays = [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY',
+    ];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+
+    return '${weekdays[dt.weekday - 1]},\n${months[dt.month - 1]} ${dt.day}';
+  }
+
 
   Widget _buildGridInfo(String label, String value) {
     return Column(

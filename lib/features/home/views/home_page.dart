@@ -267,6 +267,8 @@ class _EventraHomePageState extends State<EventraHomePage> {
   }
 
   Widget buildFeaturedCard(FeaturedEvent event) {
+    final targetEvent = _findEventForFeatured(event);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
       decoration: BoxDecoration(
@@ -323,14 +325,14 @@ class _EventraHomePageState extends State<EventraHomePage> {
                 const SizedBox(height: 24),
                 GestureDetector(
                   onTap: () {
+                    if (targetEvent != null) {
+                      widget.onEventTap(targetEvent);
+                      return;
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppConfig.instance.text(
-                            'home.ticket_snackbar',
-                            'Tickets Clicked',
-                          ),
-                        ),
+                      const SnackBar(
+                        content: Text('Tickets are not available yet'),
                       ),
                     );
                   },
@@ -670,6 +672,24 @@ class _EventraHomePageState extends State<EventraHomePage> {
       return NetworkImage(path);
     }
     return AssetImage(path);
+  }
+
+  NearbyEvent? _findEventForFeatured(FeaturedEvent featured) {
+    NearbyEvent? best;
+    var bestScore = -1;
+
+    for (final event in _ctrl.state.nearbyEvents) {
+      final score = searchMatchScore(featured.title, [
+        event.title,
+        event.artistName,
+      ]);
+      if (score > bestScore) {
+        best = event;
+        bestScore = score;
+      }
+    }
+
+    return bestScore >= 45 ? best : null;
   }
 
   Widget _buildSearchEmptyState(String message) {

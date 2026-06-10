@@ -4,10 +4,14 @@ import 'package:eventra/core/utils/search_match.dart';
 import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/core/widgets/event_card.dart';
+import 'package:eventra/data/tickets_notifier.dart';
+import 'package:eventra/features/explore/artists/artists_profile.dart';
 import 'package:eventra/features/explore/artists/trending_artists.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/ticket/buy_ticket_page.dart';
+import 'package:eventra/features/ticket/my_tickets.dart';
 import 'package:eventra/features/ticket/payment_page.dart';
+import 'package:eventra/features/ticket/payment_status_page.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -141,16 +145,33 @@ class _ExplorePageState extends State<ExplorePage> {
 
   List<Map<String, dynamic>> get _visibleArtists => _artists
       .where(
-        (artist) => matchesSearchQuery(_effectiveSearchQuery, [
-          artist['name'],
-          artist['followers'],
-          artist['location'],
-          artist['description'],
-          artist['genre'],
-          artist['upcomingEvents'],
-        ]),
+        (artist) =>
+            matchesSearchQuery(_effectiveSearchQuery, _artistSearchValues(artist)),
       )
-      .toList();
+      .toList()
+    ..sort((a, b) {
+      if (normalizeSearchText(_effectiveSearchQuery).isEmpty) return 0;
+      final aScore = searchMatchScore(_effectiveSearchQuery, [
+        a['name'],
+        a['genre'],
+        a['description'],
+        ...flattenSearchValues(a['upcomingEvents']),
+      ]);
+      final bScore = searchMatchScore(_effectiveSearchQuery, [
+        b['name'],
+        b['genre'],
+        b['description'],
+        ...flattenSearchValues(b['upcomingEvents']),
+      ]);
+      return bScore.compareTo(aScore);
+    });
+
+  List<Object?> _artistSearchValues(Map<String, dynamic> artist) {
+    return [
+      ...flattenSearchValues(artist),
+      ...flattenSearchValues(artist['upcomingEvents']),
+    ];
+  }
 
   List<_ExploreVenue> get _venues {
     final grouped = <String, List<NearbyEvent>>{};
@@ -306,7 +327,7 @@ class _ExplorePageState extends State<ExplorePage> {
           _TrendingArtistStrip(
             artists: visibleArtists,
             isLoading: _loadingArtists,
-            onArtistTap: _openTrendingArtists,
+            onArtistTap: _openArtistProfile,
           ),
           const SizedBox(height: 24),
           _SectionHeader(
@@ -457,6 +478,28 @@ class _ExplorePageState extends State<ExplorePage> {
           child: const Scaffold(
             backgroundColor: Color(0xFF0E0717),
             body: SafeArea(child: TrendingArtistsPage()),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openArtistProfile(Map<String, dynamic> artist) {
+    final rawImageUrl = (artist['imageUrl'] ?? artist['avatar_url'] ?? '')
+        .toString();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventraSubpageShell(
+          currentIndex: 1,
+          child: ArtistProfilePage(
+            artistData: {
+              ...artist,
+              'imageUrl': rawImageUrl,
+              'followers': artist['followers'],
+              'upcomingEvents': artist['upcomingEvents'] ?? [],
+            },
           ),
         ),
       ),
@@ -1366,7 +1409,7 @@ class _TrendingArtistStrip extends StatelessWidget {
 
   final List<Map<String, dynamic>> artists;
   final bool isLoading;
-  final VoidCallback onArtistTap;
+  final void Function(Map<String, dynamic> artist) onArtistTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1415,7 +1458,7 @@ class _TrendingArtistStrip extends StatelessWidget {
                   .toString();
 
               return GestureDetector(
-                onTap: onArtistTap,
+                onTap: () => onArtistTap(artist),
                 child: SizedBox(
                   width: itemWidth,
                   child: Column(
@@ -1549,9 +1592,35 @@ class _VenueProfilePageState extends State<_VenueProfilePage> {
                       tickets: tickets,
                       onBack: () => Navigator.pop(context),
                       onPaymentComplete: (payment) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Payment completed')),
+                        TicketsNotifier.instance.notify();
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EventraSubpageShell(
+                              currentIndex: 2,
+                              child: PaymentStatusPage(
+                                payment: payment,
+                                onViewTickets: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const EventraSubpageShell(
+                                            currentIndex: 2,
+                                            child: EventraTicketsPage(),
+                                          ),
+                                    ),
+                                  );
+                                },
+                                onBackHome: () {
+                                  Navigator.popUntil(
+                                    context,
+                                    (route) => route.isFirst,
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         );
                       },
                     ),

@@ -3,6 +3,8 @@ import 'package:eventra/core/widgets/event_card.dart';
 import 'package:eventra/core/utils/search_match.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/favorites_notifier.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
+import 'package:eventra/features/explore/artists/artists_profile.dart';
 import 'package:eventra/features/home/controllers/home_controller.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:flutter/material.dart';
@@ -406,59 +408,85 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
   Widget _favoriteArtistCard(Map<String, dynamic> artist) {
     final image =
         artist['image']?.toString() ?? artist['avatar_url']?.toString() ?? '';
-    return Container(
-      width: 230,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1B1526),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white10),
+    return GestureDetector(
+      onTap: () => _openArtistProfile(artist),
+      child: Container(
+        width: 230,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1B1526),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD0BCFF).withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: _artistImage(image),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    artist['title']?.toString() ??
+                        artist['name']?.toString() ??
+                        'Saved artist',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    artist['subtitle']?.toString() ??
+                        artist['genre']?.toString() ??
+                        '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => _removeArtist(artist),
+              icon: const Icon(Icons.favorite, color: Color(0xFFD0BCFF)),
+            ),
+          ],
+        ),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD0BCFF).withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: _artistImage(image),
+    );
+  }
+
+  void _openArtistProfile(Map<String, dynamic> artist) {
+    final image =
+        artist['image']?.toString() ?? artist['avatar_url']?.toString() ?? '';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventraSubpageShell(
+          currentIndex: 3,
+          child: ArtistProfilePage(
+            artistData: {
+              ...artist,
+              'name': artist['title'] ?? artist['name'],
+              'imageUrl': image,
+              'followers': artist['followers'] ?? artist['followers_count'],
+              'is_favorite': true,
+              'upcomingEvents': artist['upcomingEvents'] ?? [],
+            },
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  artist['title']?.toString() ??
-                      artist['name']?.toString() ??
-                      'Saved artist',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  artist['subtitle']?.toString() ??
-                      artist['genre']?.toString() ??
-                      '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => _removeArtist(artist),
-            icon: const Icon(Icons.favorite, color: Color(0xFFD0BCFF)),
-          ),
-        ],
+        ),
       ),
     );
   }

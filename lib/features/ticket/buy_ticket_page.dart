@@ -72,6 +72,45 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
     return 'Rp. ${buffer.toString()}';
   }
 
+  String _formatSchedule(String dateLabel, String showTime) {
+    final rawDate = dateLabel.trim();
+    final rawTime = showTime.trim();
+    final parsed = DateTime.tryParse(rawDate);
+    final dateText = parsed == null ? rawDate : _formatLongDate(parsed);
+
+    if (dateText.isEmpty) return rawTime.isEmpty ? 'TBA' : rawTime;
+    if (rawTime.isEmpty) return dateText;
+    return '$dateText • $rawTime';
+  }
+
+  String _formatLongDate(DateTime date) {
+    const weekdays = [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY',
+    ];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+
+    return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
+  }
+
   Color _badgeColor(String? color) {
     if (color != null && color.startsWith('#') && color.length == 7) {
       final parsed = int.tryParse(color.substring(1), radix: 16);
@@ -103,7 +142,10 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
     final detailImage =
         _detail['detail_image'] as String? ?? widget.event.image;
     final artistName = _detail['lineup'] as String? ?? widget.event.title;
-    final showTime = _detail['show_time'] as String? ?? widget.event.dateLabel;
+    final dateLabel =
+        _detail['date_label'] as String? ?? widget.event.dateLabel;
+    final showTime = _detail['show_time'] as String? ?? '';
+    final scheduleLabel = _formatSchedule(dateLabel, showTime);
     final venue = _detail['venue'] as String? ?? widget.event.place;
     final city = _detail['city'] as String? ?? widget.event.city;
     final description = _detail['description'] as String? ?? '';
@@ -157,6 +199,7 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // ── Header ──
+                const SizedBox(height: 10),
                 Text(
                   'Get Your Tickets',
                   style: GoogleFonts.poppins(
@@ -169,7 +212,7 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
                   'CHOOSE YOUR EXPERIENCE',
                   style: GoogleFonts.poppins(
                     color: Colors.white38,
-                    fontSize: 11,
+                    fontSize: 12,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -177,10 +220,10 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
 
                 // ── Show time & venue ──
                 Text(
-                  showTime,
+                  scheduleLabel,
                   style: GoogleFonts.poppins(
                     color: const Color(0xFFD0BCFF),
-                    fontSize: 12,
+                    fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
