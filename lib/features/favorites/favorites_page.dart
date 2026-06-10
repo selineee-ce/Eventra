@@ -337,15 +337,29 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
       return _sectionEmpty('No favorite artists yet.');
     }
 
-    return SizedBox(
-      height: 80,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: artists.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemBuilder: (context, index) => _favoriteArtistCard(artists[index]),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = (constraints.maxWidth / 320).floor();
+
+        if (crossAxisCount < 1) {
+          crossAxisCount = 1;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: artists.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 80,
+          ),
+          itemBuilder: (context, index) {
+            return _favoriteArtistCard(artists[index]);
+          },
+        );
+      },
     );
   }
 
