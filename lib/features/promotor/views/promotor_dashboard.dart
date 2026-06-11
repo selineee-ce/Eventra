@@ -43,9 +43,9 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
       final dashboard = await PromotorApi.instance.fetchDashboard(userId);
       final stats = dashboard['dashboard'] as Map<String, dynamic>? ?? {};
 
-      final revenue = (stats['total_revenue'] as num?)?.toInt() ?? 0;
-      final sold = (stats['ticket_sold'] as num?)?.toInt() ?? 0;
-      final active = (stats['active_events'] as num?)?.toInt() ?? 0;
+      final revenue = _toInt(stats['total_revenue']);
+      final sold = _toInt(stats['ticket_sold']);
+      final active = _toInt(stats['active_events']);
 
       if (!mounted) return;
       setState(() {
@@ -69,6 +69,12 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
       buffer.write(str[i]);
     }
     return 'Rp$buffer';
+  }
+
+  int _toInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
   }
 
   @override
@@ -174,7 +180,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                       const SizedBox(height: 28),
 
                       _buildStatCard(
-                        title: 'Total Revenue (30 d)',
+                        title: 'Total Revenue (Last 30 Days)',
                         value: _totalRevenue,
                         valueColor: const Color(0xFFD0BCFF),
                         icon: Icons.attach_money_outlined,
@@ -339,7 +345,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               setState(() => _selectedIndex = 2);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const EventraProfilePage()),
+                MaterialPageRoute(builder: (context) => const EventraProfilePage(isPromotorView: true)),
               );
             },
             child: Column(

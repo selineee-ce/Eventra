@@ -2,6 +2,7 @@ import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/ticket_type.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 
 class BuyTicketPage extends StatefulWidget {
@@ -494,6 +495,20 @@ class _BuyTicketPageState extends State<BuyTicketPage> {
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => _buildImageFallback(),
       );
+    }
+
+    if (path.startsWith('data:image')) {
+      try {
+        final base64Str = path.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildImageFallback(),
+        );
+      } catch (_) {
+        return _buildImageFallback();
+      }
     }
 
     return Image.asset(

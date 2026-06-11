@@ -58,6 +58,15 @@ class PromotorApi {
         .toList();
   }
 
+  Future<int> fetchPublicEventId(int promotorEventId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/promotor/events/$promotorEventId/public-id'),
+    );
+
+    final decoded = _decode(response);
+    return decoded['eventId'] as int;
+  }
+
   Future<Map<String, dynamic>> createEvent({
     required int userId,
     required String title,

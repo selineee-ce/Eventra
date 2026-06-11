@@ -7,6 +7,8 @@ import 'package:eventra/features/promotor/views/promotor_create_event_page.dart'
 import 'package:eventra/features/promotor/views/promotor_edit_event_page.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/data/eventra_session.dart';
+import 'package:eventra/data/eventra_database.dart';
+import 'package:eventra/features/promotor/views/promotor_event_detail_page.dart';
 
 class PromotorEventsPage extends StatefulWidget {
   const PromotorEventsPage({super.key});
@@ -25,7 +27,8 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
   List<String> get _filters {
     final liveCount = _events.where((e) => e['status'] == 'live').length;
     final completedCount = _events.where((e) => e['status'] == 'completed').length;
-    return ['ALL EVENTS', 'Live ($liveCount)', 'Draft', 'Past Events ($completedCount)'];
+    final draftCount = _events.where((e) => e['status'] == 'draft').length;
+    return ['ALL EVENTS', 'Live ($liveCount)', 'Draft ($draftCount)', 'Past Events ($completedCount)'];
   }
 
   @override
@@ -90,6 +93,19 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _openEventDetail(Map<String, dynamic> event) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PromotorEventDetailPage(event: event),
+      ),
+    );
+
+    if (result == true) {
+      _loadEvents();
     }
   }
 
@@ -412,7 +428,9 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
     final progress = ticketTotal > 0 ? ticketSold / ticketTotal : 0.0;
     final revenue = _toInt(event['revenue']);
 
-    return Container(
+    return GestureDetector(
+      onTap: () => _openEventDetail(event),
+      child: Container(
       decoration: BoxDecoration(
         color: const Color(0x4D1E1E2E),
         borderRadius: BorderRadius.circular(16),
@@ -479,31 +497,6 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'TICKET SOLD',
-                      style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1),
-                    ),
-                    Text(
-                      '$ticketSold / $ticketTotal',
-                      style: const TextStyle(color: Colors.white70, fontSize: 11),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.white12,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD0BCFF)),
-                    minHeight: 6,
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
                       'EST. REVENUE',
                       style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1),
                     ),
@@ -517,6 +510,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -788,7 +782,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
               setState(() => _selectedIndex = 2);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const EventraProfilePage()),
+                MaterialPageRoute(builder: (context) => const EventraProfilePage(isPromotorView: true)),
               );
             },
             child: Column(

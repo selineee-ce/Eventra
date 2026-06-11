@@ -126,6 +126,30 @@ async function ensurePaymentTables() {
     )
   `);
 
+  if (await tableExists('promotor_ticket_types')) {
+    const ticketTypeColumn = await query(
+      `SELECT DATA_TYPE FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promotor_ticket_types' AND COLUMN_NAME = 'type'`
+    );
+    if (ticketTypeColumn[0]?.DATA_TYPE === 'enum') {
+      console.log('Migrating promotor_ticket_types: type column to VARCHAR...');
+      await query('ALTER TABLE promotor_ticket_types MODIFY COLUMN type VARCHAR(120) NOT NULL');
+    }
+  }
+
+  const promotorTicketRefColumn = await query(
+    `SELECT COLUMN_NAME
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'event_ticket_types'
+       AND COLUMN_NAME = 'promotor_ticket_type_id'
+     LIMIT 1`,
+  );
+
+  if (promotorTicketRefColumn.length === 0) {
+    await query('ALTER TABLE event_ticket_types ADD COLUMN promotor_ticket_type_id INT NULL AFTER max_per_order');
+  }
+
   const maxPerOrderColumn = await query(
     `SELECT COLUMN_NAME
      FROM information_schema.COLUMNS
@@ -1305,7 +1329,7 @@ app.post('/api/payments/checkout', async (req, res, next) => {
 
     const placeholders = ticketIds.map(() => '?').join(',');
     const [ticketTypes] = await connection.execute(
-      `SELECT id, name, price, stock_remaining, max_per_order FROM event_ticket_types WHERE ${eventColumn} = ? AND id IN (${placeholders}) FOR UPDATE`,
+      `SELECT id, name, price, stock_remaining, max_per_order, promotor_ticket_type_id FROM event_ticket_types WHERE ${eventColumn} = ? AND id IN (${placeholders}) FOR UPDATE`,
       [eventId, ...ticketIds]
     );
     const ticketMap = new Map(ticketTypes.map((ticket) => [Number(ticket.id), ticket]));
@@ -1370,6 +1394,13 @@ app.post('/api/payments/checkout', async (req, res, next) => {
         'UPDATE event_ticket_types SET stock_remaining = stock_remaining - ? WHERE id = ?',
         [item.quantity, item.ticket.id]
       );
+
+      if (item.ticket.promotor_ticket_type_id) {
+        await connection.execute(
+          'UPDATE promotor_ticket_types SET sold = sold + ? WHERE id = ?',
+          [item.quantity, item.ticket.promotor_ticket_type_id]
+        );
+      }
 
       for (let index = 1; index <= item.quantity; index++) {
         const rowLabel = String.fromCharCode(64 + (((nextTicketId - 1) % 6) + 1));
@@ -1622,10 +1653,13 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
   const showTime = `${event.event_time} WIB`;
 
   const [ticketRows] = await connection.execute(
-    `SELECT MIN(price) AS min_price FROM promotor_ticket_types WHERE promotor_event_id = ?`,
+    `SELECT * FROM promotor_ticket_types WHERE promotor_event_id = ? ORDER BY id ASC`,
     [promotorEventId]
   );
-  const minPrice = ticketRows[0]?.min_price;
+
+  const minPrice = ticketRows.length > 0
+    ? Math.min(...ticketRows.map((t) => Number(t.price)))
+    : null;
   const priceLabel = minPrice ? `Rp${Number(minPrice).toLocaleString('id-ID')}` : null;
 
   const sourceMarker = `promotor:${promotorEventId}`;
@@ -1634,7 +1668,10 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
     [sourceMarker]
   );
 
+  let publicEventId;
+
   if (existing.length > 0) {
+    publicEventId = existing[0].id;
     await connection.execute(
       `UPDATE events
        SET title = ?, lineup = ?, venue = ?, city = ?, date_label = ?, show_time = ?,
@@ -1650,14 +1687,14 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
         priceLabel,
         event.image,
         event.description,
-        existing[0].id,
+        publicEventId,
       ]
     );
   } else {
     const [maxSort] = await connection.execute(`SELECT COALESCE(MAX(sort_order), 0) AS max_sort FROM events`);
     const nextSort = (maxSort[0]?.max_sort || 0) + 1;
 
-    await connection.execute(
+    const [insertResult] = await connection.execute(
       `INSERT INTO events (title, lineup, venue, city, date_label, show_time, price, image, description,
                             tag1, tag2, button, is_featured, is_limited, remaining_seats, sort_order, is_favorite, source_url)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'EVENT', 'PROMOTOR', 'GET TICKETS', 0, 0, 0, ?, 0, ?)`,
@@ -1674,6 +1711,59 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
         nextSort,
         sourceMarker,
       ]
+    );
+    publicEventId = insertResult.insertId;
+  }
+
+  const [existingTicketTypes] = await connection.execute(
+    `SELECT id, promotor_ticket_type_id, stock_remaining FROM event_ticket_types WHERE event_id = ?`,
+    [publicEventId]
+  );
+  const existingByPromotorId = new Map(
+    existingTicketTypes
+      .filter((row) => row.promotor_ticket_type_id != null)
+      .map((row) => [row.promotor_ticket_type_id, row])
+  );
+
+  const keepIds = [];
+
+  for (let i = 0; i < ticketRows.length; i++) {
+    const ticket = ticketRows[i];
+    const sortOrder = i + 1;
+    const stockRemaining = Math.max(0, Number(ticket.available) - Number(ticket.sold));
+
+    const existingTT = existingByPromotorId.get(ticket.id);
+
+    if (existingTT) {
+      await connection.execute(
+        `UPDATE event_ticket_types
+         SET name = ?, price = ?, stock_remaining = ?, sort_order = ?
+         WHERE id = ?`,
+        [ticket.type, ticket.price, stockRemaining, sortOrder, existingTT.id]
+      );
+      keepIds.push(existingTT.id);
+    } else {
+      const [insertTT] = await connection.execute(
+        `INSERT INTO event_ticket_types (
+          event_id, name, badge, badge_color, description,
+          bullet1, bullet2, bullet3, price, stock_remaining, max_per_order, promotor_ticket_type_id, sort_order
+        ) VALUES (?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, 4, ?, ?)`,
+        [publicEventId, ticket.type, ticket.price, stockRemaining, ticket.id, sortOrder]
+      );
+      keepIds.push(insertTT.insertId);
+    }
+  }
+
+  if (keepIds.length > 0) {
+    const placeholders = keepIds.map(() => '?').join(',');
+    await connection.execute(
+      `DELETE FROM event_ticket_types WHERE event_id = ? AND id NOT IN (${placeholders})`,
+      [publicEventId, ...keepIds]
+    );
+  } else {
+    await connection.execute(
+      `DELETE FROM event_ticket_types WHERE event_id = ?`,
+      [publicEventId]
     );
   }
 }
@@ -1702,22 +1792,6 @@ app.post('/api/promotor/events', async (req, res, next) => {
 
     const eventId = result.insertId;
 
-    if (Array.isArray(tickets) && tickets.length > 0) {
-      for (const ticket of tickets) {
-        await connection.execute(
-          `INSERT INTO promotor_ticket_types (promotor_event_id, type, price, available, sales_end_date, sales_end_time)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            eventId,
-            ticket.type,
-            Number(ticket.price) || 0,
-            Number(ticket.available) || 0,
-            ticket.sales_end_date || null,
-            ticket.sales_end_time || null,
-          ]
-        );
-      }
-    }
     if (Array.isArray(tickets) && tickets.length > 0) {
       for (const ticket of tickets) {
         await connection.execute(
@@ -1866,6 +1940,26 @@ app.delete('/api/promotor/events/:id', async (req, res, next) => {
   }
 });
 
+app.get('/api/promotor/events/:id/public-id', async (req, res, next) => {
+  try {
+    const promotorEventId = Number(req.params.id);
+    const sourceMarker = `promotor:${promotorEventId}`;
+
+    const [row] = await query(
+      `SELECT id FROM events WHERE source_url = ? LIMIT 1`,
+      [sourceMarker]
+    );
+
+    if (!row) {
+      return res.status(404).json({ error: 'Public event not found' });
+    }
+
+    res.json({ eventId: row.id });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/promotor/application-status', async (req, res, next) => {
   try {
     const userId = requireUserId(req, res);
@@ -1902,6 +1996,17 @@ app.get('/api/promotor/application-status', async (req, res, next) => {
 app.use((error, _req, res, _next) => {
   res.status(500).json({ error: error.message || 'Internal server error' });
 });
+
+if (await tableExists('tickets')) {
+  const ticketImageType = await query(
+    `SELECT DATA_TYPE FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tickets' AND COLUMN_NAME = 'image'`
+  );
+  if (ticketImageType[0]?.DATA_TYPE === 'text') {
+    console.log('Migrating tickets table: image column to LONGTEXT...');
+    await query('ALTER TABLE tickets MODIFY COLUMN image LONGTEXT NOT NULL');
+  }
+}
 
 ensurePaymentTables()
   .then(() => {
