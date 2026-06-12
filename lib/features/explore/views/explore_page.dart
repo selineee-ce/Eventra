@@ -143,28 +143,31 @@ class _ExplorePageState extends State<ExplorePage> {
       )
       .toList();
 
-  List<Map<String, dynamic>> get _visibleArtists => _artists
-      .where(
-        (artist) =>
-            matchesSearchQuery(_effectiveSearchQuery, _artistSearchValues(artist)),
-      )
-      .toList()
-    ..sort((a, b) {
-      if (normalizeSearchText(_effectiveSearchQuery).isEmpty) return 0;
-      final aScore = searchMatchScore(_effectiveSearchQuery, [
-        a['name'],
-        a['genre'],
-        a['description'],
-        ...flattenSearchValues(a['upcomingEvents']),
-      ]);
-      final bScore = searchMatchScore(_effectiveSearchQuery, [
-        b['name'],
-        b['genre'],
-        b['description'],
-        ...flattenSearchValues(b['upcomingEvents']),
-      ]);
-      return bScore.compareTo(aScore);
-    });
+  List<Map<String, dynamic>> get _visibleArtists =>
+      _artists
+          .where(
+            (artist) => matchesSearchQuery(
+              _effectiveSearchQuery,
+              _artistSearchValues(artist),
+            ),
+          )
+          .toList()
+        ..sort((a, b) {
+          if (normalizeSearchText(_effectiveSearchQuery).isEmpty) return 0;
+          final aScore = searchMatchScore(_effectiveSearchQuery, [
+            a['name'],
+            a['genre'],
+            a['description'],
+            ...flattenSearchValues(a['upcomingEvents']),
+          ]);
+          final bScore = searchMatchScore(_effectiveSearchQuery, [
+            b['name'],
+            b['genre'],
+            b['description'],
+            ...flattenSearchValues(b['upcomingEvents']),
+          ]);
+          return bScore.compareTo(aScore);
+        });
 
   List<Object?> _artistSearchValues(Map<String, dynamic> artist) {
     return [
@@ -390,94 +393,6 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
-  Widget _buildCompactEventCard(NearbyEvent event) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _buildImage(event.image, 72, 72),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  event.artistName.isEmpty ? 'Event' : event.artistName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.white24,
-            size: 16,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImage(String path, double w, double h) {
-    if (path.isEmpty) {
-      return Container(
-        width: w,
-        height: h,
-        color: const Color(0xFF1E142A),
-        child: const Icon(Icons.music_note, color: Colors.white24),
-      );
-    }
-    if (path.startsWith('http')) {
-      return Image.network(
-        path,
-        width: w,
-        height: h,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildImage('', w, h),
-      );
-    }
-    if (path.startsWith('data:image')) {
-      try {
-        final base64Str = path.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(bytes, width: w, height: h, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildImage('', w, h));
-      } catch (_) {
-        return _buildImage('', w, h);
-      }
-    }
-    return Image.asset(
-      path,
-      width: w,
-      height: h,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _buildImage('', w, h),
-    );
-  }
-
   void _openTrendingArtists() {
     Navigator.push(
       context,
@@ -619,60 +534,60 @@ class _GoogleMapPreviewState extends State<_GoogleMapPreview> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-            // ── Google Map ──────────────────────────────────────────────────
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: widget.center,
-                zoom: 12.5,
-              ),
-              markers: _markers,
-              myLocationEnabled: widget.userLocation != null,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              mapToolbarEnabled: false,
-              compassEnabled: false,
-              style: _darkMapStyle,
-              onMapCreated: (controller) {
-                _controller.complete(controller);
-              },
-              onTap: (_) => setState(() => _selectedVenue = null),
-            ),
-
-            // ── Map controls (custom) ───────────────────────────────────────
-            Positioned(
-              top: 14,
-              right: 12,
-              child: Column(
-                children: [
-                  _MapControl(
-                    icon: Icons.my_location,
-                    onTap: _goToUserLocation,
+                // ── Google Map ──────────────────────────────────────────────────
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: widget.center,
+                    zoom: 12.5,
                   ),
-                  const SizedBox(height: 8),
-                  _MapControl(icon: Icons.add, onTap: _zoomIn),
-                  const SizedBox(height: 8),
-                  _MapControl(icon: Icons.remove, onTap: _zoomOut),
-                ],
-              ),
-            ),
+                  markers: _markers,
+                  myLocationEnabled: widget.userLocation != null,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  mapToolbarEnabled: false,
+                  compassEnabled: false,
+                  style: _darkMapStyle,
+                  onMapCreated: (controller) {
+                    _controller.complete(controller);
+                  },
+                  onTap: (_) => setState(() => _selectedVenue = null),
+                ),
 
-            // ── Bottom info card ────────────────────────────────────────────
-            Positioned(
-              left: 14,
-              right: 14,
-              bottom: 14,
-              child: _selectedVenue != null
-                  ? _VenueInfoCard(
-                      venue: _selectedVenue!,
-                      onTap: () => widget.onVenueTap(_selectedVenue!),
-                    )
-                  : _EventsCountCard(
-                      totalEvents: widget.totalEvents,
-                      city: widget.venues.isNotEmpty
-                          ? widget.venues.first.city
-                          : 'Jakarta',
-                    ),
-            ),
+                // ── Map controls (custom) ───────────────────────────────────────
+                Positioned(
+                  top: 14,
+                  right: 12,
+                  child: Column(
+                    children: [
+                      _MapControl(
+                        icon: Icons.my_location,
+                        onTap: _goToUserLocation,
+                      ),
+                      const SizedBox(height: 8),
+                      _MapControl(icon: Icons.add, onTap: _zoomIn),
+                      const SizedBox(height: 8),
+                      _MapControl(icon: Icons.remove, onTap: _zoomOut),
+                    ],
+                  ),
+                ),
+
+                // ── Bottom info card ────────────────────────────────────────────
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: 14,
+                  child: _selectedVenue != null
+                      ? _VenueInfoCard(
+                          venue: _selectedVenue!,
+                          onTap: () => widget.onVenueTap(_selectedVenue!),
+                        )
+                      : _EventsCountCard(
+                          totalEvents: widget.totalEvents,
+                          city: widget.venues.isNotEmpty
+                              ? widget.venues.first.city
+                              : 'Jakarta',
+                        ),
+                ),
               ],
             ),
           ),
@@ -877,13 +792,11 @@ class _WebMapCanvas extends StatelessWidget {
       _ => 0.32,
     };
 
-    final focusPoint = focus ??
+    final focusPoint =
+        focus ??
         (selectedVenue?.lat != null && selectedVenue?.lng != null
             ? LatLng(selectedVenue!.lat!, selectedVenue!.lng!)
-            : LatLng(
-                (rawMinLat + rawMaxLat) / 2,
-                (rawMinLng + rawMaxLng) / 2,
-              ));
+            : LatLng((rawMinLat + rawMaxLat) / 2, (rawMinLng + rawMaxLng) / 2));
     final rawLatSpan = (rawMaxLat - rawMinLat).abs() < 0.0001
         ? 0.04
         : rawMaxLat - rawMinLat;
@@ -893,9 +806,7 @@ class _WebMapCanvas extends StatelessWidget {
     final latSpan = rawLatSpan * zoomMultiplier;
     final lngSpan = rawLngSpan * zoomMultiplier;
     final minLat = focusPoint.latitude - latSpan / 2;
-    final maxLat = focusPoint.latitude + latSpan / 2;
     final minLng = focusPoint.longitude - lngSpan / 2;
-    final maxLng = focusPoint.longitude + lngSpan / 2;
 
     Offset positionFor(LatLng point, Size size) {
       final x = ((point.longitude - minLng) / lngSpan).clamp(0.0, 1.0);
@@ -1465,9 +1376,18 @@ class _TrendingArtistStrip extends StatelessWidget {
               final name = artist['name']?.toString() ?? 'Artist';
               final image = (artist['imageUrl'] ?? artist['avatar_url'] ?? '')
                   .toString();
+              final rank =
+                  _asPositiveInt(artist['rank']) ??
+                  _asPositiveInt(artist['sort_order']) ??
+                  index + 1;
+              final preparedArtist = {
+                ...artist,
+                'rank': rank,
+                'sort_order': artist['sort_order'] ?? rank,
+              };
 
               return GestureDetector(
-                onTap: () => onArtistTap(artist),
+                onTap: () => onArtistTap(preparedArtist),
                 child: SizedBox(
                   width: itemWidth,
                   child: Column(
@@ -1506,6 +1426,13 @@ class _TrendingArtistStrip extends StatelessWidget {
         );
       },
     );
+  }
+
+  int? _asPositiveInt(Object? value) {
+    if (value is int && value > 0) return value;
+    if (value is num && value > 0) return value.toInt();
+    final parsed = int.tryParse(value?.toString() ?? '');
+    return parsed != null && parsed > 0 ? parsed : null;
   }
 }
 
@@ -1613,11 +1540,10 @@ class _VenueProfilePageState extends State<_VenueProfilePage> {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          const EventraSubpageShell(
-                                            currentIndex: 2,
-                                            child: EventraTicketsPage(),
-                                          ),
+                                      builder: (_) => const EventraSubpageShell(
+                                        currentIndex: 2,
+                                        child: EventraTicketsPage(),
+                                      ),
                                     ),
                                   );
                                 },

@@ -11,7 +11,11 @@ class EventraSession {
   Map<String, dynamic>? currentUser;
 
   bool get isLoggedIn => currentUser != null;
-  int? get userId => (currentUser?['id'] as num?)?.toInt();
+  int? get userId {
+    final rawId = currentUser?['id'];
+    if (rawId is num) return rawId.toInt();
+    return int.tryParse(rawId?.toString() ?? '');
+  }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();

@@ -91,11 +91,12 @@ class EventraEventCard extends StatelessWidget {
                             left: 8,
                             child: _buildDatePill(scale),
                           ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: _buildFavoriteButton(scale),
-                          ),
+                          if (onFavoriteTap != null)
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: _buildFavoriteButton(scale),
+                            ),
                         ],
                       ),
                     ),
@@ -198,10 +199,8 @@ class EventraEventCard extends StatelessWidget {
       }
     }
 
-    final cleanPath = image.startsWith('assets/') ? image.substring(7) : image;
-
     return Image.asset(
-      cleanPath,
+      image,
       fit: BoxFit.cover,
       errorBuilder: (_, __, ___) => _buildImageFallback(),
     );
@@ -250,10 +249,15 @@ class EventraEventCard extends StatelessWidget {
   }
 
   Widget _buildFavoriteButton(double scale) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onFavoriteTap,
-      child: AnimatedSwitcher(
+    return IconButton(
+      tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+      onPressed: onFavoriteTap,
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints.tightFor(
+        width: (compact ? 34 : 38) * scale,
+        height: (compact ? 34 : 38) * scale,
+      ),
+      icon: AnimatedSwitcher(
         duration: const Duration(milliseconds: 220),
         child: Container(
           key: ValueKey(isFavorite),

@@ -1,4 +1,6 @@
-﻿import 'package:eventra/core/widgets/event_card.dart';
+import 'dart:convert';
+
+import 'package:eventra/core/widgets/event_card.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/favorites_notifier.dart';
 import 'package:eventra/features/home/models/nearby_event.dart';
@@ -78,7 +80,10 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
             ?.toString() ??
         '0';
     final description = widget.artistData['description'] as String? ?? '';
-    final rank = widget.artistData['rank'] as int? ?? 0;
+    final rank =
+        _asPositiveInt(widget.artistData['rank']) ??
+        _asPositiveInt(widget.artistData['sort_order']) ??
+        1;
 
     // Ambil data konser yang sudah di-filter oleh server
     final upcomingEvents =
@@ -255,6 +260,11 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
     return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
+  int? _asPositiveInt(Object? value) {
+    final parsed = _asInt(value);
+    return parsed > 0 ? parsed : null;
+  }
+
   bool _asBool(Object? value) {
     if (value is bool) return value;
     if (value is num) return value != 0;
@@ -294,11 +304,10 @@ class _ArtistProfilePageState extends State<ArtistProfilePage> {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          const EventraSubpageShell(
-                                            currentIndex: 2,
-                                            child: EventraTicketsPage(),
-                                          ),
+                                      builder: (_) => const EventraSubpageShell(
+                                        currentIndex: 2,
+                                        child: EventraTicketsPage(),
+                                      ),
                                     ),
                                   );
                                 },
@@ -443,8 +452,34 @@ class _ArtistImage extends StatelessWidget {
       return Image.asset(path, fit: BoxFit.cover);
     }
     if (path.startsWith('http://') || path.startsWith('https://')) {
-      return Image.network(path, fit: BoxFit.cover);
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const _ArtistImageFallback(),
+      );
     }
+    if (path.startsWith('data:image')) {
+      try {
+        final base64Str = path.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const _ArtistImageFallback(),
+        );
+      } catch (_) {
+        return const _ArtistImageFallback();
+      }
+    }
+    return const _ArtistImageFallback();
+  }
+}
+
+class _ArtistImageFallback extends StatelessWidget {
+  const _ArtistImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFF1B1526),
       child: const Icon(Icons.person, color: Colors.white24, size: 72),

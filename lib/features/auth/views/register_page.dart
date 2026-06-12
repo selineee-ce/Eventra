@@ -15,10 +15,22 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  static const List<String> _fallbackCities = [
+    'Jakarta',
+    'Bandung',
+    'Surabaya',
+    'Yogyakarta',
+    'Medan',
+    'Makassar',
+    'Bali',
+    'Semarang',
+    'Palembang',
+    'Depok',
+  ];
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -40,13 +52,17 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _loadCities() async {
     try {
       final cities = await EventraDatabase.instance.fetchCities();
-      if (mounted) {
-        setState(() {
-          _cities = cities;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _cities = cities.isNotEmpty ? cities : _fallbackCities;
+      });
     } catch (_) {
-      // Ignore city loading errors
+      if (!mounted) return;
+
+      setState(() {
+        _cities = _fallbackCities;
+      });
     }
   }
 
@@ -54,7 +70,6 @@ class _RegisterPageState extends State<RegisterPage> {
   void dispose() {
     _usernameController.dispose();
     _phoneController.dispose();
-    _locationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -205,21 +220,6 @@ class _RegisterPageState extends State<RegisterPage> {
                           controller: _phoneController,
                           keyboardType: TextInputType.number,
                           validator: InputValidator.validatePhone,
-                        ),
-                        const SizedBox(height: 15),
-
-                        _buildLabel('City'),
-                        _buildTextField(
-                          hint: 'Jakarta, Bandung, Surabaya...',
-                          icon: Icons.location_on_outlined,
-                          controller: _locationController,
-                          textInputAction: TextInputAction.next,
-                          validator: (val) {
-                            final value = val?.trim() ?? '';
-                            if (value.isEmpty) return 'City is required';
-                            if (value.length < 3) return 'Enter a valid city';
-                            return null;
-                          },
                         ),
                         const SizedBox(height: 15),
 

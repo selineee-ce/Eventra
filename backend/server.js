@@ -409,6 +409,10 @@ async function eventTicketTypeColumn() {
     : 'nearby_event_id';
 }
 
+async function eventLookupTable(eventColumn) {
+  return eventColumn === 'event_id' ? 'events' : 'nearby_events';
+}
+
 async function ensureTicketTypesForEvent(eventId) {
   const eventColumn = await eventTicketTypeColumn();
   const existingRows = await query(
@@ -420,11 +424,21 @@ async function ensureTicketTypesForEvent(eventId) {
     return eventColumn;
   }
 
+  const sourceTable = await eventLookupTable(eventColumn);
+  if (!(await tableExists(sourceTable))) {
+    return eventColumn;
+  }
+
   const [event] = await query(
-    `SELECT id, title, venue, city, price, venue_layout
-     FROM events
-     WHERE id = ?
-     LIMIT 1`,
+    eventColumn === 'event_id'
+      ? `SELECT id, title, venue, city, price, venue_layout
+         FROM events
+         WHERE id = ?
+         LIMIT 1`
+      : `SELECT id, title, place AS venue, city, price, venue_layout
+         FROM nearby_events
+         WHERE id = ?
+         LIMIT 1`,
     [eventId],
   );
 
@@ -508,7 +522,7 @@ app.get('/api/home/featured-events', async (req, res, next) => {
           button,
           sort_order,
           CASE
-            WHEN ? IS NULL THEN is_favorite
+            WHEN ? IS NULL THEN 0
             ELSE EXISTS(
               SELECT 1
               FROM user_favorites uf
@@ -531,7 +545,7 @@ app.get('/api/home/featured-events', async (req, res, next) => {
           tag2,
           button,
           sort_order,
-          is_favorite
+          0 AS is_favorite
         FROM featured_events
         ORDER BY sort_order ASC
       `);
@@ -557,7 +571,7 @@ app.get('/api/home/passes', async (req, res, next) => {
         price,
         sort_order,
         CASE
-          WHEN ? IS NULL THEN is_favorite
+          WHEN ? IS NULL THEN 0
           ELSE EXISTS(
             SELECT 1
             FROM user_favorites uf
@@ -598,7 +612,7 @@ app.get('/api/home/nearby-events', async (req, res, next) => {
           image,
           sort_order,
           CASE
-            WHEN ? IS NULL THEN is_favorite
+            WHEN ? IS NULL THEN 0
             ELSE EXISTS(
               SELECT 1
               FROM user_favorites uf
@@ -626,7 +640,7 @@ app.get('/api/home/nearby-events', async (req, res, next) => {
           price,
           image,
           sort_order,
-          is_favorite
+          0 AS is_favorite
         FROM nearby_events
         WHERE (? = '' OR LOWER(TRIM(city)) = LOWER(TRIM(?)))
         ORDER BY sort_order ASC
@@ -934,7 +948,7 @@ app.get('/api/artists', async (req, res, next) => {
         ? await query(`
           SELECT id, title, image, city, venue, price, sort_order,
             CASE
-              WHEN ? IS NULL THEN is_favorite
+              WHEN ? IS NULL THEN 0
               ELSE EXISTS(
                 SELECT 1 FROM user_favorites uf
                 WHERE uf.user_id = ?
@@ -975,14 +989,16 @@ app.get('/api/artists', async (req, res, next) => {
         artist_id: artist.artist_id,
         name: artist.name,
         username: null,
-        avatar_url: artist.image_url,
-        imageUrl: artist.image_url,
+        avatar_url: artist.avatar_url,
+        imageUrl: artist.imageUrl,
         genre: artist.genre,
         description: artist.description,
         followers: artist.followers,
         followers_count: artist.followers,
         monthly_listeners: artist.monthly_listeners,
         events_count: artist.events_count,
+        sort_order: artist.sort_order,
+        rank: artist.sort_order,
         is_favorite: artist.is_favorite,
         upcomingEvents: allEvents
           .filter((event) => Number(event.artist_id) === Number(artist.artist_id))
@@ -999,7 +1015,7 @@ app.get('/api/artists', async (req, res, next) => {
               venue: matchedEvent?.venue || event.venue || locationParts[0] || event.location,
               city: matchedEvent?.city || locationParts[0] || '',
               date_label: event.date_label,
-              image: event.image || matchedEvent?.image || artist.image_url,
+              image: event.image || matchedEvent?.image || artist.imageUrl,
               price: matchedEvent?.price || '',
               sort_order: matchedEvent?.sort_order || event.sort_order,
               is_favorite: matchedEvent?.is_favorite || 0,
@@ -1031,7 +1047,7 @@ app.get('/api/artists', async (req, res, next) => {
       ? await query(`
         SELECT id, user_id, title, lineup, venue, city, date_label, image,
           CASE
-            WHEN ? IS NULL THEN is_favorite
+            WHEN ? IS NULL THEN 0
             ELSE EXISTS(
               SELECT 1 FROM user_favorites uf
               WHERE uf.user_id = ?
@@ -1310,8 +1326,11 @@ app.post('/api/payments/checkout', async (req, res, next) => {
 
     await connection.beginTransaction();
 
+    const eventTable = await eventLookupTable(eventColumn);
     const [events] = await connection.execute(
-      'SELECT id, title, image, date_label, venue AS place, show_time FROM events WHERE id = ? LIMIT 1',
+      eventTable === 'events'
+        ? 'SELECT id, title, image, date_label, venue AS place, show_time FROM events WHERE id = ? LIMIT 1'
+        : 'SELECT id, title, image, date_label, place, show_time FROM nearby_events WHERE id = ? LIMIT 1',
       [eventId]
     );
     const event = events[0];

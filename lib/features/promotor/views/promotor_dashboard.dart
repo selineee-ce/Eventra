@@ -95,11 +95,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(
-                      Icons.search,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    const Icon(Icons.search, color: Colors.white, size: 24),
                     const Text(
                       'EVENTRA',
                       style: TextStyle(
@@ -120,92 +116,110 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
 
               Expanded(
                 child: _isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFD0BCFF)))
-                  : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'PROMOTOR DASHBOARD',
-                        style: TextStyle(
+                    ? const Center(
+                        child: CircularProgressIndicator(
                           color: Color(0xFFD0BCFF),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.5,
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'PROMOTOR DASHBOARD',
+                              style: TextStyle(
+                                color: Color(0xFFD0BCFF),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+
+                            Text(
+                              'Welcome back, $_promotorName',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const PromotorCreateEventPage(),
+                                  ),
+                                ).then((_) => _loadDashboard());
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD0BCFF),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 18,
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.add,
+                                    color: Color(0xFF3D2B6C),
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Create Event',
+                                    style: TextStyle(
+                                      color: Color(0xFF3D2B6C),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+
+                            _buildStatCard(
+                              title: 'Total Revenue (Last 30 Days)',
+                              value: _totalRevenue,
+                              valueColor: const Color(0xFFD0BCFF),
+                              icon: Icons.attach_money_outlined,
+                            ),
+                            const SizedBox(height: 12),
+
+                            _buildStatCard(
+                              title: 'Ticket Sold',
+                              value: _ticketSold,
+                              valueColor: const Color(0xFFD0BCFF),
+                              icon: Icons.confirmation_number_outlined,
+                            ),
+                            const SizedBox(height: 12),
+
+                            _buildStatCard(
+                              title: 'Active Event',
+                              value: _activeEvent,
+                              valueColor: const Color(0xFFD0BCFF),
+                              icon: Icons.calendar_month_outlined,
+                            ),
+
+                            const SizedBox(height: 20),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 6),
-
-                      Text(
-                        'Welcome back, $_promotorName',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const PromotorCreateEventPage()),
-                          ).then((_) => _loadDashboard());
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD0BCFF),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 18,
-                          ),
-                        ),
-                        child: const Text(
-                          '+ Create Event',
-                          style: TextStyle(
-                            color: Color(0xFF3D2B6C),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-
-                      _buildStatCard(
-                        title: 'Total Revenue (Last 30 Days)',
-                        value: _totalRevenue,
-                        valueColor: const Color(0xFFD0BCFF),
-                        icon: Icons.attach_money_outlined,
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildStatCard(
-                        title: 'Ticket Sold',
-                        value: _ticketSold,
-                        valueColor: const Color(0xFFD0BCFF),
-                        icon: Icons.confirmation_number_outlined,
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildStatCard(
-                        title: 'Active Event',
-                        value: _activeEvent,
-                        valueColor: const Color(0xFFD0BCFF),
-                        icon: Icons.calendar_month_outlined,
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
               ),
 
               _buildBottomNavBar(),
@@ -262,11 +276,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               color: const Color(0x33D0BCFF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFFD0BCFF),
-              size: 22,
-            ),
+            child: Icon(icon, color: const Color(0xFFD0BCFF), size: 22),
           ),
         ],
       ),
@@ -290,14 +300,22 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               children: [
                 Icon(
                   _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
-                  color: _selectedIndex == 0 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
+                  color: _selectedIndex == 0
+                      ? const Color(0xFFD0BCFF)
+                      : const Color(0xFFB3B3B3),
                   size: 24,
                 ),
                 const SizedBox(height: 4),
-                Text('HOME', style: TextStyle(
-                  color: _selectedIndex == 0 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
-                  fontSize: 10, fontWeight: FontWeight.w600,
-                )),
+                Text(
+                  'HOME',
+                  style: TextStyle(
+                    color: _selectedIndex == 0
+                        ? const Color(0xFFD0BCFF)
+                        : const Color(0xFFB3B3B3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -305,9 +323,11 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
           GestureDetector(
             onTap: () {
               setState(() => _selectedIndex = 1);
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const PromotorEventsPage()),
+                MaterialPageRoute(
+                  builder: (context) => const PromotorEventsPage(),
+                ),
               );
             },
             child: Column(
@@ -318,24 +338,34 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                   children: [
                     Icon(
                       Icons.calendar_today,
-                      color: _selectedIndex == 1 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
+                      color: _selectedIndex == 1
+                          ? const Color(0xFFD0BCFF)
+                          : const Color(0xFFB3B3B3),
                       size: 26,
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Icon(
                         Icons.star,
-                        color: _selectedIndex == 1 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
+                        color: _selectedIndex == 1
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
                         size: 13,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('EVENTS', style: TextStyle(
-                  color: _selectedIndex == 1 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
-                  fontSize: 10, fontWeight: FontWeight.w600,
-                )),
+                Text(
+                  'EVENTS',
+                  style: TextStyle(
+                    color: _selectedIndex == 1
+                        ? const Color(0xFFD0BCFF)
+                        : const Color(0xFFB3B3B3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
@@ -343,9 +373,12 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
           GestureDetector(
             onTap: () {
               setState(() => _selectedIndex = 2);
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const EventraProfilePage(isPromotorView: true)),
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const EventraProfilePage(isPromotorView: true),
+                ),
               );
             },
             child: Column(
@@ -353,14 +386,22 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               children: [
                 Icon(
                   _selectedIndex == 2 ? Icons.person : Icons.person_outline,
-                  color: _selectedIndex == 2 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
+                  color: _selectedIndex == 2
+                      ? const Color(0xFFD0BCFF)
+                      : const Color(0xFFB3B3B3),
                   size: 24,
                 ),
                 const SizedBox(height: 4),
-                Text('PROFILE', style: TextStyle(
-                  color: _selectedIndex == 2 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
-                  fontSize: 10, fontWeight: FontWeight.w600,
-                )),
+                Text(
+                  'PROFILE',
+                  style: TextStyle(
+                    color: _selectedIndex == 2
+                        ? const Color(0xFFD0BCFF)
+                        : const Color(0xFFB3B3B3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),

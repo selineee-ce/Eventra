@@ -20,18 +20,34 @@ class PassPackage {
   });
 
   factory PassPackage.fromJson(Map<String, dynamic> json) => PassPackage(
-        id: json['id'] as int,
-        title: json['title'] as String? ?? '',
-        // API mengirim field ini sebagai 'desc' (alias dari kolom 'description')
-        description: (json['desc'] ?? json['description']) as String? ?? '',
-        price: json['price'] as String? ?? '',
-        sortOrder: json['sort_order'] as int? ?? 0,
-        isFavorite: (json['is_favorite'] as int? ?? 0) == 1,
-      );
+    id: _asInt(json['id']),
+    title: json['title'] as String? ?? '',
+    // API mengirim field ini sebagai 'desc' (alias dari kolom 'description')
+    description: (json['desc'] ?? json['description']) as String? ?? '',
+    price: json['price'] as String? ?? '',
+    sortOrder: _asInt(json['sort_order']),
+    isFavorite: _asBool(json['is_favorite']),
+  );
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static bool _asBool(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == '1' || text == 'true';
+  }
 
   PassPackage copyWith({bool? isFavorite}) => PassPackage(
-        id: id, title: title, description: description,
-        price: price, sortOrder: sortOrder,
-        isFavorite: isFavorite ?? this.isFavorite,
-      );
+    id: id,
+    title: title,
+    description: description,
+    price: price,
+    sortOrder: sortOrder,
+    isFavorite: isFavorite ?? this.isFavorite,
+  );
 }

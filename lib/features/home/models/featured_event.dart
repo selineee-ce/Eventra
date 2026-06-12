@@ -26,20 +26,39 @@ class FeaturedEvent {
   });
 
   factory FeaturedEvent.fromJson(Map<String, dynamic> json) => FeaturedEvent(
-        id: json['id'] as int,
-        title: json['title'] as String? ?? '',
-        subtitle: json['subtitle'] as String? ?? '',
-        image: json['image'] as String? ?? '',
-        tag1: json['tag1'] as String? ?? '',
-        tag2: json['tag2'] as String?,
-        button: json['button'] as String? ?? '',
-        sortOrder: json['sort_order'] as int? ?? 0,
-        isFavorite: (json['is_favorite'] as int? ?? 0) == 1,
-      );
+    id: _asInt(json['id']),
+    title: json['title'] as String? ?? '',
+    subtitle: json['subtitle'] as String? ?? '',
+    image: json['image'] as String? ?? '',
+    tag1: json['tag1'] as String? ?? '',
+    tag2: json['tag2'] as String?,
+    button: json['button'] as String? ?? '',
+    sortOrder: _asInt(json['sort_order']),
+    isFavorite: _asBool(json['is_favorite']),
+  );
+
+  static int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static bool _asBool(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value?.toString().toLowerCase().trim();
+    return text == '1' || text == 'true';
+  }
 
   FeaturedEvent copyWith({bool? isFavorite}) => FeaturedEvent(
-        id: id, title: title, subtitle: subtitle, image: image,
-        tag1: tag1, tag2: tag2, button: button, sortOrder: sortOrder,
-        isFavorite: isFavorite ?? this.isFavorite,
-      );
+    id: id,
+    title: title,
+    subtitle: subtitle,
+    image: image,
+    tag1: tag1,
+    tag2: tag2,
+    button: button,
+    sortOrder: sortOrder,
+    isFavorite: isFavorite ?? this.isFavorite,
+  );
 }
