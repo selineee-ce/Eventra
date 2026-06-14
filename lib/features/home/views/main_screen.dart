@@ -11,6 +11,7 @@ import 'package:eventra/features/home/repositories/home_repository.dart';
 import 'package:eventra/features/ticket/buy_ticket_page.dart';
 import 'package:eventra/features/ticket/payment_page.dart';
 import 'package:eventra/features/ticket/payment_status_page.dart';
+import 'package:eventra/features/explore/views/search_page.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 
@@ -272,9 +273,14 @@ class _MainScreenState extends State<MainScreen> {
                           onChanged: (value) {
                             setState(() => _searchQuery = value);
                           },
-                          onSubmitted: (_) {
-                            if (_currentIndex > 4) {
-                              setState(() => _currentIndex = 0);
+                          onSubmitted: (value) {
+                            if (value.trim().isNotEmpty) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SearchPage(query: value),
+                                ),
+                              );
                             }
                           },
                         ),
