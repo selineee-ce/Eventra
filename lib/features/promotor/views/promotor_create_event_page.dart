@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/data/eventra_session.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PromotorCreateEventPage extends StatefulWidget {
   const PromotorCreateEventPage({super.key});
@@ -549,6 +550,21 @@ class _PromotorCreateEventPageState extends State<PromotorCreateEventPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF16111F),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'EVENTRA',
+          style: GoogleFonts.poppins(
+            color: const Color(0xFFD0BCFF),
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -556,29 +572,6 @@ class _PromotorCreateEventPageState extends State<PromotorCreateEventPage> {
         child: SafeArea(
           child: Column(
             children: [
-              // Top bar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
-                    ),
-                    const Spacer(),
-                    const Text(
-                      'EVENTRA',
-                      style: TextStyle(
-                        color: Color(0xFFD0BCFF), fontSize: 18,
-                        fontWeight: FontWeight.bold, letterSpacing: 2,
-                      ),
-                    ),
-                    const Spacer(),
-                    const SizedBox(width: 24),
-                  ],
-                ),
-              ),
-
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 20),

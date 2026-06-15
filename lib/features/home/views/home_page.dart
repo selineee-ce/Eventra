@@ -50,8 +50,6 @@ class _EventraHomePageState extends State<EventraHomePage> {
         if (countdown.inSeconds > 0) {
           countdown -= const Duration(seconds: 1);
         }
-
-        // ← tambah ini
         _dropCountdowns.updateAll((id, secs) => secs > 0 ? secs - 1 : 0);
 
         if (normalizeSearchText(widget.searchQuery).isNotEmpty) {
