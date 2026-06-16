@@ -138,20 +138,20 @@ INSERT INTO users (id, username, name, email, phone, password_hash, bio, locatio
 (4, 'edsheeran', 'ED SHEERAN', 'ed@eventra.local', '+441632960031', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Mathematics Tour', 'Framlingham, United Kingdom', 'assets/artists/EdSheeran.jpg', 42000000, 600, 18, 'Pop / Acoustic', 'Armed with just a guitar and a loop pedal, Ed commands massive stages.', 'promoter', 1),
 (5, 'seventeen', 'SEVENTEEN', 'svt@eventra.local', '+8225550123', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Say the name, SEVENTEEN!', 'Seoul, South Korea', 'assets/artists/Seventeen.jpg', 14000000, 300, 8, 'K-Pop', 'Self-producing K-Pop powerhouse known for synchronized choreography.', 'promoter', 1),
 (6, 'bmth', 'Bring Me The Horizon', 'bmth@eventra.local', '+441144960145', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Post Human Nex Gen', 'Sheffield, United Kingdom', 'assets/artists/bmth.jpg', 8500000, 400, 11, 'Alternative Metal', 'Pushing boundaries of heavy music, infusing electronic beats.', 'promoter', 1),
-(7, 'fiersabesari', 'Fiersa Besari', 'fiersa@eventra.local', '+628112233445', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Garis Waktu', 'Bandung, Indonesia', 'assets/artists/FiersaBesari.jpg', 12000000, 500, 5, 'Indie Folk', 'Indonesian indie-folk singer-songwriter known for poetic lyrics.', 'promoter', 1),
-(8, 'sheilaon7', 'Sheila On 7', 'so7@eventra.local', '+628123456789', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Kisah Klasik Untuk Masa Depan', 'Yogyakarta, Indonesia', 'assets/artists/SheilaOn7.jpg', 6000000, 900, 4, 'Pop Rock', 'The ultimate timeless band of Indonesia. Concert is a massive karaoke session.', 'promoter', 1),
-(9, 'ndarboy', 'Ndarboy Genk', 'ndarboy@eventra.local', '+628139876543', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Mendung Tanpo Udan', 'Yogyakarta, Indonesia', 'assets/artists/Ndarboy.jpg', 2500000, 350, 9, 'Dangdut Koplo', 'Bringing traditional Javanese sounds into modern pop.', 'promoter', 1),
-(10, 'tulus', 'TULUS', 'tulus@eventra.local', '+628115556677', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Manusia', 'Bandung, Indonesia', 'assets/artists/Tulus.jpg', 9500000, 600, 6, 'Pop / Soul', 'Award-winning Indonesian singer-songwriter with deep, emotional soul.', 'promoter', 1),
+(7, 'fiersabesari', 'Fiersa Besari', 'fiersa@eventra.local', '+628112233445', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Garis Waktu', 'Bandung', 'assets/artists/FiersaBesari.jpg', 12000000, 500, 5, 'Indie Folk', 'Indonesian indie-folk singer-songwriter known for poetic lyrics.', 'promoter', 1),
+(8, 'sheilaon7', 'Sheila On 7', 'so7@eventra.local', '+628123456789', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Kisah Klasik Untuk Masa Depan', 'Yogyakarta', 'assets/artists/SheilaOn7.jpg', 6000000, 900, 4, 'Pop Rock', 'The ultimate timeless band of Indonesia. Concert is a massive karaoke session.', 'promoter', 1),
+(9, 'ndarboy', 'Ndarboy Genk', 'ndarboy@eventra.local', '+628139876543', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Mendung Tanpo Udan', 'Yogyakarta', 'assets/artists/Ndarboy.jpg', 2500000, 350, 9, 'Dangdut Koplo', 'Bringing traditional Javanese sounds into modern pop.', 'promoter', 1),
+(10, 'tulus', 'TULUS', 'tulus@eventra.local', '+628115556677', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Manusia', 'Bandung', 'assets/artists/Tulus.jpg', 9500000, 600, 6, 'Pop / Soul', 'Award-winning Indonesian singer-songwriter with deep, emotional soul.', 'promoter', 1),
 (11, 'keshi', 'KESHI', 'keshi@eventra.local', '+17135550122', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Requiem Tour', 'Houston, USA', 'assets/artists/Keshi.jpg', 4800000, 200, 15, 'Lo-Fi / R&B', 'The king of falsettos and lo-fi aesthetics with moody R&B tracks.', 'promoter', 1),
 (12, 'cigarettesafter', 'Cigarettes After Sex', 'cas@eventra.local', '+19155550176', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'X''s', 'El Paso, USA', 'assets/artists/CigarettesAfterSex.jpg', 6500000, 250, 10, 'Dream Pop', 'Slow, cinematic, monochrome aesthetics and deeply melancholic.', 'promoter', 1),
 (13, 'laufey', 'LAUFEY', 'laufey@eventra.local', '+3545551234', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Bewitched', 'Reykjavik, Iceland', 'assets/artists/Laufey.jpg', 5000000, 180, 13, 'Jazz', 'Bringing jazz back to Gen Z with cinematic cello lines.', 'promoter', 1),
 (14, 'taylorswift', 'Taylor Swift', 'taylor@eventra.local', '+16155550111', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'The Eras Tour', 'Nashville, USA', 'assets/artists/TaylorSwift.jpg', 110000000, 1200, 40, 'Pop / Country', 'Global pop icon breaking economic records with Eras stadium tour.', 'promoter', 1),
-(15, 'hindia', 'Hindia', 'hindia@eventra.local', '+628129988776', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Lagipula Hidup Akan Berakhir', 'Jakarta, Indonesia', 'assets/artists/Hindia.jpg', 5500000, 450, 14, 'Indie Rock', 'Baskara Putra delivers alternative indie rock defining youth anxiety.', 'promoter', 1),
+(15, 'hindia', 'Hindia', 'hindia@eventra.local', '+628129988776', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Lagipula Hidup Akan Berakhir', 'Jakarta', 'assets/artists/Hindia.jpg', 5500000, 450, 14, 'Indie Rock', 'Baskara Putra delivers alternative indie rock defining youth anxiety.', 'promoter', 1),
 (16, 'newjeans', 'NewJeans', 'newjeans@eventra.local', '+8225550987', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Bunnies, ATTENTION!', 'Seoul, South Korea', 'assets/artists/NewJeans.jpg', 12000000, 150, 10, 'K-Pop', 'Pioneering easy-listening Y2K R&B revival in K-Pop.', 'promoter', 1),
 (17, 'billieeilish', 'Billie Eilish', 'billie@eventra.local', '+13105550155', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'HIT ME HARD AND SOFT', 'Los Angeles, USA', 'assets/artists/BillieEilish.jpg', 58000000, 280, 19, 'Alternative Pop', 'Dark, bass-heavy avant-pop paired with whispery vocals.', 'promoter', 1),
-(18, 'niki', 'NIKI', 'niki@eventra.local', '+628135554433', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Buzz Tour', 'Jakarta, Indonesia', 'assets/artists/Niki.jpg', 7000000, 220, 12, 'R&B / Pop', 'Indonesia''s finest 88rising star bringing smooth R&B storytelling.', 'promoter', 1),
+(18, 'niki', 'NIKI', 'niki@eventra.local', '+628135554433', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Buzz Tour', 'Jakarta', 'assets/artists/Niki.jpg', 7000000, 220, 12, 'R&B / Pop', 'Indonesia''s finest 88rising star bringing smooth R&B storytelling.', 'promoter', 1),
 (19, 'alanwalker', 'Alan Walker', 'alan@eventra.local', '+4721000123', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', 'Walkerworld', 'Bergen, Norway', 'assets/artists/AlanWalker.jpg', 28000000, 700, 22, 'EDM', 'Masked hitmaker behind Faded delivering high-energy tracks.', 'promoter', 1),
-(20, 'dewa19', 'Dewa 19', 'dewa19@eventra.local', '+628119909876', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', '30 Tahun Dewa 19', 'Surabaya, Indonesia', 'assets/artists/Dewa19.jpg', 4500000, 1100, 5, 'Classic Rock', 'Indonesian rock royalty. Anthems engraved in cultural DNA.', 'promoter', 1)
+(20, 'dewa19', 'Dewa 19', 'dewa19@eventra.local', '+628119909876', '$2b$10$7RmsbXfI6fK9Z8gHY2VvUe1A6rN9A7e4Z3x1Wv8h8G2Yc7OWp7xyz', '30 Tahun Dewa 19', 'Surabaya', 'assets/artists/Dewa19.jpg', 4500000, 1100, 5, 'Classic Rock', 'Indonesian rock royalty. Anthems engraved in cultural DNA.', 'promoter', 1)
 ON DUPLICATE KEY UPDATE username=VALUES(username), name=VALUES(name), email=VALUES(email), password_hash=VALUES(password_hash), bio=VALUES(bio), location=VALUES(location), avatar_url=VALUES(avatar_url), followers_count=VALUES(followers_count), events_count=VALUES(events_count), upcoming_events_count=VALUES(upcoming_events_count), genre=VALUES(genre), description=VALUES(description), role=VALUES(role), is_verified=VALUES(is_verified);
 
 SET @rank := 0;
@@ -168,7 +168,7 @@ INSERT INTO users (username, name, email, phone, password_hash, bio, location, a
 
 -- Seed Data Semua Events (Featured dan Nearby Dilebur Disini)
 INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_time, price, image, description, tag1, tag2, button, is_featured, is_limited, remaining_seats, is_favorite) VALUES
-(1, 13, 'myBCA Java Jazz Festival 2026', 'Laufey, Java Jazz Lineup', 'NICE PIK 2, Tangerang', 'Tangerang', '2026-05-29', '20:00 WIB', 'Rp850.000', 'assets/events/laufey_jiexpo.webp', 'Festival dates are set for 29-31 May 2026 at NICE, PIK 2.', 'JAZZ FESTIVAL', 'OFFICIAL 2026', 'GET TICKETS', 1, 1, 48, 1),
+(1, 13, 'myBCA Java Jazz Festival 2026', 'Laufey, Java Jazz Lineup', 'NICE PIK 2', 'Tangerang', '2026-05-29', '20:00 WIB', 'Rp850.000', 'assets/events/laufey_jiexpo.webp', 'Festival dates are set for 29-31 May 2026 at NICE, PIK 2.', 'JAZZ FESTIVAL', 'OFFICIAL 2026', 'GET TICKETS', 1, 1, 48, 1),
 
 (2, 15, 'Pestapora 2026', 'Hindia, Sheila On 7, Tulus, Fiersa Besari', 'Gambir Expo JIExpo', 'Jakarta', '2026-09-25', '15:00 WIB', 'Rp450.000', 'assets/events/wtf2026.jpg', 'Save 25-27 September 2026 for the three-day Indonesian music celebration.', 'LOCAL FEST', 'THREE DAYS', 'BOOK NOW', 1, 0, 150, 1),
 
@@ -176,13 +176,13 @@ INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_ti
 
 (7, 2, 'Coldplay: Music Of The Spheres Jakarta', 'Coldplay', 'Gelora Bung Karno Stadium', 'Jakarta', '2023-11-15', '20:00 WIB', 'Rp800.000', 'assets/events/featured_events/featured_coldplay.jpg', 'Coldplay first Indonesia stadium show archive listing.', 'ARCHIVE', 'WORLD TOUR', 'VIEW DETAIL', 0, 0, 0, 0),
 
-(8, 8, 'Sheila On 7: Tunggu Aku Di Jakarta', 'Sheila On 7', 'Stadion Utama Gelora Bung Karno', 'Jakarta', '2026-12-25', '19:00 WIB', 'Rp600.000', 'assets/events/so7_gbk.webp', 'Every concert is a massive karaoke session across generations.', 'LOCAL ROCK', 'SOLO CONCERT', 'BUY TICKETS', 0, 0, 200, 1),
+(8, 8, 'Sheila On 7: Tunggu Aku Di Jakarta', 'Sheila On 7', 'Gelora Bung Karno Stadium', 'Jakarta', '2026-12-25', '19:00 WIB', 'Rp600.000', 'assets/events/so7_gbk.webp', 'Every concert is a massive karaoke session across generations.', 'LOCAL ROCK', 'SOLO CONCERT', 'BUY TICKETS', 0, 0, 200, 1),
 
 (9, 18, 'NIKI: Buzz World Tour Jakarta', 'NIKI', 'Beach City International Stadium', 'Jakarta', '2026-08-05', '20:00 WIB', 'IDR 950k', 'assets/events/niki_buzz.jpeg', 'Preorder tickets for NIKI: Buzz World Tour Jakarta are now available for VIP users.', 'R&B', 'WORLD TOUR', 'BUY NOW', 0, 0, 45, 0),
 
 (10, 5, 'SEVENTEEN: Right Here World Tour Jakarta', 'SEVENTEEN', 'Jakarta International Stadium', 'Jakarta', '2026-09-15', '18:30 WIB', 'IDR 1.800k', 'assets/events/seventeen_concert.jpeg', 'General Sales for SEVENTEEN: Right Here World Tour Jakarta starts in 30 minutes. Get ready!', 'K-POP', 'STADIUM', 'BUY TICKETS', 0, 0, 500, 0),
 
-(11, 19, 'Alan Walker: Walkerworld Tour Bali', 'Alan Walker', 'Atlas Beach Club, Badung', 'Bali', '2026-10-10', '16:00 WITA', 'IDR 750k', 'assets/events/alan_walker2.jpg', 'Alan Walker: Walkerworld Tour Bali has updated its gate-open time to 04:00 PM.', 'EDM', 'CLUB SHOW', 'BOOK NOW', 0, 0, 110, 0),
+(11, 19, 'Alan Walker: Walkerworld Tour Bali', 'Alan Walker', 'Atlas Beach Club', 'Bali', '2026-10-10', '16:00 WITA', 'IDR 750k', 'assets/events/alan_walker2.jpg', 'Alan Walker: Walkerworld Tour Bali has updated its gate-open time to 04:00 PM.', 'EDM', 'CLUB SHOW', 'BOOK NOW', 0, 0, 110, 0),
 
 (12, 6, 'Bring Me The Horizon: Live in Jakarta', 'Bring Me The Horizon', 'Ancol Carnaval Circuit', 'Jakarta', '2026-11-20', '20:00 WIB', 'IDR 1.250k', 'assets/events/bmth_ancol.jpg', 'Pushing the boundaries of heavy alternative rock music.', 'ROCK', 'LIVE', 'GET TICKETS', 0, 0, 75, 0),
 
@@ -190,21 +190,21 @@ INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_ti
 
 (14, 11, 'Keshi: Requiem Tour', 'Keshi', 'Istora Senayan', 'Jakarta', '2027-01-18', '20:00 WIB', 'IDR 1.350k', 'assets/events/keshi_istora.jpg', 'Moody, guitar-driven R&B tracks from the king of falsettos.', 'R&B', 'LO-FI', 'GET TICKETS', 0, 0, 85, 0),
 
-(15, 8, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'GBK Sports Complex', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0),
+(15, 8, 'We The Fest 2026', 'Sheila On 7, Dewa 19, TULUS, NIKI, Hindia', 'Gelora Bung Karno Stadium', 'Jakarta', '2026-07-19', '14:00 WIB', 'Rp1.500.000', 'assets/events/wtf2026.jpg', 'Festival musik musim panas terbesar di Indonesia kembali hadir dengan lineup lokal legendaris!', 'FESTIVAL', 'SUMMER', 'GET TICKETS', 0, 1, 30, 0),
 
 (20, 1, 'Sabrina Carpenter: Short n Sweet Tour', 'Sabrina Carpenter', 'ICE BSD', 'Tangerang', '2026-06-18', '19:30 WIB', 'Rp1.250.000', 'assets/events/featured_events/featured_sabrina.jpg', 'Espresso-fueled pop anthems live in Jakarta.', 'POP', 'WORLD TOUR', 'GET TICKETS', 1, 1, 25, 0),
 
 (21, 3, 'Bruno Mars: Live in Jakarta 2026', 'Bruno Mars', 'Jakarta International Stadium', 'Jakarta', '2026-07-24', '20:00 WIB', 'Rp1.500.000', 'assets/events/bruno_jis.webp', 'The ultimate showman bringing 24K Magic back to the stage.', 'FUNK / POP', 'STADIUM SHOW', 'BUY TICKETS', 1, 0, 350, 1),
 
-(22, 4, 'Ed Sheeran: Mathematics Tour Plus', 'Ed Sheeran', 'Stadion Utama Gelora Bung Karno', 'Jakarta', '2026-08-12', '19:00 WIB', 'Rp900.000', 'assets/events/ed_gbk.webp', 'Armed with just a guitar and a loop pedal, Ed commands the 360 stage.', 'ACOUSTIC', '360 STAGE', 'BOOK NOW', 0, 1, 15, 0),
+(22, 4, 'Ed Sheeran: Mathematics Tour Plus', 'Ed Sheeran', 'Gelora Bung Karno Stadium', 'Jakarta', '2026-08-12', '19:00 WIB', 'Rp900.000', 'assets/events/ed_gbk.webp', 'Armed with just a guitar and a loop pedal, Ed commands the 360 stage.', 'ACOUSTIC', '360 STAGE', 'BOOK NOW', 0, 1, 15, 0),
 
 (23, 14, 'Taylor Swift: The Eras Tour (Extended)', 'Taylor Swift', 'Jakarta International Stadium', 'Jakarta', '2026-10-15', '18:00 WIB', 'Rp2.100.000', 'assets/events/taylor_eras.webp', 'Additional CAT 1 tickets for Taylor Swift: The Eras Tour have been released. Grab them fast!', 'POP', 'STADIUM TOUR', 'BUY TICKETS', 1, 1, 5, 1),
 
 (24, 17, 'Billie Eilish: HIT ME HARD AND SOFT Tour', 'Billie Eilish', 'ICE BSD', 'Tangerang', '2026-11-05', '20:00 WIB', 'Rp1.650.000', 'assets/events/billie_ice.jpg', 'Dark, bass-heavy avant-pop paired with whispery emotional vocals.', 'ALTERNATIVE', 'LIVE IN INDO', 'GET TICKETS', 0, 0, 180, 0),
 
-(25, 20, 'Dewa 19: 30 Tahun Karaoke Massal', 'Dewa 19', 'Stadion Utama Gelora Bung Karno', 'Jakarta', '2026-11-28', '19:30 WIB', 'Rp350.000', 'assets/events/dewa_gbk.webp', 'Indonesian rock royalty celebrating their best anthems.', 'CLASSIC ROCK', 'ANNIVERSARY', 'BUY TICKETS', 0, 0, 400, 1),
+(25, 20, 'Dewa 19: 30 Tahun Karaoke Massal', 'Dewa 19', 'Gelora Bung Karno Stadium', 'Jakarta', '2026-11-28', '19:30 WIB', 'Rp350.000', 'assets/events/dewa_gbk.webp', 'Indonesian rock royalty celebrating their best anthems.', 'CLASSIC ROCK', 'ANNIVERSARY', 'BUY TICKETS', 0, 0, 400, 1),
 
-(26, 3, 'Bruno Mars: Live in Bali 2026', 'Bruno Mars', 'GWK Cultural Park, Bali', 'Bali', '2026-12-31', '18:00 WIB', 'Rp2.500.000', 'assets/events/featured_events/featured_bruno.png',  'The ultimate showman bringing 24K Magic back to the stage.', 'FUNK / POP', 'STADIUM SHOW', 'BUY TICKETS', 1, 1, 45, 0),
+(26, 3, 'Bruno Mars: Live in Bali 2026', 'Bruno Mars', 'GWK Cultural Park', 'Bali', '2026-12-31', '18:00 WIB', 'Rp2.500.000', 'assets/events/featured_events/featured_bruno.png',  'The ultimate showman bringing 24K Magic back to the stage.', 'FUNK / POP', 'STADIUM SHOW', 'BUY TICKETS', 1, 1, 45, 0),
 
 (27, 10, 'TULUS: Tur Manusia Jakarta', 'TULUS', 'Santhika Hall Kelapa Gading', 'Jakarta', '2026-08-20', '20:00 WIB', 'Rp550.000', 'assets/events/tulus.jpg', 'Award-winning singer-songwriter with deep, emotional soul tracks.', 'SOUL / POP', 'SOLO TOUR', 'BOOK NOW', 0, 0, 55, 0),
 
@@ -214,7 +214,7 @@ INSERT INTO events (id, user_id, title, lineup, venue, city, date_label, show_ti
 
 (30, 15, 'Hindia: Lagipula Hidup Akan Berakhir', 'Hindia', 'Tennis Indoor Senayan', 'Jakarta', '2027-02-14', '19:30 WIB', 'IDR 450k', 'assets/events/hindia_tennis_indoor.jpeg', 'Official Hindia: Lagipula Hidup Akan Berakhir merchandise is now available for pre-order.', 'INDIE', 'LOCAL', 'BUY TICKETS', 0, 0, 140, 1),
 
-(31, 19, 'Djakarta Warehouse Project 2026 Deluxe', 'Alan Walker, Martin Garrix, Hardwell', 'GWK Cultural Park, Bali', 'Bali', '2026-12-31', '18:00 WIB', 'Rp1.200.000', 'assets/events/featured_events/featured_dwp.jpg', 'Experience South East Asia''s biggest electronic dance music festival.', 'EDM FESTIVAL', 'DAY ONE', 'EXPLORE', 0, 0, 300, 0)
+(31, 19, 'Djakarta Warehouse Project 2026 Deluxe', 'Alan Walker, Martin Garrix, Hardwell', 'GWK Cultural Park', 'Bali', '2026-12-31', '18:00 WIB', 'Rp1.200.000', 'assets/events/featured_events/featured_dwp.jpg', 'Experience South East Asia''s biggest electronic dance music festival.', 'EDM FESTIVAL', 'DAY ONE', 'EXPLORE', 0, 0, 300, 0)
 ON DUPLICATE KEY UPDATE title=VALUES(title), lineup=VALUES(lineup), venue=VALUES(venue), city=VALUES(city), date_label=VALUES(date_label), show_time=VALUES(show_time), price=VALUES(price), image=VALUES(image), description=VALUES(description), tag1=VALUES(tag1), tag2=VALUES(tag2), button=VALUES(button), is_featured=VALUES(is_featured), is_limited=VALUES(is_limited), remaining_seats=VALUES(remaining_seats), is_favorite=VALUES(is_favorite);
 
 DELETE FROM events WHERE id IN (3, 4, 5, 16, 17, 18, 19);
@@ -240,7 +240,7 @@ ON DUPLICATE KEY UPDATE name=VALUES(name), price=VALUES(price);
 INSERT INTO tickets (id, user_id, title, image, date_label, time_label, venue, section, row_label, seat_label, qr_data, ticket_type, ticket_status, sort_order) VALUES
 (1, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'Laufey: Bewitched Tour', 'assets/events/laufey_jiexpo.webp', 'Jun 12,\n2026', '07:30 PM', 'JIExpo Theatre, Jakarta', 'VIP', 'CENTER', 'A-08', 'Eventra-Laufey-VIP-Center-A08', 'DAILY PASS', 'UPCOMING', 1),
 (2, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'DJAKARTA WAREHOUSE PROJECT', 'assets/events/featured_events/featured_dwp.jpg', 'Dec 11,\n2026', '05:00 PM', 'JIExpo Kemayoran, Jakarta', 'GA', 'FESTIVAL', 'Free', 'Eventra-DWP2026-GA-Festival-Free', 'VIP DECK', 'UPCOMING', 2),
-(3, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'Sheila On 7: Tunggu Aku Di Jakarta', 'assets/events/so7_gbk.webp', 'Dec 25,\n2026', '08:00 PM', 'Gelora Bung Karno Main Stadium', 'CAT 2', 'WEST', 'B-14', 'Eventra-SO7-GBK-CAT2-West-B14', '3-DAY PASS', 'UPCOMING', 3)
+(3, (SELECT id FROM users WHERE username = 'jessica01' LIMIT 1), 'Sheila On 7: Tunggu Aku Di Jakarta', 'assets/events/so7_gbk.webp', 'Dec 25,\n2026', '08:00 PM', 'Gelora Bung Karno Stadium', 'CAT 2', 'WEST', 'B-14', 'Eventra-SO7-GBK-CAT2-West-B14', '3-DAY PASS', 'UPCOMING', 3)
 ON DUPLICATE KEY UPDATE user_id=VALUES(user_id), title=VALUES(title), venue=VALUES(venue);
 
 -- Seed User Favorites
@@ -308,7 +308,7 @@ CREATE TABLE IF NOT EXISTS promotor_events (
 CREATE TABLE IF NOT EXISTS promotor_ticket_types (
     id INT PRIMARY KEY AUTO_INCREMENT,
     promotor_event_id INT NOT NULL,
-    type ENUM('General Admission', 'VIP Access', 'Backstage Pass') NOT NULL,
+    type VARCHAR(120) NOT NULL,
     price INT NOT NULL,
     available INT NOT NULL DEFAULT 0,
     sold INT NOT NULL DEFAULT 0,

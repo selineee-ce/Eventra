@@ -184,24 +184,21 @@ class _ExplorePageState extends State<ExplorePage> {
       grouped.putIfAbsent(key, () => []).add(event);
     }
 
-    return grouped.values
-        .map((events) {
-          final first = events.first;
-          final coords = _lookupVenueCoords(first.place);
-          return _ExploreVenue(
-            name: first.place.isEmpty ? first.title : first.place,
-            city: first.city,
-            image: _lookupVenueImage(first.place, first.image),
-            seatCapacity: _formatSeatCapacity(events),
-            events: events.length.toString(),
-            description: _venueDescription(first, events.length),
-            upcomingEvents: events,
-            lat: coords?.latitude,
-            lng: coords?.longitude,
-          );
-        })
-        .take(6)
-        .toList();
+    return grouped.values.map((events) {
+      final first = events.first;
+      final coords = _lookupVenueCoords(first.place);
+      return _ExploreVenue(
+        name: first.place.isEmpty ? first.title : first.place,
+        city: first.city,
+        image: _lookupVenueImage(first.place, first.image),
+        seatCapacity: _formatSeatCapacity(events),
+        events: events.length.toString(),
+        description: _venueDescription(first, events.length),
+        upcomingEvents: events,
+        lat: coords?.latitude,
+        lng: coords?.longitude,
+      );
+    }).toList();
   }
 
   String _formatSeatCapacity(List<NearbyEvent> events) {
@@ -357,13 +354,7 @@ class _ExplorePageState extends State<ExplorePage> {
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 1000
-                  ? 5
-                  : constraints.maxWidth >= 760
-                  ? 4
-                  : constraints.maxWidth >= 520
-                  ? 3
-                  : 2;
+              final columns = constraints.maxWidth >= 600 ? 3 : 2;
               if (_loadingEvents) {
                 return const SizedBox(
                   height: 120,
@@ -512,7 +503,7 @@ class _GoogleMapPreviewState extends State<_GoogleMapPreview> {
           infoWindow: InfoWindow(
             title: venue.name,
             snippet:
-                '${venue.events} upcoming events · ${venue.seatCapacity} seats',
+                '${venue.events} upcoming events · ${venue.seatCapacity} capacity',
           ),
           onTap: () => setState(() => _selectedVenue = venue),
         ),
@@ -1170,7 +1161,7 @@ class _VenueInfoCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${venue.events} events · ${venue.seatCapacity} seats',
+                    '${venue.events} events · ${venue.seatCapacity} capacity',
                     style: GoogleFonts.poppins(
                       color: const Color(0xFFD0BCFF),
                       fontSize: 11,
@@ -1664,16 +1655,6 @@ class _VenueProfilePageState extends State<_VenueProfilePage> {
             ),
             const SizedBox(height: 18),
 
-            // Small map showing venue location
-            if (venue.lat != null && venue.lng != null) ...[
-              _VenueLocationMap(
-                name: venue.name,
-                position: LatLng(venue.lat!, venue.lng!),
-                city: venue.city,
-              ),
-              const SizedBox(height: 12),
-            ],
-
             _VenueSection(
               title: 'LOCATION',
               child: Row(
@@ -1701,7 +1682,7 @@ class _VenueProfilePageState extends State<_VenueProfilePage> {
                       Expanded(
                         child: _VenueStat(
                           value: venue.seatCapacity,
-                          label: 'SEAT CAPACITY',
+                          label: 'CAPACITY',
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1785,196 +1766,6 @@ class _VenueProfilePageState extends State<_VenueProfilePage> {
       'DEC',
     ];
     return '${months[parsed.month - 1]} ${parsed.day}';
-  }
-}
-
-// ── Venue location mini-map ───────────────────────────────────────────────────
-
-class _VenueLocationMap extends StatefulWidget {
-  const _VenueLocationMap({
-    required this.name,
-    required this.position,
-    required this.city,
-  });
-
-  final String name;
-  final LatLng position;
-  final String city;
-
-  @override
-  State<_VenueLocationMap> createState() => _VenueLocationMapState();
-}
-
-class _VenueLocationMapState extends State<_VenueLocationMap> {
-  final Completer<GoogleMapController> _ctrl = Completer();
-
-  @override
-  Widget build(BuildContext context) {
-    if (kIsWeb) {
-      return _WebVenueLocationMap(
-        name: widget.name,
-        city: widget.city,
-        position: widget.position,
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        height: 160,
-        child: Stack(
-          children: [
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: widget.position,
-                zoom: 15,
-              ),
-              markers: {
-                Marker(
-                  markerId: MarkerId(widget.name),
-                  position: widget.position,
-                  infoWindow: InfoWindow(title: widget.name),
-                ),
-              },
-              zoomControlsEnabled: false,
-              mapToolbarEnabled: false,
-              myLocationButtonEnabled: false,
-              compassEnabled: false,
-              style: _darkMapStyle,
-              onMapCreated: (ctrl) {
-                _ctrl.complete(ctrl);
-              },
-            ),
-            // Subtle gradient overlay at bottom
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.55),
-                    ],
-                  ),
-                ),
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Color(0xFFD0BCFF),
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${widget.name}, ${widget.city}',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WebVenueLocationMap extends StatelessWidget {
-  const _WebVenueLocationMap({
-    required this.name,
-    required this.city,
-    required this.position,
-  });
-
-  final String name;
-  final String city;
-  final LatLng position;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: SizedBox(
-        height: 160,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CustomPaint(painter: _WebMapPainter()),
-            Center(
-              child: _MapPin(
-                icon: Icons.location_on,
-                color: const Color(0xFF56C7FF),
-                selected: true,
-                onTap: () {},
-              ),
-            ),
-            const Positioned(
-              top: 12,
-              left: 12,
-              child: _MapBadge(text: 'Venue location'),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.62),
-                    ],
-                  ),
-                ),
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Color(0xFFD0BCFF),
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '$name, $city',
-                          style: GoogleFonts.poppins(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

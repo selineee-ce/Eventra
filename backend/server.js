@@ -52,6 +52,25 @@ async function columnExists(tableName, columnName) {
   return rows.length > 0;
 }
 
+async function indexExists(tableName, indexName) {
+  const rows = await query(
+    `SELECT INDEX_NAME
+     FROM information_schema.STATISTICS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND INDEX_NAME = ?
+     LIMIT 1`,
+    [tableName, indexName],
+  );
+  return rows.length > 0;
+}
+
+async function addIndexIfMissing(tableName, indexName, columns) {
+  if (await tableExists(tableName) && !(await indexExists(tableName, indexName))) {
+    await query(`CREATE INDEX ${indexName} ON ${tableName} (${columns})`);
+  }
+}
+
 async function ensurePaymentTables() {
   if (await tableExists('users')) {
     const requiredUserColumns = [
@@ -270,6 +289,9 @@ async function ensurePaymentTables() {
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await normalizeExistingLocationData();
+  await ensureDatabaseIndexes();
 }
 
 function normalizePaymentMethod(method) {
@@ -311,6 +333,10 @@ function normalizeTitle(value) {
 }
 
 function normalizeCityFilter(value) {
+  return normalizeCityName(value);
+}
+
+function normalizeCityName(value) {
   const location = String(value || '').trim();
   const lowered = location.toLowerCase();
 
@@ -318,7 +344,195 @@ function normalizeCityFilter(value) {
     return '';
   }
 
-  return location.includes(',') ? location.split(',')[0].trim() : location;
+  const primary = location
+    .split(',')[0]
+    .trim()
+    .replace(/\s+indonesia$/i, '')
+    .trim();
+  const key = primary.toLowerCase();
+  const cityAliases = new Map([
+    ['dki jakarta', 'Jakarta'],
+    ['jakarta indonesia', 'Jakarta'],
+    ['jakarta', 'Jakarta'],
+    ['kabupaten tangerang', 'Tangerang'],
+    ['tangerang selatan', 'Tangerang'],
+    ['bsd', 'Tangerang'],
+    ['ice bsd', 'Tangerang'],
+    ['tangerang', 'Tangerang'],
+    ['badung', 'Bali'],
+    ['denpasar', 'Bali'],
+    ['bali indonesia', 'Bali'],
+    ['bali', 'Bali'],
+    ['bandung', 'Bandung'],
+    ['surabaya', 'Surabaya'],
+    ['yogyakarta', 'Yogyakarta'],
+    ['jogja', 'Yogyakarta'],
+    ['bekasi', 'Bekasi'],
+  ]);
+
+  return cityAliases.get(key) || primary;
+}
+
+function normalizeVenueName(value) {
+  const venue = String(value || '').trim().replace(/\s+/g, ' ');
+  if (!venue) return '';
+
+  const cleaned = venue
+    .replace(/,\s*(jakarta|tangerang|bali|badung|indonesia)$/i, '')
+    .trim();
+  const key = cleaned.toLowerCase();
+  const venueAliases = new Map([
+    ['gbk', 'Gelora Bung Karno Stadium'],
+    ['gbk stadium', 'Gelora Bung Karno Stadium'],
+    ['gbk sports complex', 'Gelora Bung Karno Stadium'],
+    ['gelora bung karno stadium', 'Gelora Bung Karno Stadium'],
+    ['stadion utama gelora bung karno', 'Gelora Bung Karno Stadium'],
+    ['gelora bung karno main stadium', 'Gelora Bung Karno Stadium'],
+    ['jakarta international stadium', 'Jakarta International Stadium'],
+    ['jis', 'Jakarta International Stadium'],
+    ['ice bsd', 'ICE BSD'],
+    ['ice bsd city', 'ICE BSD'],
+    ['gwk cultural park', 'GWK Cultural Park'],
+    ['nice pik 2', 'NICE PIK 2'],
+    ['atlas beach club', 'Atlas Beach Club'],
+    ['beach city international stadium', 'Beach City International Stadium'],
+    ['tennis indoor senayan', 'Tennis Indoor Senayan'],
+    ['istora senayan', 'Istora Senayan'],
+    ['jiexpo theatre', 'JIExpo Theatre'],
+    ['gambir expo jiexpo', 'Gambir Expo JIExpo'],
+  ]);
+
+  return venueAliases.get(key) || cleaned;
+}
+
+const VENUE_CAPACITY_BY_NAME = new Map([
+  ['Gelora Bung Karno Stadium', 77193],
+  ['Jakarta International Stadium', 82000],
+  ['ICE BSD', 10000],
+  ['GWK Cultural Park', 20000],
+  ['Atlas Beach Club', 10000],
+  ['Beach City International Stadium', 15000],
+  ['Gambir Expo JIExpo', 12000],
+  ['JIExpo Theatre', 5000],
+  ['Istora Senayan', 7166],
+  ['Tennis Indoor Senayan', 3500],
+  ['Ancol Carnaval Circuit', 20000],
+  ['Santhika Hall Kelapa Gading', 2500],
+  ['NICE PIK 2', 20000],
+]);
+
+function venueCapacityForVenue(value) {
+  const canonicalVenue = normalizeVenueName(value);
+  return VENUE_CAPACITY_BY_NAME.get(canonicalVenue) || 0;
+}
+
+async function normalizeExistingLocationData() {
+  if (await tableExists('users')) {
+    const users = await query('SELECT id, location FROM users WHERE location IS NOT NULL');
+    for (const user of users) {
+      const location = normalizeCityName(user.location);
+      if (location && location !== user.location) {
+        await query('UPDATE users SET location = ? WHERE id = ?', [location, user.id]);
+      }
+    }
+  }
+
+  if (await tableExists('events')) {
+    const events = await query('SELECT id, venue, city FROM events');
+    for (const event of events) {
+      const venue = normalizeVenueName(event.venue);
+      const city = normalizeCityName(event.city);
+      if (venue && city && (venue !== event.venue || city !== event.city)) {
+        await query('UPDATE events SET venue = ?, city = ? WHERE id = ?', [venue, city, event.id]);
+      }
+    }
+  }
+
+  if (await tableExists('featured_events')) {
+    const events = await query('SELECT id, venue, city FROM featured_events');
+    for (const event of events) {
+      const venue = normalizeVenueName(event.venue);
+      const city = normalizeCityName(event.city);
+      if (venue && city && (venue !== event.venue || city !== event.city)) {
+        await query('UPDATE featured_events SET venue = ?, city = ? WHERE id = ?', [venue, city, event.id]);
+      }
+    }
+  }
+
+  if (await tableExists('nearby_events')) {
+    const events = await query('SELECT id, place, city FROM nearby_events');
+    for (const event of events) {
+      const place = normalizeVenueName(event.place);
+      const city = normalizeCityName(event.city);
+      if (place && city && (place !== event.place || city !== event.city)) {
+        await query('UPDATE nearby_events SET place = ?, city = ? WHERE id = ?', [place, city, event.id]);
+      }
+    }
+  }
+
+  if (await tableExists('artist_events')) {
+    const events = await query('SELECT id, venue, location FROM artist_events');
+    for (const event of events) {
+      const venue = normalizeVenueName(event.venue);
+      const location = normalizeCityName(event.location);
+      if ((venue && venue !== event.venue) || (location && location !== event.location)) {
+        await query('UPDATE artist_events SET venue = ?, location = ? WHERE id = ?', [
+          venue || event.venue,
+          location || event.location,
+          event.id,
+        ]);
+      }
+    }
+  }
+
+  if (await tableExists('exclusive_drops')) {
+    const drops = await query('SELECT id, venue, city FROM exclusive_drops');
+    for (const drop of drops) {
+      const venue = normalizeVenueName(drop.venue);
+      const city = normalizeCityName(drop.city);
+      if (venue && city && (venue !== drop.venue || city !== drop.city)) {
+        await query('UPDATE exclusive_drops SET venue = ?, city = ? WHERE id = ?', [venue, city, drop.id]);
+      }
+    }
+  }
+
+  if (await tableExists('promotor_events')) {
+    const events = await query('SELECT id, venue, location FROM promotor_events');
+    for (const event of events) {
+      const venue = event.venue ? normalizeVenueName(event.venue) : null;
+      const location = normalizeCityName(event.location);
+      if ((venue && venue !== event.venue) || (location && location !== event.location)) {
+        await query('UPDATE promotor_events SET venue = COALESCE(?, venue), location = ? WHERE id = ?', [
+          venue,
+          location || event.location,
+          event.id,
+        ]);
+      }
+    }
+  }
+}
+
+async function ensureDatabaseIndexes() {
+  await addIndexIfMissing('events', 'idx_events_city_sort', 'city, sort_order');
+  await addIndexIfMissing('events', 'idx_events_venue_city', 'venue, city');
+  await addIndexIfMissing('users', 'idx_users_location', 'location');
+  await addIndexIfMissing('promotor_events', 'idx_promotor_events_location', 'location');
+}
+
+async function normalizeExistingVenueCapacities() {
+  if (!(await tableExists('events'))) {
+    return;
+  }
+
+  if (!(await columnExists('events', 'venue_capacity'))) {
+    await query('ALTER TABLE events ADD COLUMN venue_capacity INT NOT NULL DEFAULT 0 AFTER city');
+  }
+
+  const rows = await query('SELECT id, venue FROM events');
+  for (const row of rows) {
+    const venueCapacity = venueCapacityForVenue(row.venue);
+    await query('UPDATE events SET venue_capacity = ? WHERE id = ?', [venueCapacity, row.id]);
+  }
 }
 
 function parseTicketPrice(value, fallback = 850000) {
@@ -740,7 +954,7 @@ app.post('/api/profile/update', async (req, res, next) => {
     }
     if (location !== undefined) {
       updates.push('location = ?');
-      params.push(location);
+      params.push(normalizeCityName(location) || location);
     }
     if (avatar_url !== undefined) {
       updates.push('avatar_url = ?');
@@ -1506,7 +1720,7 @@ app.post('/api/auth/register', async (req, res, next) => {
     const [result] = await pool.execute(
       `INSERT INTO users (username, name, email, phone, password_hash, location, avatar_url, followers_count, upcoming_events_count, description, role, is_verified, sort_order)
        VALUES (?, ?, ?, ?, ?, ?, NULL, 0, 0, NULL, 'user', 1, 0)`,
-      [username, username, email, phone || null, passwordHash, location || 'Set your location'],
+      [username, username, email, phone || null, passwordHash, userLocation],
     );
 
     res.status(201).json({
@@ -1516,7 +1730,7 @@ app.post('/api/auth/register', async (req, res, next) => {
         name: username,
         email,
         phone: phone || null,
-        location: 'Set your location' || userLocation,
+        location: userLocation,
         avatar_url: null,
         followers_count: 0,
         upcoming_events_count: 0,
@@ -1684,6 +1898,8 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
     : String(event.event_date);
 
   const showTime = `${event.event_time} WIB`;
+  const publicVenue = normalizeVenueName(event.venue || event.location) || event.venue || event.location;
+  const publicCity = normalizeCityName(event.location) || event.location;
 
   const [ticketRows] = await connection.execute(
     `SELECT * FROM promotor_ticket_types WHERE promotor_event_id = ? ORDER BY id ASC`,
@@ -1713,8 +1929,8 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
       [
         event.title,
         event.artist_name || event.title,
-        event.venue || event.location,
-        event.location,
+        publicVenue,
+        publicCity,
         dateLabel,
         showTime,
         priceLabel,
@@ -1734,8 +1950,8 @@ async function syncPromotorEventToPublic(connection, promotorEventId) {
       [
         event.title,
         event.artist_name || event.title,
-        event.venue || event.location,
-        event.location,
+        publicVenue,
+        publicCity,
         dateLabel,
         showTime,
         priceLabel,
@@ -1808,8 +2024,10 @@ app.post('/api/promotor/events', async (req, res, next) => {
     if (!userId) return;
 
     const { title, artist_name, venue, description, location, event_date, event_time, image, status, tickets } = req.body || {};
+    const eventVenue = venue ? normalizeVenueName(venue) : null;
+    const eventLocation = normalizeCityName(location);
 
-    if (!title || !location || !event_date || !event_time) {
+    if (!title || !eventLocation || !event_date || !event_time) {
       return res.status(400).json({ error: 'Title, location, date, and time are required' });
     }
 
@@ -1820,7 +2038,7 @@ app.post('/api/promotor/events', async (req, res, next) => {
     const [result] = await connection.execute(
       `INSERT INTO promotor_events (user_id, title, artist_name, venue, description, location, event_date, event_time, image, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, title, artist_name || null, venue || null, description || null, location, event_date, event_time, image || null, eventStatus]
+      [userId, title, artist_name || null, eventVenue, description || null, eventLocation, event_date, event_time, image || null, eventStatus]
     );
 
     const eventId = result.insertId;
@@ -1868,6 +2086,8 @@ app.put('/api/promotor/events/:id', async (req, res, next) => {
 
     const eventId = Number(req.params.id);
     const { title, artist_name, venue, description, location, event_date, event_time, image, status, tickets } = req.body || {};
+    const eventVenue = venue === undefined ? null : (venue ? normalizeVenueName(venue) : null);
+    const eventLocation = location === undefined ? null : normalizeCityName(location);
 
     const [existing] = await query(
       `SELECT id FROM promotor_events WHERE id = ? AND user_id = ? LIMIT 1`,
@@ -1891,29 +2111,19 @@ app.put('/api/promotor/events/:id', async (req, res, next) => {
            image = COALESCE(?, image),
            status = COALESCE(?, status)
        WHERE id = ?`,
-      [title, artist_name, venue, description, location, event_date, event_time, image, status, eventId]
+      [
+        title ?? null,
+        artist_name ?? null,
+        eventVenue,
+        description ?? null,
+        eventLocation,
+        event_date ?? null,
+        event_time ?? null,
+        image ?? null,
+        status ?? null,
+        eventId,
+      ]
     );
-
-    if (Array.isArray(tickets)) {
-      await connection.execute(
-        `DELETE FROM promotor_ticket_types WHERE promotor_event_id = ?`,
-        [eventId]
-      );
-      for (const ticket of tickets) {
-        await connection.execute(
-          `INSERT INTO promotor_ticket_types (promotor_event_id, type, price, available, sales_end_date, sales_end_time)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-          [
-            eventId,
-            ticket.type,
-            Number(ticket.price) || 0,
-            Number(ticket.available) || 0,
-            ticket.sales_end_date || null,
-            ticket.sales_end_time || null,
-          ]
-        );
-      }
-    }
 
     if (Array.isArray(tickets)) {
       await connection.execute(
