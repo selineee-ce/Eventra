@@ -190,6 +190,18 @@ async function ensurePaymentTables() {
     await query('ALTER TABLE payment_orders ADD COLUMN user_id INT NULL AFTER id');
   }
 
+  try {
+    const [paymentMethodCol] = await query(
+      "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment_orders' AND COLUMN_NAME = 'payment_method'"
+    );
+    if (paymentMethodCol && !paymentMethodCol.COLUMN_TYPE.includes("'manual_transfer'")) {
+      console.log('Migrating payment_orders table: adding manual_transfer payment method...');
+      await query("ALTER TABLE payment_orders MODIFY COLUMN payment_method ENUM('qris','gopay','ovo','visa','manual_transfer') NOT NULL");
+    }
+  } catch (err) {
+    console.error('Failed to migrate payment method enum:', err.message);
+  }
+
   await query(`
     CREATE TABLE IF NOT EXISTS user_favorites (
       id INT PRIMARY KEY AUTO_INCREMENT,
@@ -262,7 +274,7 @@ async function ensurePaymentTables() {
 
 function normalizePaymentMethod(method) {
   const normalized = String(method || '').toLowerCase();
-  return ['qris', 'gopay', 'ovo', 'visa'].includes(normalized) ? normalized : null;
+  return ['qris', 'gopay', 'ovo', 'visa', 'manual_transfer'].includes(normalized) ? normalized : null;
 }
 
 function maskCardNumber(cardNumber) {
@@ -610,6 +622,7 @@ app.get('/api/home/nearby-events', async (req, res, next) => {
           COALESCE(lineup, title) AS artist_name,
           price,
           image,
+          remaining_seats,
           sort_order,
           CASE
             WHEN ? IS NULL THEN 0
@@ -639,6 +652,7 @@ app.get('/api/home/nearby-events', async (req, res, next) => {
           artist_name,
           price,
           image,
+          remaining_seats,
           sort_order,
           0 AS is_favorite
         FROM nearby_events

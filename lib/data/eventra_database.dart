@@ -106,16 +106,16 @@ class EventraDatabase {
     } catch (error) {
       final msg = error.toString();
 
-    final isNotFound = msg.contains('404');
+      final isNotFound = msg.contains('404');
 
-    if (!isNotFound) rethrow;
+      if (!isNotFound) rethrow;
 
-    // fallback ONLY kalau backend tidak punya endpoint
-    await _postJson('/favorites', {
-      'favorite_type': 'artist',
-      'item_id': artistId,
-      'is_favorite': isFavorite,
-    }, requiresAuth: true);
+      // fallback ONLY kalau backend tidak punya endpoint
+      await _postJson('/favorites', {
+        'favorite_type': 'artist',
+        'item_id': artistId,
+        'is_favorite': isFavorite,
+      }, requiresAuth: true);
     }
   }
 
@@ -124,6 +124,7 @@ class EventraDatabase {
     required String paymentMethod,
     required List<Map<String, dynamic>> items,
     Map<String, dynamic>? card,
+    Map<String, dynamic>? proof,
   }) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/payments/checkout'),
@@ -133,6 +134,7 @@ class EventraDatabase {
         'paymentMethod': paymentMethod,
         'items': items,
         if (card != null) 'card': card,
+        if (proof != null) 'proof': proof,
       }),
     );
 

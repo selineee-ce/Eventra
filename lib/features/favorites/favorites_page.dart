@@ -421,9 +421,7 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
 
   Widget _favoriteArtistCard(Map<String, dynamic> artist) {
     final image =
-        artist['image']?.toString() ??
-        artist['avatar_url']?.toString() ??
-        '';
+        artist['image']?.toString() ?? artist['avatar_url']?.toString() ?? '';
 
     final title =
         artist['title']?.toString() ??
@@ -431,9 +429,7 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
         'Saved artist';
 
     final subtitle =
-        artist['subtitle']?.toString() ??
-        artist['genre']?.toString() ??
-        '';
+        artist['subtitle']?.toString() ?? artist['genre']?.toString() ?? '';
 
     return GestureDetector(
       onTap: () => _openArtistProfile(artist),
@@ -515,27 +511,70 @@ class _EventraFavoritesPageState extends State<EventraFavoritesPage> {
     );
   }
 
-  void _openArtistProfile(Map<String, dynamic> artist) {
+  Future<void> _openArtistProfile(Map<String, dynamic> artist) async {
     final image =
         artist['image']?.toString() ?? artist['avatar_url']?.toString() ?? '';
+    var profileData = <String, dynamic>{
+      ...artist,
+      'name': artist['title'] ?? artist['name'],
+      'imageUrl': image,
+      'followers': artist['followers'] ?? artist['followers_count'],
+      'is_favorite': true,
+      'upcomingEvents': artist['upcomingEvents'] ?? [],
+    };
+
+    try {
+      final artists = await EventraDatabase.instance.fetchTrendingArtists();
+      final favoriteArtistId = _asInt(artist['artist_id'] ?? artist['id']);
+      final favoriteName = (artist['title'] ?? artist['name'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
+      final matchedArtist = artists.cast<Map<String, dynamic>?>().firstWhere((
+        candidate,
+      ) {
+        if (candidate == null) return false;
+        final candidateArtistId = _asInt(candidate['artist_id']);
+        final candidateId = _asInt(candidate['id']);
+        final candidateName = (candidate['name'] ?? candidate['title'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
+
+        return (favoriteArtistId > 0 &&
+                (candidateArtistId == favoriteArtistId ||
+                    candidateId == favoriteArtistId)) ||
+            (favoriteName.isNotEmpty && candidateName == favoriteName);
+      }, orElse: () => null);
+
+      if (matchedArtist != null) {
+        profileData = {
+          ...matchedArtist,
+          'is_favorite': true,
+          'imageUrl':
+              matchedArtist['imageUrl'] ?? matchedArtist['avatar_url'] ?? image,
+        };
+      }
+    } catch (_) {
+      // Keep the lightweight favorite payload as fallback.
+    }
+
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => EventraSubpageShell(
           currentIndex: 3,
-          child: ArtistProfilePage(
-            artistData: {
-              ...artist,
-              'name': artist['title'] ?? artist['name'],
-              'imageUrl': image,
-              'followers': artist['followers'] ?? artist['followers_count'],
-              'is_favorite': true,
-              'upcomingEvents': artist['upcomingEvents'] ?? [],
-            },
-          ),
+          child: ArtistProfilePage(artistData: profileData),
         ),
       ),
     );
+  }
+
+  int _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   Widget _artistImage(String image) {

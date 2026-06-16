@@ -25,7 +25,7 @@ class _ExploreVenue {
     required this.name,
     required this.city,
     required this.image,
-    required this.startingPrice,
+    required this.seatCapacity,
     required this.events,
     required this.description,
     required this.upcomingEvents,
@@ -36,7 +36,7 @@ class _ExploreVenue {
   final String name;
   final String city;
   final String image;
-  final String startingPrice;
+  final String seatCapacity;
   final String events;
   final String description;
   final List<NearbyEvent> upcomingEvents;
@@ -192,7 +192,7 @@ class _ExplorePageState extends State<ExplorePage> {
             name: first.place.isEmpty ? first.title : first.place,
             city: first.city,
             image: _lookupVenueImage(first.place, first.image),
-            startingPrice: first.price.isEmpty ? '-' : first.price,
+            seatCapacity: _formatSeatCapacity(events),
             events: events.length.toString(),
             description: _venueDescription(first, events.length),
             upcomingEvents: events,
@@ -202,6 +202,22 @@ class _ExplorePageState extends State<ExplorePage> {
         })
         .take(6)
         .toList();
+  }
+
+  String _formatSeatCapacity(List<NearbyEvent> events) {
+    final totalSeats = events.fold<int>(
+      0,
+      (sum, event) => sum + event.remainingSeats,
+    );
+    if (totalSeats <= 0) return '-';
+
+    final text = totalSeats.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      if (i > 0 && (text.length - i) % 3 == 0) buffer.write('.');
+      buffer.write(text[i]);
+    }
+    return buffer.toString();
   }
 
   @override
@@ -496,7 +512,7 @@ class _GoogleMapPreviewState extends State<_GoogleMapPreview> {
           infoWindow: InfoWindow(
             title: venue.name,
             snippet:
-                '${venue.events} upcoming events · from ${venue.startingPrice}',
+                '${venue.events} upcoming events · ${venue.seatCapacity} seats',
           ),
           onTap: () => setState(() => _selectedVenue = venue),
         ),
@@ -1154,7 +1170,7 @@ class _VenueInfoCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${venue.events} events · from ${venue.startingPrice}',
+                    '${venue.events} events · ${venue.seatCapacity} seats',
                     style: GoogleFonts.poppins(
                       color: const Color(0xFFD0BCFF),
                       fontSize: 11,
@@ -1684,8 +1700,8 @@ class _VenueProfilePageState extends State<_VenueProfilePage> {
                     children: [
                       Expanded(
                         child: _VenueStat(
-                          value: venue.startingPrice,
-                          label: 'START FROM',
+                          value: venue.seatCapacity,
+                          label: 'SEAT CAPACITY',
                         ),
                       ),
                       const SizedBox(width: 12),

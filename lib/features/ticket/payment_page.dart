@@ -3,6 +3,7 @@ import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:eventra/features/home/models/ticket_type.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 class PaymentPage extends StatefulWidget {
   const PaymentPage({
@@ -23,14 +24,10 @@ class PaymentPage extends StatefulWidget {
 }
 
 class _PaymentPageState extends State<PaymentPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _cardHolderController = TextEditingController();
-  final _cardNumberController = TextEditingController();
-  final _expiryController = TextEditingController();
-  final _cvvController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
 
-  String _paymentMethod = 'qris';
-  bool _isChangingMethod = false;
+  XFile? _transferProof;
+  bool _isPickingProof = false;
   bool _isSubmitting = false;
   String? _errorMessage;
 
@@ -43,15 +40,6 @@ class _PaymentPageState extends State<PaymentPage> {
 
   int get total => subtotal + serviceFee;
 
-  @override
-  void dispose() {
-    _cardHolderController.dispose();
-    _cardNumberController.dispose();
-    _expiryController.dispose();
-    _cvvController.dispose();
-    super.dispose();
-  }
-
   String _formatRupiah(int amount) {
     final str = amount.toString();
     final buffer = StringBuffer();
@@ -62,9 +50,36 @@ class _PaymentPageState extends State<PaymentPage> {
     return 'Rp. ${buffer.toString()}';
   }
 
-  Future<void> _submitPayment() async {
-    if (_paymentMethod == 'visa' &&
-        !(_formKey.currentState?.validate() ?? false)) {
+  Future<void> _pickTransferProof() async {
+    if (_isPickingProof) return;
+
+    setState(() {
+      _isPickingProof = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (!mounted || picked == null) return;
+      setState(() => _transferProof = picked);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to upload transfer proof. Please try again.';
+      });
+    } finally {
+      if (mounted) setState(() => _isPickingProof = false);
+    }
+  }
+
+  Future<void> _checkStatus() async {
+    if (_transferProof == null) {
+      setState(() {
+        _errorMessage = 'Please upload your transfer proof first.';
+      });
       return;
     }
 
@@ -76,7 +91,7 @@ class _PaymentPageState extends State<PaymentPage> {
     try {
       final payment = await EventraDatabase.instance.checkoutPayment(
         eventId: widget.event.id,
-        paymentMethod: _paymentMethod,
+        paymentMethod: 'manual_transfer',
         items: widget.tickets
             .map(
               (ticket) => {
@@ -85,14 +100,7 @@ class _PaymentPageState extends State<PaymentPage> {
               },
             )
             .toList(),
-        card: _paymentMethod == 'visa'
-            ? {
-                'cardHolder': _cardHolderController.text.trim(),
-                'cardNumber': _cardNumberController.text.trim(),
-                'expiry': _expiryController.text.trim(),
-                'cvv': _cvvController.text.trim(),
-              }
-            : null,
+        proof: {'fileName': _transferProof!.name, 'status': 'uploaded'},
       );
 
       if (!mounted) return;
@@ -103,9 +111,7 @@ class _PaymentPageState extends State<PaymentPage> {
         _errorMessage = error.toString().replaceFirst('Exception: ', '');
       });
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -123,7 +129,7 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Review Order',
+            'Manual Payment',
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 26,
@@ -132,13 +138,13 @@ class _PaymentPageState extends State<PaymentPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Check your details before finalizing the payment.',
+            'Transfer to the Eventra BCA account, then upload your proof.',
             style: GoogleFonts.poppins(color: Colors.white60, fontSize: 13),
           ),
           const SizedBox(height: 18),
           _buildOrderSummary(),
           const SizedBox(height: 24),
-          _buildPaymentMethod(),
+          _buildBankTransferPanel(),
           if (_errorMessage != null) ...[
             const SizedBox(height: 14),
             Text(
@@ -153,11 +159,11 @@ class _PaymentPageState extends State<PaymentPage> {
           const SizedBox(height: 28),
           Row(
             children: [
-              const Icon(Icons.lock_outline, color: Colors.white70, size: 18),
+              const Icon(Icons.verified_user, color: Colors.white70, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'SECURE CHECKOUT POWERED BY EVENTRA ENCRYPTION',
+                  'DUMMY VERIFICATION: CHECK STATUS WILL AUTO APPROVE',
                   style: GoogleFonts.poppins(
                     color: Colors.white54,
                     fontSize: 11,
@@ -169,7 +175,7 @@ class _PaymentPageState extends State<PaymentPage> {
           const SizedBox(height: 24),
           Center(
             child: ElevatedButton.icon(
-              onPressed: _isSubmitting ? null : _submitPayment,
+              onPressed: _isSubmitting ? null : _checkStatus,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFD0BCFF),
                 foregroundColor: const Color(0xFF241B32),
@@ -181,13 +187,13 @@ class _PaymentPageState extends State<PaymentPage> {
                 shape: const StadiumBorder(),
               ),
               label: Text(
-                _isSubmitting ? 'Processing...' : 'Confirm & Pay',
+                _isSubmitting ? 'Checking...' : 'Check Status',
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
               ),
-              icon: const Icon(Icons.arrow_forward, size: 18),
+              icon: const Icon(Icons.fact_check_outlined, size: 18),
             ),
           ),
         ],
@@ -227,41 +233,7 @@ class _PaymentPageState extends State<PaymentPage> {
           const SizedBox(height: 8),
           _buildPriceLine('Service Fee (3.5%)', _formatRupiah(serviceFee)),
           const Divider(color: Colors.white24, height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'Total',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFFD0BCFF),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    _formatRupiah(total),
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFFD0BCFF),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    'All taxes included',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white38,
-                      fontSize: 10,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          _buildPriceLine('Total', _formatRupiah(total), highlight: true),
         ],
       ),
     );
@@ -340,7 +312,7 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 
-  Widget _buildPaymentMethod() {
+  Widget _buildBankTransferPanel() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -348,283 +320,109 @@ class _PaymentPageState extends State<PaymentPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Payment Method',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() => _isChangingMethod = !_isChangingMethod);
-                },
-                child: Text(
-                  _isChangingMethod ? 'DONE' : 'CHANGE',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFFD0BCFF),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'Bank Transfer',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 16),
-          _buildSelectedMethodCard(),
-          if (_isChangingMethod) ...[
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _buildMethodButton('qris', 'QRIS', Icons.qr_code_2),
-                _buildMethodButton(
-                  'gopay',
-                  'GoPay',
-                  Icons.account_balance_wallet,
-                ),
-                _buildMethodButton('ovo', 'OVO', Icons.wallet),
-                _buildMethodButton('visa', 'Visa', Icons.credit_card),
-              ],
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2035),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0x33D0BCFF)),
             ),
-          ],
-          if (_paymentMethod == 'qris') ...[
-            const SizedBox(height: 18),
-            _buildQrisBox(),
-          ],
-          if (_paymentMethod == 'visa') ...[
-            const SizedBox(height: 18),
-            _buildVisaForm(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMethodButton(String value, String label, IconData icon) {
-    final selected = _paymentMethod == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _paymentMethod = value;
-          _isChangingMethod = false;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0x33D0BCFF) : const Color(0xFF2A2035),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? const Color(0xFFD0BCFF) : Colors.white10,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: const Color(0xFFD0BCFF), size: 18),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSelectedMethodCard() {
-    final details = switch (_paymentMethod) {
-      'qris' => ('QRIS', 'Scan QR to complete payment', Icons.qr_code_2),
-      'gopay' => (
-        'GoPay',
-        'Pay with your GoPay wallet',
-        Icons.account_balance_wallet,
-      ),
-      'ovo' => ('OVO', 'Pay with your OVO wallet', Icons.wallet),
-      'visa' => ('Visa Card', 'Enter card details below', Icons.credit_card),
-      _ => ('Payment', 'Choose payment method', Icons.payments),
-    };
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2035),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x33D0BCFF)),
-      ),
-      child: Row(
-        children: [
-          Icon(details.$3, color: const Color(0xFFD0BCFF), size: 24),
-          const SizedBox(width: 12),
-          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  details.$1,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  details.$2,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white54,
-                    fontSize: 12,
-                  ),
-                ),
+                _buildBankRow('Bank', 'BCA'),
+                _buildBankRow('Account Name', 'Edwin Winarto'),
+                _buildBankRow('Account Number', '8085413291'),
+                _buildBankRow('Amount', _formatRupiah(total)),
               ],
             ),
           ),
-          const Icon(
-            Icons.check_circle_outline,
-            color: Color(0xFFD0BCFF),
-            size: 20,
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _isPickingProof ? null : _pickTransferProof,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFD0BCFF),
+              side: const BorderSide(color: Color(0x66D0BCFF)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: Icon(
+              _transferProof == null
+                  ? Icons.upload_file
+                  : Icons.check_circle_outline,
+              size: 18,
+            ),
+            label: Text(
+              _isPickingProof
+                  ? 'Uploading...'
+                  : _transferProof == null
+                  ? 'Upload Transfer Proof'
+                  : _transferProof!.name,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildQrisBox() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2035),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
+  Widget _buildBankRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.qr_code_2,
-              color: Color(0xFF0E0717),
-              size: 120,
-            ),
-          ),
-          const SizedBox(height: 10),
           Text(
-            'Dummy QRIS for prototype checkout',
+            label,
             style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVisaForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          _buildInput(
-            controller: _cardHolderController,
-            label: 'Card Holder',
-            validator: (value) =>
-                value == null || value.trim().isEmpty ? 'Required' : null,
-          ),
-          const SizedBox(height: 12),
-          _buildInput(
-            controller: _cardNumberController,
-            label: 'Card Number',
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              final digits = (value ?? '').replaceAll(RegExp(r'\D'), '');
-              if (digits.length < 13 || digits.length > 19) {
-                return 'Invalid card number';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInput(
-                  controller: _expiryController,
-                  label: 'MM/YY',
-                  validator: (value) =>
-                      RegExp(r'^\d{2}/\d{2}$').hasMatch(value ?? '')
-                      ? null
-                      : 'MM/YY',
-                ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInput(
-                  controller: _cvvController,
-                  label: 'CVV',
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      RegExp(r'^\d{3,4}$').hasMatch(value ?? '') ? null : 'CVV',
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInput({
-    required TextEditingController controller,
-    required String label,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      validator: validator,
-      style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
-        filled: true,
-        fillColor: const Color(0xFF2A2035),
-        errorStyle: GoogleFonts.poppins(fontSize: 10),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPriceLine(String label, String value) {
+  Widget _buildPriceLine(String label, String value, {bool highlight = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13),
+          style: GoogleFonts.poppins(
+            color: highlight ? const Color(0xFFD0BCFF) : Colors.white70,
+            fontSize: highlight ? 20 : 13,
+            fontWeight: highlight ? FontWeight.w800 : FontWeight.w500,
+          ),
         ),
         Text(
           value,
           style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+            color: highlight ? const Color(0xFFD0BCFF) : Colors.white,
+            fontSize: highlight ? 20 : 13,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -634,7 +432,7 @@ class _PaymentPageState extends State<PaymentPage> {
   BoxDecoration _panelDecoration() {
     return BoxDecoration(
       color: const Color(0xFF1B1526),
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       border: Border.all(color: Colors.white10),
     );
   }

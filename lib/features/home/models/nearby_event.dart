@@ -1,6 +1,6 @@
 // Model untuk tabel `events` di MySQL
 // Query di server.js:
-//   SELECT id, title, date_label, venue, city, lineup, price, image, sort_order, is_favorite
+//   SELECT id, title, date_label, venue, city, lineup, price, image, remaining_seats, sort_order, is_favorite
 //   FROM events ORDER BY sort_order ASC
 class NearbyEvent {
   final int id;
@@ -11,6 +11,7 @@ class NearbyEvent {
   final String artistName;
   final String price;
   final String image;
+  final int remainingSeats;
   final int sortOrder;
   final bool isFavorite;
 
@@ -23,6 +24,7 @@ class NearbyEvent {
     required this.artistName,
     required this.price,
     required this.image,
+    this.remainingSeats = 0,
     required this.sortOrder,
     required this.isFavorite,
   });
@@ -37,6 +39,7 @@ class NearbyEvent {
       dateLabel: (json['date_label'] ?? json['date'])?.toString() ?? '',
       price: json['price']?.toString() ?? '',
       image: json['image']?.toString() ?? '',
+      remainingSeats: _asInt(json['remaining_seats']),
       sortOrder: _asInt(json['sort_order']),
       isFavorite: _asBool(json['is_favorite']),
     );
@@ -64,6 +67,7 @@ class NearbyEvent {
     String? artistName,
     String? price,
     String? image,
+    int? remainingSeats,
     int? sortOrder,
     bool? isFavorite,
   }) {
@@ -76,6 +80,7 @@ class NearbyEvent {
       artistName: artistName ?? this.artistName,
       price: price ?? this.price,
       image: image ?? this.image,
+      remainingSeats: remainingSeats ?? this.remainingSeats,
       sortOrder: sortOrder ?? this.sortOrder,
       isFavorite: isFavorite ?? this.isFavorite,
     );
