@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:eventra/features/promotor/views/promotor_events_page.dart';
+import 'package:eventra/features/promotor/views/promotor_profile_page.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/promotor/views/promotor_create_event_page.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:eventra/features/promotor/views/promotor_profile_page.dart';
 
 class PromotorDashboard extends StatefulWidget {
   const PromotorDashboard({super.key});
@@ -39,7 +39,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
 
     try {
       final profile = await EventraDatabase.instance.fetchProfile();
-      final name = profile['name'] as String? ?? 'Promotor';
+      final name = profile['name']?.toString() ?? 'Promotor';
 
       final dashboard = await PromotorApi.instance.fetchDashboard(userId);
       final stats = dashboard['dashboard'] as Map<String, dynamic>? ?? {};
@@ -56,7 +56,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
         _activeEvent = active.toString();
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -81,21 +81,6 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF16111F),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'EVENTRA',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFFD0BCFF),
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -103,25 +88,38 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
         child: SafeArea(
           child: Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Icon(Icons.search, color: Colors.white, size: 24),
+                    Text(
+                      'EVENTRA',
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFFD0BCFF),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                  ],
+                ),
+              ),
+
               Expanded(
                 child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFD0BCFF),
-                        ),
-                      )
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFD0BCFF)))
                     : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 8,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'PROMOTOR DASHBOARD',
-                              style: TextStyle(
-                                color: Color(0xFFD0BCFF),
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFFD0BCFF),
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 1.5,
@@ -145,8 +143,7 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const PromotorCreateEventPage(),
+                                    builder: (_) => const PromotorCreateEventPage(),
                                   ),
                                 ).then((_) => _loadDashboard());
                               },
@@ -155,29 +152,15 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(7),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 18,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
                               ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.add,
-                                    color: Color(0xFF3D2B6C),
-                                    size: 18,
-                                  ),
-                                  SizedBox(width: 6),
-                                  Text(
-                                    'Create Event',
-                                    style: TextStyle(
-                                      color: Color(0xFF3D2B6C),
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
+                              child: const Text(
+                                '+ Create Event',
+                                style: TextStyle(
+                                  color: Color(0xFF3D2B6C),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 28),
@@ -239,23 +222,13 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(title,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
-              Text(
-                value,
-                style: TextStyle(
-                  color: valueColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(value,
+                  style: TextStyle(
+                      color: valueColor, fontSize: 20, fontWeight: FontWeight.bold)),
             ],
           ),
           Container(
@@ -289,22 +262,17 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               children: [
                 Icon(
                   _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
-                  color: _selectedIndex == 0
-                      ? const Color(0xFFD0BCFF)
-                      : const Color(0xFFB3B3B3),
+                  color: _selectedIndex == 0 ? const Color(0xFFD0BCFF) : const Color(0xFFB3B3B3),
                   size: 24,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'HOME',
-                  style: TextStyle(
-                    color: _selectedIndex == 0
-                        ? const Color(0xFFD0BCFF)
-                        : const Color(0xFFB3B3B3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('HOME',
+                    style: TextStyle(
+                        color: _selectedIndex == 0
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -314,8 +282,10 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               setState(() => _selectedIndex = 1);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const PromotorEventsPage(),
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorEventsPage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
                 ),
               );
             },
@@ -345,16 +315,13 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'EVENTS',
-                  style: TextStyle(
-                    color: _selectedIndex == 1
-                        ? const Color(0xFFD0BCFF)
-                        : const Color(0xFFB3B3B3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('EVENTS',
+                    style: TextStyle(
+                        color: _selectedIndex == 1
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -364,7 +331,11 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               setState(() => _selectedIndex = 2);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const PromotorProfilePage()),
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorProfilePage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
               );
             },
             child: Column(
@@ -378,16 +349,13 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                   size: 24,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'PROFILE',
-                  style: TextStyle(
-                    color: _selectedIndex == 2
-                        ? const Color(0xFFD0BCFF)
-                        : const Color(0xFFB3B3B3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('PROFILE',
+                    style: TextStyle(
+                        color: _selectedIndex == 2
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),

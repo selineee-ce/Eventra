@@ -6,6 +6,8 @@ import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/home/views/notification_page.dart';
 import 'package:eventra/features/home/views/main_screen.dart';
+import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
+import 'package:eventra/features/promotor/views/promotor_events_page.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,21 +40,19 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
     }
 
     try {
-      final results = await Future.wait([
-        EventraDatabase.instance.fetchProfile(),
-        PromotorApi.instance.fetchEvents(userId),
-      ]);
+      final profileFuture = EventraDatabase.instance.fetchProfile();
+      final eventsFuture = PromotorApi.instance.fetchEvents(userId);
+
+      final profile = await profileFuture;
+      final rawEvents = await eventsFuture;
 
       if (!mounted) return;
 
-      final profile = results[0] as Map<String, dynamic>;
-      final events = results[1] as List<Map<String, dynamic>>;
-
       setState(() {
         _profile = profile;
-        _draftCount = events.where((e) => e['status'] == 'draft').length;
-        _liveCount = events.where((e) => e['status'] == 'live').length;
-        _completedCount = events.where((e) => e['status'] == 'completed').length;
+        _draftCount = rawEvents.where((e) => e['status'] == 'draft').length;
+        _liveCount = rawEvents.where((e) => e['status'] == 'live').length;
+        _completedCount = rawEvents.where((e) => e['status'] == 'completed').length;
         _isLoading = false;
       });
     } catch (_) {
@@ -68,6 +68,7 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0E0717),
+      bottomNavigationBar: _buildBottomNavBar(),
       body: SafeArea(
         child: _isLoading
             ? const Center(
@@ -83,7 +84,7 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
                       _buildHeader(context),
                       const SizedBox(height: 26),
 
-                      _buildAvatar(_profile['avatar_url'] as String?),
+                      _buildAvatar(_profile['avatar_url']?.toString()),
                       const SizedBox(height: 15),
 
                       Text(
@@ -144,7 +145,7 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
                         ],
                       ),
                       const SizedBox(height: 25),
-                      
+
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
@@ -195,8 +196,8 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
                         child: _buildSettingsItem(
                           icon: Icons.business_outlined,
                           title: 'Company',
-                          statusText: _profile['company']?.toString().isNotEmpty == true
-                              ? _profile['company'] as String
+                          statusText: (_profile['company']?.toString().isNotEmpty == true)
+                              ? _profile['company'].toString()
                               : 'Not set',
                           isLast: true,
                         ),
@@ -245,13 +246,8 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
 
   Widget _buildHeader(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        IconButton(
-          onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        const SizedBox(width: 48),
         IconButton(
           onPressed: () {
             Navigator.push(
@@ -284,8 +280,7 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
       if (avatarUrl.startsWith('http')) {
         imageProvider = NetworkImage(avatarUrl);
       } else if (avatarUrl.startsWith('data:image')) {
-        final base64Str = avatarUrl.split(',').last;
-        imageProvider = MemoryImage(base64Decode(base64Str));
+        imageProvider = MemoryImage(base64Decode(avatarUrl.split(',').last));
       } else if (avatarUrl.startsWith('assets/')) {
         imageProvider = AssetImage(avatarUrl);
       } else {
@@ -407,20 +402,18 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
       ),
     );
   }
-  
+
   Future<void> _showEditProfileModal(BuildContext context) async {
-    final nameCtrl = TextEditingController(text: _profile['name'] as String? ?? '');
-    final aboutCtrl = TextEditingController(text: _profile['description'] as String? ?? '');
-    final avatarCtrl = TextEditingController(text: _profile['avatar_url'] as String? ?? '');
+    final nameCtrl = TextEditingController(text: _profile['name']?.toString() ?? '');
+    final aboutCtrl = TextEditingController(text: _profile['description']?.toString() ?? '');
+    final avatarCtrl = TextEditingController(text: _profile['avatar_url']?.toString() ?? '');
 
     final bool? saved = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1B1526),
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
+        title: Text('Edit Profile',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -440,7 +433,8 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('SAVE', style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+            child: Text('SAVE',
+                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -468,30 +462,24 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
       }
     }
   }
-  
+
   Future<void> _showCompanyDialog(BuildContext context) async {
-    final companyCtrl = TextEditingController(text: _profile['company'] as String? ?? '');
+    final companyCtrl = TextEditingController(text: _profile['company']?.toString() ?? '');
 
     final String? newCompany = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1B1526),
-        title: Text(
-          'Company Name',
-          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
-        ),
+        title: Text('Company Name',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700)),
         content: TextField(
           controller: companyCtrl,
           style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             hintText: 'Enter your organization or company name',
-            hintStyle: const TextStyle(color: Colors.white38),
-            enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.white10),
-            ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: Color(0xFFD0BCFF)),
-            ),
+            hintStyle: TextStyle(color: Colors.white38),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFD0BCFF))),
           ),
         ),
         actions: [
@@ -501,7 +489,8 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, companyCtrl.text.trim()),
-            child: Text('SAVE', style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+            child: Text('SAVE',
+                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -535,7 +524,8 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(label,
+            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -554,6 +544,87 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF121114),
+        border: Border(top: BorderSide(color: Colors.white10)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorDashboard(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.home_outlined, color: Color(0xFFB3B3B3), size: 24),
+                const SizedBox(height: 4),
+                Text('HOME',
+                    style: GoogleFonts.poppins(
+                        color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorEventsPage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(Icons.calendar_today, color: Color(0xFFB3B3B3), size: 26),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: const Icon(Icons.star, color: Color(0xFFB3B3B3), size: 13),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('EVENTS',
+                    style: GoogleFonts.poppins(
+                        color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {},
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.person, color: Color(0xFFD0BCFF), size: 24),
+                const SizedBox(height: 4),
+                Text('PROFILE',
+                    style: GoogleFonts.poppins(
+                        color: const Color(0xFFD0BCFF), fontSize: 10, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

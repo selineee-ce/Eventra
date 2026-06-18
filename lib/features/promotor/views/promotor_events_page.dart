@@ -4,11 +4,11 @@ import 'package:eventra/core/constants/colors.dart';
 import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:eventra/features/promotor/views/promotor_create_event_page.dart';
 import 'package:eventra/features/promotor/views/promotor_edit_event_page.dart';
+import 'package:eventra/features/promotor/views/promotor_profile_page.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/promotor/views/promotor_event_detail_page.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:eventra/features/promotor/views/promotor_profile_page.dart';
 
 class PromotorEventsPage extends StatefulWidget {
   const PromotorEventsPage({super.key});
@@ -26,9 +26,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
 
   List<String> get _filters {
     final liveCount = _events.where((e) => e['status'] == 'live').length;
-    final completedCount = _events
-        .where((e) => e['status'] == 'completed')
-        .length;
+    final completedCount = _events.where((e) => e['status'] == 'completed').length;
     final draftCount = _events.where((e) => e['status'] == 'draft').length;
     return [
       'ALL EVENTS',
@@ -52,10 +50,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E2E),
-        title: const Text(
-          'Delete Event',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Delete Event', style: TextStyle(color: Colors.white)),
         content: const Text(
           'Are you sure you want to delete this event? This cannot be undone.',
           style: TextStyle(color: Colors.white70),
@@ -63,20 +58,12 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'CANCEL',
-              style: TextStyle(color: Colors.white38),
-            ),
+            child: const Text('CANCEL', style: TextStyle(color: Colors.white38)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'DELETE',
-              style: TextStyle(
-                color: Colors.redAccent,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text('DELETE',
+                style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -87,9 +74,8 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
     try {
       await PromotorApi.instance.deleteEvent(userId: userId, eventId: eventId);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Event deleted')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Event deleted')));
       _loadEvents();
     } catch (e) {
       if (!mounted) return;
@@ -113,7 +99,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
         _events = events;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
     }
@@ -124,46 +110,23 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
       context,
       MaterialPageRoute(builder: (_) => PromotorEventDetailPage(event: event)),
     );
-
-    if (result == true) {
-      _loadEvents();
-    }
+    if (result == true) _loadEvents();
   }
 
   Widget _buildEventImage(dynamic imageData, double height) {
     final imageStr = imageData?.toString();
     if (imageStr == null || imageStr.isEmpty) {
-      return Container(
-        height: height,
-        width: double.infinity,
-        color: const Color(0xFF2A1F3D),
-      );
+      return Container(height: height, width: double.infinity, color: const Color(0xFF2A1F3D));
     }
-
     if (imageStr.startsWith('data:image')) {
       try {
-        final base64Str = imageStr.split(',').last;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(
-          bytes,
-          height: height,
-          width: double.infinity,
-          fit: BoxFit.cover,
-        );
+        final bytes = base64Decode(imageStr.split(',').last);
+        return Image.memory(bytes, height: height, width: double.infinity, fit: BoxFit.cover);
       } catch (_) {
-        return Container(
-          height: height,
-          width: double.infinity,
-          color: const Color(0xFF2A1F3D),
-        );
+        return Container(height: height, width: double.infinity, color: const Color(0xFF2A1F3D));
       }
     }
-
-    return Container(
-      height: height,
-      width: double.infinity,
-      color: const Color(0xFF2A1F3D),
-    );
+    return Container(height: height, width: double.infinity, color: const Color(0xFF2A1F3D));
   }
 
   int _toInt(dynamic value) {
@@ -185,30 +148,14 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
   String _formatEventDate(dynamic dateValue) {
     if (dateValue == null) return '-';
     final str = dateValue.toString();
-    // Backend returns YYYY-MM-DD, convert to readable format
     try {
       final parts = str.split('-');
       if (parts.length == 3) {
-        const months = [
-          '',
-          'Jan',
-          'Feb',
-          'Mar',
-          'Apr',
-          'May',
-          'Jun',
-          'Jul',
-          'Aug',
-          'Sep',
-          'Oct',
-          'Nov',
-          'Dec',
-        ];
+        const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         final month = int.tryParse(parts[1]) ?? 0;
         final day = int.tryParse(parts[2]) ?? 0;
-        if (month >= 1 && month <= 12) {
-          return '${months[month]} $day';
-        }
+        if (month >= 1 && month <= 12) return '${months[month]} $day';
       }
     } catch (_) {}
     return str;
@@ -216,33 +163,14 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
 
   List<Map<String, dynamic>> get _filteredEvents {
     if (_selectedFilter == 0) return _events;
-    if (_selectedFilter == 1) {
-      return _events.where((e) => e['status'] == 'live').toList();
-    }
-    if (_selectedFilter == 2) {
-      return _events.where((e) => e['status'] == 'draft').toList();
-    }
+    if (_selectedFilter == 1) return _events.where((e) => e['status'] == 'live').toList();
+    if (_selectedFilter == 2) return _events.where((e) => e['status'] == 'draft').toList();
     return _events.where((e) => e['status'] == 'completed').toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF16111F),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'EVENTRA',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFFD0BCFF),
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -250,13 +178,26 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
         child: SafeArea(
           child: Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Icon(Icons.search, color: Colors.white, size: 24),
+                    Text('EVENTRA',
+                        style: GoogleFonts.poppins(
+                            color: const Color(0xFFD0BCFF),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2)),
+                    const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                  ],
+                ),
+              ),
+
               Expanded(
                 child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFFD0BCFF),
-                        ),
-                      )
+                    ? const Center(child: CircularProgressIndicator(color: Color(0xFFD0BCFF)))
                     : _events.isEmpty
                     ? _buildEmptyState()
                     : Stack(
@@ -266,68 +207,47 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'My Events',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                const Text('My Events',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold)),
                                 const SizedBox(height: 8),
                                 const Text(
                                   'Manage your roster, track live ticket sales, and analyze post-event revenue.',
-                                  style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 15,
-                                    height: 1.5,
-                                  ),
+                                  style: TextStyle(color: Colors.white54, fontSize: 15, height: 1.5),
                                 ),
                                 const SizedBox(height: 20),
 
                                 SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
                                   child: Row(
-                                    children: List.generate(_filters.length, (
-                                      index,
-                                    ) {
-                                      final isSelected =
-                                          _selectedFilter == index;
+                                    children: List.generate(_filters.length, (index) {
+                                      final isSelected = _selectedFilter == index;
                                       return GestureDetector(
-                                        onTap: () => setState(
-                                          () => _selectedFilter = index,
-                                        ),
+                                        onTap: () => setState(() => _selectedFilter = index),
                                         child: Container(
-                                          margin: const EdgeInsets.only(
-                                            right: 10,
-                                          ),
+                                          margin: const EdgeInsets.only(right: 10),
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 8,
-                                          ),
+                                              horizontal: 16, vertical: 8),
                                           decoration: BoxDecoration(
                                             color: isSelected
                                                 ? const Color(0xFFD0BCFF)
                                                 : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
+                                            borderRadius: BorderRadius.circular(20),
                                             border: Border.all(
                                               color: isSelected
                                                   ? const Color(0xFFD0BCFF)
                                                   : Colors.white30,
                                             ),
                                           ),
-                                          child: Text(
-                                            _filters[index],
-                                            style: TextStyle(
-                                              color: isSelected
-                                                  ? const Color(0xFF3D2B6C)
-                                                  : Colors.white70,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
+                                          child: Text(_filters[index],
+                                              style: TextStyle(
+                                                  color: isSelected
+                                                      ? const Color(0xFF3D2B6C)
+                                                      : Colors.white70,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600)),
                                         ),
                                       );
                                     }),
@@ -337,28 +257,17 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
 
                                 if (_filteredEvents.isEmpty)
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 40,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 40),
                                     child: Center(
-                                      child: Text(
-                                        'No events in this category yet.',
-                                        style: TextStyle(
-                                          color: Colors.white38,
-                                          fontSize: 14,
-                                        ),
-                                      ),
+                                      child: Text('No events in this category yet.',
+                                          style: TextStyle(color: Colors.white38, fontSize: 14)),
                                     ),
                                   )
                                 else
-                                  ..._filteredEvents.map(
-                                    (event) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 16,
-                                      ),
-                                      child: _buildEventCard(event),
-                                    ),
-                                  ),
+                                  ..._filteredEvents.map((event) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 16),
+                                        child: _buildEventCard(event),
+                                      )),
 
                                 const SizedBox(height: 80),
                               ],
@@ -373,9 +282,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const PromotorCreateEventPage(),
-                                  ),
+                                      builder: (_) => const PromotorCreateEventPage()),
                                 ).then((_) => _loadEvents());
                               },
                               child: Container(
@@ -385,11 +292,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                                   color: Color(0xFFD0BCFF),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Color(0xFF3D2B6C),
-                                  size: 28,
-                                ),
+                                child: const Icon(Icons.add, color: Color(0xFF3D2B6C), size: 28),
                               ),
                             ),
                           ),
@@ -413,46 +316,26 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'My Events',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('My Events',
+                  style: TextStyle(
+                      color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               const Text(
                 'Manage your roster, track live ticket sales, and analyze post-event revenue.',
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontSize: 15,
-                  height: 1.5,
-                ),
+                style: TextStyle(color: Colors.white54, fontSize: 15, height: 1.5),
               ),
               const SizedBox(height: 80),
               Center(
                 child: Column(
-                  children: [
-                    const Icon(
-                      Icons.event_note_outlined,
-                      color: Colors.white24,
-                      size: 56,
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'No events yet',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Tap the + button to create your first event.',
-                      style: TextStyle(color: Colors.white38, fontSize: 13),
-                    ),
+                  children: const [
+                    Icon(Icons.event_note_outlined, color: Colors.white24, size: 56),
+                    SizedBox(height: 12),
+                    Text('No events yet',
+                        style: TextStyle(
+                            color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 6),
+                    Text('Tap the + button to create your first event.',
+                        style: TextStyle(color: Colors.white38, fontSize: 13)),
                   ],
                 ),
               ),
@@ -466,18 +349,13 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const PromotorCreateEventPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const PromotorCreateEventPage()),
               ).then((_) => _loadEvents());
             },
             child: Container(
               width: 52,
               height: 52,
-              decoration: const BoxDecoration(
-                color: Color(0xFFD0BCFF),
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: Color(0xFFD0BCFF), shape: BoxShape.circle),
               child: const Icon(Icons.add, color: Color(0xFF3D2B6C), size: 28),
             ),
           ),
@@ -488,7 +366,6 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
 
   Widget _buildEventCard(Map<String, dynamic> event) {
     final status = event['status'] as String;
-
     if (status == 'live') return _buildLiveCard(event);
     if (status == 'draft') return _buildDraftCard(event);
     return _buildCompletedCard(event);
@@ -511,31 +388,19 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   child: _buildEventImage(event['image'], 160),
                 ),
                 Positioned(
                   top: 12,
                   left: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'LIVE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                        color: Colors.red, borderRadius: BorderRadius.circular(6)),
+                    child: const Text('LIVE',
+                        style: TextStyle(
+                            color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                   ),
                 ),
                 Positioned(
@@ -548,7 +413,6 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                 ),
               ],
             ),
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -558,46 +422,29 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          event['title']?.toString() ?? 'Untitled Event',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: Text(event['title']?.toString() ?? 'Untitled Event',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold)),
                       ),
                       GestureDetector(
                         onTap: () => _deleteEvent(_toInt(event['id'])),
-                        child: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.redAccent,
-                          size: 22,
-                        ),
+                        child: const Icon(Icons.delete_outline,
+                            color: Colors.redAccent, size: 22),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'EST. REVENUE',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      Text(
-                        _formatRupiah(revenue),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      const Text('EST. REVENUE',
+                          style: TextStyle(
+                              color: Colors.white54, fontSize: 11, letterSpacing: 1)),
+                      Text(_formatRupiah(revenue),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ],
@@ -622,31 +469,20 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: _buildEventImage(event['image'], 140),
               ),
               Positioned(
                 top: 12,
                 left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade700,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'DRAFT',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                      color: Colors.grey.shade700,
+                      borderRadius: BorderRadius.circular(6)),
+                  child: const Text('DRAFT',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
               ),
               Positioned(
@@ -659,7 +495,6 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
               ),
             ],
           ),
-
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -669,36 +504,25 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
-                        event['title']?.toString() ?? 'Untitled Event',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: Text(event['title']?.toString() ?? 'Untitled Event',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold)),
                     ),
                     GestureDetector(
                       onTap: () => _deleteEvent(_toInt(event['id'])),
-                      child: const Icon(
-                        Icons.delete_outline,
-                        color: Colors.redAccent,
-                        size: 22,
-                      ),
+                      child: const Icon(Icons.delete_outline,
+                          color: Colors.redAccent, size: 22),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Setup incomplete. Review your event details and ticket types before publishing.',
-                  style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                  style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.4),
                 ),
                 const SizedBox(height: 16),
-
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -706,30 +530,22 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              PromotorEditEventPage(existingEvent: event),
-                        ),
+                            builder: (_) =>
+                                PromotorEditEventPage(existingEvent: event)),
                       ).then((_) => _loadEvents());
                     },
-                    icon: const Icon(
-                      Icons.edit_outlined,
-                      size: 16,
-                      color: Color(0xFFD0BCFF),
-                    ),
-                    label: const Text(
-                      'CONTINUE EDITING',
-                      style: TextStyle(
-                        color: Color(0xFFD0BCFF),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    icon: const Icon(Icons.edit_outlined,
+                        size: 16, color: Color(0xFFD0BCFF)),
+                    label: const Text('CONTINUE EDITING',
+                        style: TextStyle(
+                            color: Color(0xFFD0BCFF),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5)),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFFD0BCFF)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                          borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -763,59 +579,35 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
               color: const Color(0xFF1A4A2E),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: const Color(0xFF2ECC71).withValues(alpha: 0.4),
-              ),
+                  color: const Color(0xFF2ECC71).withValues(alpha: 0.4)),
             ),
-            child: const Text(
-              'COMPLETED',
-              style: TextStyle(
-                color: Color(0xFF2ECC71),
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            child: const Text('COMPLETED',
+                style: TextStyle(
+                    color: Color(0xFF2ECC71),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 12),
-
-          Text(
-            '${_formatEventDate(event['event_date'])} • ${event['location'] ?? '-'}',
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
-          ),
+          Text('${_formatEventDate(event['event_date'])} • ${event['location'] ?? '-'}',
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
           const SizedBox(height: 4),
-
-          Text(
-            event['title']?.toString() ?? 'Untitled Event',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text(event['title']?.toString() ?? 'Untitled Event',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 14),
-
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'FINAL ATTENDANCE',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
+                    const Text('FINAL ATTENDANCE',
+                        style: TextStyle(
+                            color: Colors.white54, fontSize: 11, letterSpacing: 0.8)),
                     const SizedBox(height: 4),
-                    Text(
-                      '$ticketSold / $ticketTotal',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('$ticketSold / $ticketTotal',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -823,23 +615,15 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'TOTAL PAYOUT',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
+                    const Text('TOTAL PAYOUT',
+                        style: TextStyle(
+                            color: Colors.white54, fontSize: 11, letterSpacing: 0.8)),
                     const SizedBox(height: 4),
-                    Text(
-                      _formatRupiah(revenue),
-                      style: const TextStyle(
-                        color: Color(0xFFD0BCFF),
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(_formatRupiah(revenue),
+                        style: const TextStyle(
+                            color: Color(0xFFD0BCFF),
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -865,8 +649,10 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
               setState(() => _selectedIndex = 0);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const PromotorDashboard(),
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorDashboard(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
                 ),
               );
             },
@@ -881,16 +667,13 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                   size: 24,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'HOME',
-                  style: TextStyle(
-                    color: _selectedIndex == 0
-                        ? const Color(0xFFD0BCFF)
-                        : const Color(0xFFB3B3B3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('HOME',
+                    style: TextStyle(
+                        color: _selectedIndex == 0
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -923,16 +706,13 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'EVENTS',
-                  style: TextStyle(
-                    color: _selectedIndex == 1
-                        ? const Color(0xFFD0BCFF)
-                        : const Color(0xFFB3B3B3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('EVENTS',
+                    style: TextStyle(
+                        color: _selectedIndex == 1
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -942,7 +722,11 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
               setState(() => _selectedIndex = 2);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const PromotorProfilePage()),
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorProfilePage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
               );
             },
             child: Column(
@@ -956,16 +740,13 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                   size: 24,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'PROFILE',
-                  style: TextStyle(
-                    color: _selectedIndex == 2
-                        ? const Color(0xFFD0BCFF)
-                        : const Color(0xFFB3B3B3),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text('PROFILE',
+                    style: TextStyle(
+                        color: _selectedIndex == 2
+                            ? const Color(0xFFD0BCFF)
+                            : const Color(0xFFB3B3B3),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
               ],
             ),
           ),
