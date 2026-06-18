@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:eventra/core/constants/colors.dart';
-import 'package:eventra/features/profile/profile_page.dart';
 import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:eventra/features/promotor/views/promotor_create_event_page.dart';
 import 'package:eventra/features/promotor/views/promotor_edit_event_page.dart';
@@ -9,6 +8,7 @@ import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/promotor/views/promotor_event_detail_page.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:eventra/features/promotor/views/promotor_profile_page.dart';
 
 class PromotorEventsPage extends StatefulWidget {
   const PromotorEventsPage({super.key});
@@ -942,10 +942,7 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
               setState(() => _selectedIndex = 2);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const EventraProfilePage(isPromotorView: true),
-                ),
+                MaterialPageRoute(builder: (context) => const PromotorProfilePage()),
               );
             },
             child: Column(

@@ -7,15 +7,12 @@ import 'package:eventra/features/auth/views/login_page.dart';
 import 'package:eventra/features/home/views/notification_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:eventra/features/home/views/main_screen.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:eventra/features/promotor/views/promotor_register_page.dart';
 
 class EventraProfilePage extends StatefulWidget {
-  const EventraProfilePage({super.key, this.isPromotorView = false});
-
-  final bool isPromotorView;
+  const EventraProfilePage({super.key});
 
   @override
   State<EventraProfilePage> createState() => _EventraProfilePageState();
@@ -33,45 +30,29 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
   }
 
   Future<void> _loadProfile() async {
-    print('[Profile] _loadProfile START');
     try {
       final loadedProfile = await EventraDatabase.instance.fetchProfile();
-      print('[Profile] fetchProfile OK: $loadedProfile');
 
-      if (!mounted) {
-        print('[Profile] not mounted, returning');
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         profile = loadedProfile;
         _isLoading = false;
       });
-      print('[Profile] setState 1 done');
 
       await EventraSession.instance.setUser(loadedProfile);
-      print('[Profile] setUser done');
 
       final userId = EventraSession.instance.userId;
-      print('[Profile] userId = $userId');
       if (userId != null) {
         try {
           final status = await PromotorApi.instance.checkApplicationStatus(userId);
-          print('[Profile] status = $status');
           if (mounted) {
             setState(() => _promotorStatus = status);
           }
-        } catch (e) {
-          print('[Profile] checkApplicationStatus ERROR: $e');
-        }
+        } catch (_) {}
       }
-    } catch (e, st) {
-      print('[Profile] OUTER CATCH ERROR: $e');
-      print(st);
-      if (!mounted) {
-        return;
-      }
-
+    } catch (_) {
+      if (!mounted) return;
       setState(() {
         profile = EventraSession.instance.currentUser ?? {};
         _isLoading = false;
@@ -80,9 +61,7 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
   }
 
   @override
-  @override
-Widget build(BuildContext context) {
-  print('[Profile] BUILD called, isLoading=$_isLoading, status=$_promotorStatus, isPromotorView=${widget.isPromotorView}');
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -97,16 +76,13 @@ Widget build(BuildContext context) {
                   child: Column(
                     children: [
                       const SizedBox(height: 6),
-
                       _buildHeader(context),
-
                       const SizedBox(height: 26),
 
-                      // PROFILE HEADER
                       _buildAvatar(profile['avatar_url'] as String?),
                       const SizedBox(height: 15),
                       Text(
-                        profile['name'] as String? ?? '',
+                        profile['name']?.toString() ?? '',
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 28,
@@ -116,7 +92,7 @@ Widget build(BuildContext context) {
                       const SizedBox(height: 2),
                       Text(
                         (profile['description']?.toString().isNotEmpty == true)
-                            ? profile['description'] as String
+                            ? profile['description'].toString()
                             : 'No bio yet.',
                         style: GoogleFonts.poppins(
                           color: Colors.white60,
@@ -127,7 +103,6 @@ Widget build(BuildContext context) {
                       ),
                       const SizedBox(height: 18),
 
-                      // EDIT PROFILE BUTTON
                       SizedBox(
                         width: 160,
                         child: ElevatedButton.icon(
@@ -144,7 +119,9 @@ Widget build(BuildContext context) {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD0BCFF),
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
                         ),
                       ),
@@ -155,18 +132,12 @@ Widget build(BuildContext context) {
                         children: [
                           _buildStatCard(
                             _displayCount(profile['upcoming_events_count']),
-                            AppConfig.instance.text(
-                              'profile.stats.upcoming',
-                              'UPCOMING EVENTS',
-                            ),
+                            AppConfig.instance.text('profile.stats.upcoming', 'UPCOMING EVENTS'),
                           ),
                           const SizedBox(width: 12),
                           _buildStatCard(
                             _displayCount(profile['followers_count']),
-                            AppConfig.instance.text(
-                              'profile.stats.followers',
-                              'FOLLOWERS',
-                            ),
+                            AppConfig.instance.text('profile.stats.followers', 'FOLLOWERS'),
                           ),
                         ],
                       ),
@@ -175,10 +146,7 @@ Widget build(BuildContext context) {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          AppConfig.instance.text(
-                            'profile.settings.title',
-                            'ACCOUNT SETTINGS',
-                          ),
+                          AppConfig.instance.text('profile.settings.title', 'ACCOUNT SETTINGS'),
                           style: GoogleFonts.poppins(
                             color: Colors.white60,
                             fontSize: 22,
@@ -190,50 +158,53 @@ Widget build(BuildContext context) {
 
                       GestureDetector(
                         onTap: () {
-                          if (widget.isPromotorView) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const MainScreen()),
-                              (route) => false,
-                            );
-                            return;
-                          }
-
                           switch (_promotorStatus) {
                             case 'approved':
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const PromotorDashboard()),
+                                MaterialPageRoute(
+                                  builder: (_) => const PromotorDashboard(),
+                                ),
                               );
                               break;
                             case 'pending':
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Your promoter application is still pending approval.')),
+                                const SnackBar(
+                                  content: Text('Your promoter application is still pending approval.'),
+                                ),
                               );
                               break;
                             case 'rejected':
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Your promoter application was rejected.')),
+                                const SnackBar(
+                                  content: Text('Your promoter application was rejected.'),
+                                ),
                               );
                               break;
-                            default: // 'none'
+                            default:
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const PromotorRegisterPage()),
+                                MaterialPageRoute(
+                                  builder: (_) => const PromotorRegisterPage(),
+                                ),
                               );
                           }
                         },
                         child: _buildSettingsItem(
                           icon: Icons.campaign_outlined,
-                          title: widget.isPromotorView ? "Customer View" : "Promoter Roles",
-                          statusText: widget.isPromotorView ? '• SWITCH BACK' : _promotorStatusLabel(),
-                          statusColor: widget.isPromotorView ? const Color(0xFF4FA7FF) : _promotorStatusColor(),
+                          title: 'Promoter Roles',
+                          statusText: _promotorStatusLabel(),
+                          statusColor: _promotorStatusColor(),
                           trailingWidget: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                "SWITCH",
-                                style: GoogleFonts.poppins(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w400),
+                                'SWITCH',
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               const Icon(Icons.loop, color: Colors.white38, size: 14),
@@ -242,12 +213,13 @@ Widget build(BuildContext context) {
                           showChevron: false,
                         ),
                       ),
+
                       GestureDetector(
                         onTap: () => _showLocationDialog(context),
                         child: _buildSettingsItem(
                           icon: Icons.location_on_outlined,
-                          title: "Location",
-                          statusText: profile['location'] as String? ?? 'Not set',
+                          title: 'Location',
+                          statusText: profile['location']?.toString() ?? 'Not set',
                           isLast: true,
                         ),
                       ),
@@ -257,14 +229,10 @@ Widget build(BuildContext context) {
                       GestureDetector(
                         onTap: () async {
                           await EventraSession.instance.clear();
-                          if (!mounted) {
-                            return;
-                          }
+                          if (!mounted) return;
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginPage(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const LoginPage()),
                             (route) => false,
                           );
                         },
@@ -298,62 +266,40 @@ Widget build(BuildContext context) {
   }
 
   Future<void> _showEditProfileModal(BuildContext context) async {
-    final TextEditingController nameController = TextEditingController(
-      text: profile['name'] as String? ?? '',
-    );
-    final TextEditingController aboutController = TextEditingController(
-      text: profile['description'] as String? ?? '',
-    );
-    final TextEditingController avatarController = TextEditingController(
-      text: profile['avatar_url'] as String? ?? '',
-    );
+    final nameController = TextEditingController(text: profile['name']?.toString() ?? '');
+    final aboutController = TextEditingController(text: profile['description']?.toString() ?? '');
+    final avatarController = TextEditingController(text: profile['avatar_url']?.toString() ?? '');
 
     final bool? saved = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1B1526),
-          title: Text(
-            'Edit Profile',
-            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1526),
+        title: Text('Edit Profile',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildTextField(controller: nameController, label: 'Name', hint: 'Enter your name'),
+              const SizedBox(height: 16),
+              _buildTextField(controller: aboutController, label: 'About', hint: 'Enter your about info', maxLines: 3),
+              const SizedBox(height: 16),
+              _buildTextField(controller: avatarController, label: 'Avatar URL', hint: 'Enter image URL'),
+            ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTextField(
-                  controller: nameController,
-                  label: 'Name',
-                  hint: 'Enter your name',
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: aboutController,
-                  label: 'About',
-                  hint: 'Enter your about info',
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: avatarController,
-                  label: 'Avatar URL',
-                  hint: 'Enter image URL',
-                ),
-              ],
-            ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text('SAVE', style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
-            ),
-          ],
-        );
-      },
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('SAVE',
+                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
     );
 
     if (saved == true) {
@@ -388,10 +334,8 @@ Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
-        ),
+        Text(label,
+            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -414,62 +358,55 @@ Widget build(BuildContext context) {
   }
 
   Future<void> _showLocationDialog(BuildContext context) async {
-    final TextEditingController locationController = TextEditingController(
-      text: profile['location'] as String? ?? '',
+    final locationController = TextEditingController(
+      text: profile['location']?.toString() ?? '',
     );
 
     final String? newLocation = await showDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1B1526),
-          title: Text(
-            'Change Location',
-            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: locationController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Enter your city (e.g. Jakarta, Bali)',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  enabledBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white10),
-                  ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFFD0BCFF)),
-                  ),
-                ),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1526),
+        title: Text('Change Location',
+            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: locationController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Enter your city (e.g. Jakarta, Bali)',
+                hintStyle: TextStyle(color: Colors.white38),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white10)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFD0BCFF))),
               ),
-              const SizedBox(height: 15),
-              Wrap(
-                spacing: 8,
-                children: ['Jakarta', 'Tangerang', 'Bali'].map((city) {
-                  return ActionChip(
-                    label: Text(city),
-                    onPressed: () => locationController.text = city,
-                    backgroundColor: const Color(0xFF231A34),
-                    labelStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, locationController.text.trim()),
-              child: Text('SAVE', style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+            const SizedBox(height: 15),
+            Wrap(
+              spacing: 8,
+              children: ['Jakarta', 'Tangerang', 'Bali'].map((city) {
+                return ActionChip(
+                  label: Text(city),
+                  onPressed: () => locationController.text = city,
+                  backgroundColor: const Color(0xFF231A34),
+                  labelStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
+                );
+              }).toList(),
             ),
           ],
-        );
-      },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, locationController.text.trim()),
+            child: Text('SAVE',
+                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
     );
 
     if (newLocation != null && newLocation.isNotEmpty) {
@@ -493,41 +430,26 @@ Widget build(BuildContext context) {
 
   String _promotorStatusLabel() {
     switch (_promotorStatus) {
-      case 'approved':
-        return '• APPROVED';
-      case 'pending':
-        return '• PENDING APPROVAL';
-      case 'rejected':
-        return '• REJECTED';
-      default:
-        return '• NOT APPLIED';
+      case 'approved': return '• APPROVED';
+      case 'pending': return '• PENDING APPROVAL';
+      case 'rejected': return '• REJECTED';
+      default: return '• NOT APPLIED';
     }
   }
 
   Color _promotorStatusColor() {
     switch (_promotorStatus) {
-      case 'approved':
-        return const Color(0xFF2ECC71);
-      case 'pending':
-        return const Color(0xFF4FA7FF);
-      case 'rejected':
-        return const Color(0xFFF47A7A);
-      default:
-        return Colors.white38;
+      case 'approved': return const Color(0xFF2ECC71);
+      case 'pending': return const Color(0xFF4FA7FF);
+      case 'rejected': return const Color(0xFFF47A7A);
+      default: return Colors.white38;
     }
   }
 
   String _displayCount(dynamic value) {
-    if (value == null) {
-      return '0';
-    }
-
-    if (value is num) {
-      return value.toString();
-    }
-
-    final parsed = int.tryParse(value.toString());
-    return parsed?.toString() ?? value.toString();
+    if (value == null) return '0';
+    if (value is num) return value.toString();
+    return int.tryParse(value.toString())?.toString() ?? value.toString();
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -544,7 +466,7 @@ Widget build(BuildContext context) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const EventraSubpageShell(
+                builder: (_) => const EventraSubpageShell(
                   currentIndex: 4,
                   child: NotificationPage(),
                 ),
@@ -571,8 +493,7 @@ Widget build(BuildContext context) {
       if (avatarUrl.startsWith('http')) {
         imageProvider = NetworkImage(avatarUrl);
       } else if (avatarUrl.startsWith('data:image')) {
-        final base64Str = avatarUrl.split(',').last;
-        imageProvider = MemoryImage(base64Decode(base64Str));
+        imageProvider = MemoryImage(base64Decode(avatarUrl.split(',').last));
       } else if (avatarUrl.startsWith('assets/')) {
         imageProvider = AssetImage(avatarUrl);
       } else {
@@ -582,7 +503,6 @@ Widget build(BuildContext context) {
           child: Icon(Icons.person, size: 75, color: Colors.white24),
         );
       }
-
       return CircleAvatar(
         radius: 55,
         backgroundColor: Colors.white10,
@@ -664,29 +584,21 @@ Widget build(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 19,
-                  ),
-                ),
+                Text(title,
+                    style: GoogleFonts.poppins(
+                        color: Colors.white, fontWeight: FontWeight.w500, fontSize: 19)),
                 if (statusText != null) ...[
                   const SizedBox(height: 1),
-                  Text(
-                    statusText,
-                    style: GoogleFonts.poppins(
-                      color: statusColor ?? Colors.white38,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                  Text(statusText,
+                      style: GoogleFonts.poppins(
+                          color: statusColor ?? Colors.white38,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400)),
                 ],
               ],
             ),
           ),
-          if (trailingWidget != null) ...[trailingWidget],
+          if (trailingWidget != null) trailingWidget,
           if (showChevron) ...[
             const SizedBox(width: 12),
             const Icon(Icons.chevron_right, color: Colors.white38, size: 18),

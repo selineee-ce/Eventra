@@ -264,6 +264,15 @@ async function ensurePaymentTables() {
     if (ticketsUserIdColumn.length === 0) {
       await query('ALTER TABLE tickets ADD COLUMN user_id INT NULL AFTER id');
     }
+
+    const ticketImageType = await query(
+      `SELECT DATA_TYPE FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tickets' AND COLUMN_NAME = 'image'`
+    );
+    if (ticketImageType[0]?.DATA_TYPE === 'text') {
+      console.log('Migrating tickets table: image column to LONGTEXT...');
+      await query('ALTER TABLE tickets MODIFY COLUMN image LONGTEXT NOT NULL');
+    }
   }
 
   await query(`
@@ -930,7 +939,18 @@ app.get('/api/profile', async (req, res, next) => {
        LIMIT 1`,
       [userId],
     );
-    res.json({ profile: row || {} });
+
+    const profile = row || {};
+
+    if (profile.role === 'promoter') {
+      const [application] = await query(
+        `SELECT organization_name FROM promotor_applications WHERE user_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
+        [userId],
+      );
+      profile.company = application?.organization_name || null;
+    }
+
+    res.json({ profile });
   } catch (error) {
     next(error);
   }
@@ -943,7 +963,7 @@ app.post('/api/profile/update', async (req, res, next) => {
       return;
     }
 
-    const { name, location, avatar_url, description } = req.body || {};
+    const { name, location, avatar_url, description, company } = req.body || {};
 
     const updates = [];
     const params = [];
@@ -954,7 +974,7 @@ app.post('/api/profile/update', async (req, res, next) => {
     }
     if (location !== undefined) {
       updates.push('location = ?');
-      params.push(normalizeCityName(location) || location);
+      params.push(location);
     }
     if (avatar_url !== undefined) {
       updates.push('avatar_url = ?');
@@ -965,18 +985,19 @@ app.post('/api/profile/update', async (req, res, next) => {
       params.push(description);
     }
 
-    if (updates.length === 0) {
+    if (updates.length === 0 && company === undefined) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
     const [oldUser] = await query('SELECT role, name FROM users WHERE id = ?', [userId]);
 
-    params.push(userId);
-
-    await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
-      params,
-    );
+    if (updates.length > 0) {
+      params.push(userId);
+      await query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+        params,
+      );
+    }
 
     if (description !== undefined) {
       await query('UPDATE users SET bio = ? WHERE id = ?', [description, userId]);
@@ -1006,6 +1027,13 @@ app.post('/api/profile/update', async (req, res, next) => {
           artistParams,
         );
       }
+    }
+
+    if (company !== undefined && oldUser && oldUser.role === 'promoter') {
+      await query(
+        `UPDATE promotor_applications SET organization_name = ? WHERE user_id = ? AND status = 'approved'`,
+        [company, userId],
+      );
     }
 
     res.json({ ok: true });
@@ -1135,8 +1163,6 @@ app.get('/api/artists', async (req, res, next) => {
   try {
     const userId = getRequestUserId(req);
     if (await tableExists('artists')) {
-      // Join with users table to get the latest profile info (source of truth)
-      // We match by name for seeded artists
       const artists = await query(`
         SELECT 
           a.id AS artist_id,
@@ -2239,17 +2265,6 @@ app.get('/api/promotor/application-status', async (req, res, next) => {
 app.use((error, _req, res, _next) => {
   res.status(500).json({ error: error.message || 'Internal server error' });
 });
-
-if (await tableExists('tickets')) {
-  const ticketImageType = await query(
-    `SELECT DATA_TYPE FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tickets' AND COLUMN_NAME = 'image'`
-  );
-  if (ticketImageType[0]?.DATA_TYPE === 'text') {
-    console.log('Migrating tickets table: image column to LONGTEXT...');
-    await query('ALTER TABLE tickets MODIFY COLUMN image LONGTEXT NOT NULL');
-  }
-}
 
 ensurePaymentTables()
   .then(() => {
