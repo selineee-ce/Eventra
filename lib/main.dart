@@ -28,9 +28,10 @@ class MyApp extends StatelessWidget {
       ),
 
       home: EventraSession.instance.isLoggedIn
-          ? const MainScreen()
+          ? (EventraSession.instance.currentUser?['role'] == 'promoter'
+              ? const PromotorDashboard()
+              : const MainScreen())
           : const LoginPage(),
-      // home: const PromotorDashboard(),
     );
   }
 }

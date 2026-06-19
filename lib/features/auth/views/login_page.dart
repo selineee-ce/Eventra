@@ -3,6 +3,7 @@ import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/auth/controller/input_validator.dart';
 import 'package:eventra/features/auth/views/register_page.dart';
+import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -49,10 +50,13 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
+      final role = EventraSession.instance.currentUser?['role'];
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
-          builder: (context) => const MainScreen(),
+          builder: (_) => role == 'promoter'
+              ? const PromotorDashboard()
+              : const MainScreen(),
         ),
         (route) => false,
       );
@@ -197,7 +201,6 @@ class _LoginPageState extends State<LoginPage> {
 
                         const SizedBox(height: 35),
 
-                        /// LOGIN BUTTON
                         SizedBox(
                           width: double.infinity,
                           height: 55,
