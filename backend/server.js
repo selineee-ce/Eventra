@@ -942,6 +942,25 @@ app.get('/api/profile', async (req, res, next) => {
 
     const profile = row || {};
 
+    if (profile.id) {
+      let dynamicEventsCount = 0;
+      if (await tableExists('events')) {
+        const result = await query(
+          `SELECT COUNT(*) as c FROM events WHERE user_id = ? OR LOWER(lineup) LIKE LOWER(?)`,
+          [profile.id, `%${profile.name}%`]
+        );
+        dynamicEventsCount += Number(result[0]?.c || 0);
+      }
+      if (await tableExists('artist_events')) {
+        const result = await query(
+          `SELECT COUNT(*) as c FROM artist_events WHERE artist_id = ?`,
+          [profile.id]
+        );
+        dynamicEventsCount += Number(result[0]?.c || 0);
+      }
+      profile.upcoming_events_count = dynamicEventsCount;
+    }
+
     if (profile.role === 'promoter') {
       const [application] = await query(
         `SELECT organization_name FROM promotor_applications WHERE user_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT 1`,
@@ -1200,7 +1219,7 @@ app.get('/api/artists', async (req, res, next) => {
         : [];
       const eventRows = (await tableExists('events'))
         ? await query(`
-          SELECT id, title, image, city, venue, price, sort_order,
+          SELECT id, title, image, city, venue, price, sort_order, lineup, date_label,
             CASE
               WHEN ? IS NULL THEN 0
               ELSE EXISTS(
@@ -1238,23 +1257,8 @@ app.get('/api/artists', async (req, res, next) => {
         ]),
       );
 
-      const responseData = artists.map((artist) => ({
-        id: artist.id,
-        artist_id: artist.artist_id,
-        name: artist.name,
-        username: null,
-        avatar_url: artist.avatar_url,
-        imageUrl: artist.imageUrl,
-        genre: artist.genre,
-        description: artist.description,
-        followers: artist.followers,
-        followers_count: artist.followers,
-        monthly_listeners: artist.monthly_listeners,
-        events_count: artist.events_count,
-        sort_order: artist.sort_order,
-        rank: artist.sort_order,
-        is_favorite: artist.is_favorite,
-        upcomingEvents: allEvents
+      const responseData = artists.map((artist) => {
+        const seededEvents = allEvents
           .filter((event) => Number(event.artist_id) === Number(artist.artist_id))
           .map((event) => {
             const matchedEvent = eventImageByTitle.get(normalizeTitle(event.title));
@@ -1274,8 +1278,49 @@ app.get('/api/artists', async (req, res, next) => {
               sort_order: matchedEvent?.sort_order || event.sort_order,
               is_favorite: matchedEvent?.is_favorite || 0,
             };
-          }),
-      }));
+          });
+
+        const promoterEvents = eventRows
+          .filter((event) => {
+            const lineupMatch = event.lineup && event.lineup.toLowerCase().includes(artist.name.toLowerCase());
+            const isDuplicate = seededEvents.some((se) => normalizeTitle(se.title) === normalizeTitle(event.title));
+            return lineupMatch && !isDuplicate;
+          })
+          .map((event) => {
+            return {
+              id: event.id,
+              event_id: event.id,
+              title: event.title,
+              lineup: event.lineup,
+              venue: event.venue,
+              city: event.city || '',
+              date_label: event.date_label,
+              image: event.image || artist.imageUrl,
+              price: event.price || '',
+              sort_order: event.sort_order,
+              is_favorite: event.is_favorite || 0,
+            };
+          });
+
+        return {
+          id: artist.id,
+          artist_id: artist.artist_id,
+          name: artist.name,
+          username: null,
+          avatar_url: artist.avatar_url,
+          imageUrl: artist.imageUrl,
+          genre: artist.genre,
+          description: artist.description,
+          followers: artist.followers,
+          followers_count: artist.followers,
+          monthly_listeners: artist.monthly_listeners,
+          events_count: artist.events_count,
+          sort_order: artist.sort_order,
+          rank: artist.sort_order,
+          is_favorite: artist.is_favorite,
+          upcomingEvents: [...seededEvents, ...promoterEvents],
+        };
+      });
 
       return res.json({ data: responseData });
     }
@@ -1795,6 +1840,24 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
 
     delete user.password_hash;
+    
+    let dynamicEventsCount = 0;
+    if (await tableExists('events')) {
+      const result = await query(
+        `SELECT COUNT(*) as c FROM events WHERE user_id = ? OR LOWER(lineup) LIKE LOWER(?)`,
+        [user.id, `%${user.name}%`]
+      );
+      dynamicEventsCount += Number(result[0]?.c || 0);
+    }
+    if (await tableExists('artist_events')) {
+      const result = await query(
+        `SELECT COUNT(*) as c FROM artist_events WHERE artist_id = ?`,
+        [user.id]
+      );
+      dynamicEventsCount += Number(result[0]?.c || 0);
+    }
+    user.upcoming_events_count = dynamicEventsCount;
+
     res.json({ user });
   } catch (error) {
     next(error);

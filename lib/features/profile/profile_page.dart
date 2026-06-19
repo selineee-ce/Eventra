@@ -10,9 +10,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:eventra/features/promotor/views/promotor_register_page.dart';
+import 'package:eventra/core/constants/colors.dart';
+import 'package:eventra/features/home/views/main_screen.dart';
+import 'package:eventra/features/promotor/views/promotor_events_page.dart';
 
 class EventraProfilePage extends StatefulWidget {
-  const EventraProfilePage({super.key});
+  const EventraProfilePage({super.key, this.isPromotorView = false});
+
+  final bool isPromotorView;
 
   @override
   State<EventraProfilePage> createState() => _EventraProfilePageState();
@@ -64,7 +69,11 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: SafeArea(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(gradient: AppColors.mainAppBackground),
+        child: SafeArea(
         child: _isLoading
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFFD0BCFF)),
@@ -158,6 +167,15 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
 
                       GestureDetector(
                         onTap: () {
+                          if (widget.isPromotorView) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MainScreen()),
+                              (route) => false,
+                            );
+                            return;
+                          }
+
                           switch (_promotorStatus) {
                             case 'approved':
                               Navigator.push(
@@ -192,9 +210,9 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                         },
                         child: _buildSettingsItem(
                           icon: Icons.campaign_outlined,
-                          title: 'Promoter Roles',
-                          statusText: _promotorStatusLabel(),
-                          statusColor: _promotorStatusColor(),
+                          title: widget.isPromotorView ? "Customer View" : "Promoter Roles",
+                          statusText: widget.isPromotorView ? '• SWITCH BACK' : _promotorStatusLabel(),
+                          statusColor: widget.isPromotorView ? const Color(0xFF4FA7FF) : _promotorStatusColor(),
                           trailingWidget: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -261,7 +279,9 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                   ),
                 ),
               ),
+        ),
       ),
+      bottomNavigationBar: widget.isPromotorView ? _buildPromotorBottomNavBar() : null,
     );
   }
 
@@ -603,6 +623,117 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
             const SizedBox(width: 12),
             const Icon(Icons.chevron_right, color: Colors.white38, size: 18),
           ],
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildPromotorBottomNavBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF121114),
+        border: Border(top: BorderSide(color: Colors.white10)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PromotorDashboard(),
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.home_outlined,
+                  color: Color(0xFFB3B3B3),
+                  size: 24,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'HOME',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFB3B3B3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PromotorEventsPage(),
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: const [
+                    Icon(
+                      Icons.calendar_today,
+                      color: Color(0xFFB3B3B3),
+                      size: 26,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Icon(
+                        Icons.star,
+                        color: Color(0xFFB3B3B3),
+                        size: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'EVENTS',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFB3B3B3),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          GestureDetector(
+            onTap: () {}, // Already on Profile page
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.person,
+                  color: Color(0xFFD0BCFF),
+                  size: 24,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'PROFILE',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFD0BCFF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
