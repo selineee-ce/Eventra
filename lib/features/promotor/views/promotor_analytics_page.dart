@@ -156,11 +156,10 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 children: [
                   Text(
                     'Analytics',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
+                      fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -318,13 +317,16 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             children: [
               const Text('🏆', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 6),
-              Text(
-                'TOP EVENT',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFFD0BCFF),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+              Flexible(
+                child: Text(
+                  'TOP EVENT',
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFD0BCFF),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
@@ -370,13 +372,15 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             children: [
               const Text('📉', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 6),
-              Text(
-                'NEEDS ATTENTION',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFFFFB347),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
+              Flexible(
+                child: Text(
+                  'NEEDS ATTENTION',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFFFB347),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
@@ -708,7 +712,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFB3B3B3), size: 24),
+                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFD0BCFF), size: 24),
                   ],
                 ),
                 const SizedBox(height: 4),
