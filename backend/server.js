@@ -1871,6 +1871,56 @@ app.get('/api/promotor/dashboard', async (req, res, next) => {
   }
 });
 
+app.get('/api/promotor/analytics/fans-by-location', async (req, res, next) => {
+  try {
+    const userId = requireUserId(req, res);
+    if (!userId) return;
+
+    const [user] = await query(`SELECT name FROM users WHERE id = ? LIMIT 1`, [userId]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    let favoriteItemId = null;
+
+    if (await tableExists('artists')) {
+      const [artist] = await query(
+        `SELECT id FROM artists WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) LIMIT 1`,
+        [user.name]
+      );
+      if (artist) favoriteItemId = artist.id;
+    } else {
+      favoriteItemId = userId;
+    }
+
+    if (!favoriteItemId) {
+      return res.json({ data: [], totalFans: 0 });
+    }
+
+    const rows = await query(
+      `SELECT u.location, COUNT(*) AS fan_count
+       FROM user_favorites uf
+       JOIN users u ON u.id = uf.user_id
+       WHERE uf.favorite_type = 'artist' AND uf.item_id = ?
+       GROUP BY u.location
+       ORDER BY fan_count DESC`,
+      [favoriteItemId]
+    );
+
+    const totalFans = rows.reduce((sum, row) => sum + Number(row.fan_count), 0);
+
+    res.json({
+      data: rows.map((row) => ({
+        location: row.location || 'Unknown',
+        fanCount: Number(row.fan_count),
+      })),
+      totalFans,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/api/promotor/events', async (req, res, next) => {
   try {
     const userId = requireUserId(req, res);

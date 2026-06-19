@@ -8,6 +8,7 @@ import 'package:eventra/features/home/views/notification_page.dart';
 import 'package:eventra/features/home/views/main_screen.dart';
 import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:eventra/features/promotor/views/promotor_events_page.dart';
+import 'package:eventra/features/promotor/views/promotor_analytics_page.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -605,6 +606,33 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
                 ),
                 const SizedBox(height: 4),
                 Text('EVENTS',
+                    style: GoogleFonts.poppins(
+                        color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorAnalyticsPage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFB3B3B3), size: 24),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('ANALYTICS',
                     style: GoogleFonts.poppins(
                         color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
               ],

@@ -137,6 +137,13 @@ class PromotorApi {
   );
   return _decode(response);
 }
+  Future<Map<String, dynamic>> fetchFansByLocation(int userId) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/promotor/analytics/fans-by-location'),
+      headers: {'x-user-id': userId.toString()},
+    );
+    return _decode(response);
+  }
 
   Future<void> deleteEvent({required int userId, required int eventId}) async {
     final response = await http.delete(

@@ -6,6 +6,7 @@ import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/promotor/views/promotor_create_event_page.dart';
+import 'package:eventra/features/promotor/views/promotor_analytics_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PromotorDashboard extends StatefulWidget {
@@ -325,7 +326,33 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
               ],
             ),
           ),
-
+          GestureDetector(
+            onTap: () {
+              Navigator.pushReplacement(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const PromotorAnalyticsPage(),
+                  transitionDuration: Duration.zero,
+                  reverseTransitionDuration: Duration.zero,
+                ),
+              );
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                children: [
+                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFB3B3B3), size: 24),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('ANALYTICS',
+                    style: GoogleFonts.poppins(
+                        color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
           GestureDetector(
             onTap: () {
               setState(() => _selectedIndex = 2);
