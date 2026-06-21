@@ -9,6 +9,9 @@ import 'package:eventra/features/home/models/nearby_event.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:eventra/features/home/models/exclusive_drop.dart';
+import 'package:eventra/data/eventra_database.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
+import 'package:eventra/features/explore/artists/artists_profile.dart';
 
 class EventraHomePage extends StatefulWidget {
   const EventraHomePage({
@@ -32,6 +35,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
   int currentPage = 0;
   int carouselTick = 0;
   final Map<int, int> _dropCountdowns = {};
+  List<Map<String, dynamic>> _artists = [];
 
   Duration countdown = const Duration(hours: 24);
   Timer? timer;
@@ -43,6 +47,10 @@ class _EventraHomePageState extends State<EventraHomePage> {
     super.initState();
     _ctrl.addListener(_onStateChange);
     _ctrl.loadAll();
+
+    EventraDatabase.instance.fetchTrendingArtists().then((artists) {
+      if (mounted) setState(() => _artists = artists);
+    });
 
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -325,6 +333,41 @@ class _EventraHomePageState extends State<EventraHomePage> {
                   onTap: () {
                     if (targetEvent != null) {
                       widget.onEventTap(targetEvent);
+                      return;
+                    }
+
+                    Map<String, dynamic>? targetArtist;
+                    var bestScore = -1;
+                    for (final artist in _artists) {
+                      final artistName = artist['name']?.toString() ?? '';
+                      if (artistName.isEmpty || artistName.length < 3) continue;
+
+                      final score1 = searchMatchScore(artistName, [
+                        event.title,
+                        event.subtitle,
+                      ]);
+                      final score2 = searchMatchScore(event.title, [
+                        artistName,
+                        artist['genre']?.toString() ?? '',
+                      ]);
+
+                      final maxScore = score1 > score2 ? score1 : score2;
+                      if (maxScore > bestScore) {
+                        targetArtist = artist;
+                        bestScore = maxScore;
+                      }
+                    }
+
+                    if (bestScore >= 45 && targetArtist != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => EventraSubpageShell(
+                            currentIndex: 0,
+                            child: ArtistProfilePage(artistData: targetArtist!),
+                          ),
+                        ),
+                      );
                       return;
                     }
 
