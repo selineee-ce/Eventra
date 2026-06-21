@@ -10,8 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:eventra/features/home/models/exclusive_drop.dart';
 import 'package:eventra/data/eventra_database.dart';
-import 'package:eventra/core/widgets/subpage_shell.dart';
-import 'package:eventra/features/explore/artists/artists_profile.dart';
 
 class EventraHomePage extends StatefulWidget {
   const EventraHomePage({
@@ -35,7 +33,7 @@ class _EventraHomePageState extends State<EventraHomePage> {
   int currentPage = 0;
   int carouselTick = 0;
   final Map<int, int> _dropCountdowns = {};
-  List<Map<String, dynamic>> _artists = [];
+  List<NearbyEvent> _allEvents = [];
 
   Duration countdown = const Duration(hours: 24);
   Timer? timer;
@@ -48,8 +46,8 @@ class _EventraHomePageState extends State<EventraHomePage> {
     _ctrl.addListener(_onStateChange);
     _ctrl.loadAll();
 
-    EventraDatabase.instance.fetchTrendingArtists().then((artists) {
-      if (mounted) setState(() => _artists = artists);
+    EventraDatabase.instance.fetchNearbyEvents(location: '').then((events) {
+      if (mounted) setState(() => _allEvents = events.map(NearbyEvent.fromJson).toList());
     });
 
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -333,41 +331,6 @@ class _EventraHomePageState extends State<EventraHomePage> {
                   onTap: () {
                     if (targetEvent != null) {
                       widget.onEventTap(targetEvent);
-                      return;
-                    }
-
-                    Map<String, dynamic>? targetArtist;
-                    var bestScore = -1;
-                    for (final artist in _artists) {
-                      final artistName = artist['name']?.toString() ?? '';
-                      if (artistName.isEmpty || artistName.length < 3) continue;
-
-                      final score1 = searchMatchScore(artistName, [
-                        event.title,
-                        event.subtitle,
-                      ]);
-                      final score2 = searchMatchScore(event.title, [
-                        artistName,
-                        artist['genre']?.toString() ?? '',
-                      ]);
-
-                      final maxScore = score1 > score2 ? score1 : score2;
-                      if (maxScore > bestScore) {
-                        targetArtist = artist;
-                        bestScore = maxScore;
-                      }
-                    }
-
-                    if (bestScore >= 45 && targetArtist != null) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => EventraSubpageShell(
-                            currentIndex: 0,
-                            child: ArtistProfilePage(artistData: targetArtist!),
-                          ),
-                        ),
-                      );
                       return;
                     }
 
@@ -719,14 +682,23 @@ class _EventraHomePageState extends State<EventraHomePage> {
     NearbyEvent? best;
     var bestScore = -1;
 
-    for (final event in _ctrl.state.nearbyEvents) {
-      final score = searchMatchScore(featured.title, [
+    final searchList = _allEvents.isNotEmpty ? _allEvents : _ctrl.state.nearbyEvents;
+
+    for (final event in searchList) {
+      final score1 = searchMatchScore(featured.title, [
         event.title,
         event.artistName,
       ]);
-      if (score > bestScore) {
+      final score2 = searchMatchScore(event.title, [
+        featured.title,
+        featured.subtitle,
+      ]);
+      
+      final maxScore = score1 > score2 ? score1 : score2;
+      
+      if (maxScore > bestScore) {
         best = event;
-        bestScore = score;
+        bestScore = maxScore;
       }
     }
 
