@@ -84,8 +84,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
-                      const SizedBox(height: 6),
-                      _buildHeader(context),
                       const SizedBox(height: 26),
 
                       _buildAvatar(profile['avatar_url'] as String?),
@@ -470,33 +468,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
     if (value == null) return '0';
     if (value is num) return value.toString();
     return int.tryParse(value.toString())?.toString() ?? value.toString();
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Navigator.maybePop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        const SizedBox(width: 48),
-        IconButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const EventraSubpageShell(
-                  currentIndex: 4,
-                  child: NotificationPage(),
-                ),
-              ),
-            );
-          },
-          icon: const Icon(Icons.notifications_none, color: Colors.white),
-        ),
-      ],
-    );
   }
 
   Widget _buildAvatar(String? avatarUrl) {
