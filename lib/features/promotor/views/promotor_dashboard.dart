@@ -7,6 +7,7 @@ import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/data/eventra_database.dart';
 import 'package:eventra/features/promotor/views/promotor_create_event_page.dart';
 import 'package:eventra/features/promotor/views/promotor_analytics_page.dart';
+import 'package:eventra/features/promotor/views/promotor_search_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PromotorDashboard extends StatefulWidget {
@@ -94,7 +95,17 @@ class _PromotorDashboardState extends State<PromotorDashboard> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.search, color: Colors.white, size: 24),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PromotorSearchPage(),
+                          ),
+                        ).then((_) => _loadDashboard());
+                      },
+                      child: const Icon(Icons.search, color: Colors.white, size: 24),
+                    ),
                     Text(
                       'EVENTRA',
                       style: GoogleFonts.poppins(
