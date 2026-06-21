@@ -37,11 +37,13 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
   Future<void> _loadProfile() async {
     try {
       final loadedProfile = await EventraDatabase.instance.fetchProfile();
+      final loadedTickets = await EventraDatabase.instance.fetchTickets();
 
       if (!mounted) return;
 
       setState(() {
         profile = loadedProfile;
+        profile['upcoming_events_count'] = loadedTickets.length;
         _isLoading = false;
       });
 
