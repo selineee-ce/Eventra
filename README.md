@@ -1,62 +1,144 @@
 # Eventra - As Your Personal Concert Hub
 
-**Eventra** adalah platform ekosistem konser yang berfokus pada keadilan akses tiket dan pengambilan keputusan berbasis data bagi promotor. Project ini menggabungkan seluruh informasi konser dalam satu aplikasi sehingga pengguna tidak perlu lagi mengecek banyak platform berbeda. 
-
+**Eventra** adalah platform ekosistem konser yang berfokus pada keadilan akses tiket dan pengambilan keputusan berbasis data bagi promotor. Project ini menggabungkan seluruh informasi konser dalam satu aplikasi sehingga pengguna tidak perlu lagi mengecek banyak platform berbeda.
 
 ## Tentang Project
 
-Aplikasi ini dikembangkan untuk mengatasi masalah tersebarnya informasi konser di berbagai platform dan ketidakadilan akses tiket akibat praktik *scalping*. Kami menggunakan model pengembangan **Scrum** untuk memastikan fleksibilitas tinggi dan kolaborasi yang aktif selama proses pembuatan produk. 
+Industri konser saat ini masih menghadapi beberapa permasalahan, seperti informasi event yang tersebar di berbagai platform, keterlambatan pengguna memperoleh informasi penjualan tiket, serta praktik *scalping* yang menyebabkan ketidakadilan akses tiket.
 
-### Anggota Tim (Group 5):
-- Edwin Winarto(2802445431) 
-- Joseline Fransiska Wijaya (2802455722) 
-- Kelly Aurelya Tiona (2802455325) 
-- Michelle Santoso (2802452582) 
-- Vincent Juvento (2802446011) 
+Eventra hadir sebagai solusi dengan menyediakan platform terpusat yang menghubungkan penggemar, artis, dan promotor dalam satu ekosistem digital. Selain mempermudah pengguna menemukan konser yang diminati, Eventra juga membantu promotor memahami minat pasar melalui fitur analytics berbasis aktivitas pengguna.
+
+Project ini dikembangkan menggunakan metodologi **Agile Scrum** untuk mendukung kolaborasi tim yang aktif dan proses pengembangan yang fleksibel.
+
+---
+
+## Anggota Tim (Group 5)
+
+* Edwin Winarto (2802445431)
+* Joseline Fransiska Wijaya (2802455722)
+* Kelly Aurelya Tiona (2802455325)
+* Michelle Santoso (2802452582)
+* Vincent Juvento (2802446011)
+
+---
 
 ## Fitur Utama
-1. Platform Terpusat: Mengintegrasikan semua informasi konser agar lebih mudah diakses. 
-2. Reminder & Notifikasi Otomatis: Pengingat jadwal konser (H-7, H-3, H-1) dan notifikasi penjualan tiket agar pengguna tidak kehabisan tiket. 
-3. Personal Recommendation: Rekomendasi konser berdasarkan minat, riwayat pencarian, dan artis yang di-*subscribe*. 
-4. Profil Artis & Subscribe: Halaman khusus untuk setiap artis dengan jadwal konser mendatang yang bisa diikuti oleh pengguna.  
-5. Penjualan Tiket Aman: Fitur jual-beli tiket langsung di dalam aplikasi dengan proses transaksi yang terpercaya. 
-6. Wishlist Konser: Memungkinkan pengguna menyimpan konser pilihan dan menerima pembaruan terkait event tersebut. 
 
-## Instruksi Instalasi & Running
-### Prasyarat
+### Untuk Pengguna
 
-* Instal [Flutter SDK](https://docs.flutter.dev/get-started/install) versi terbaru.
-* Instal [Docker Desktop](https://www.docker.com/products/docker-desktop/) untuk menjalankan backend dan MySQL lewat Compose.
+* **Platform Terpusat** – Mengintegrasikan informasi konser dalam satu aplikasi.
+* **Reminder & Notifikasi Otomatis** – Pengingat jadwal konser dan penjualan tiket.
+* **Personal Recommendation** – Rekomendasi konser berdasarkan preferensi pengguna.
+* **Artist Profile & Subscription** – Mengikuti artis favorit dan mendapatkan update terbaru.
+* **Wishlist Konser** – Menyimpan konser yang diminati untuk diakses kembali.
+* **Ticket Purchasing** – Pembelian tiket secara digital melalui aplikasi.
 
-### Langkah-langkah:
+### Untuk Promotor
 
-1. Clone Repository:
+* **Demand Analytics** – Analisis minat pengguna berdasarkan wishlist dan aktivitas pencarian.
+* **Revenue Monitoring** – Pemantauan performa event dan penjualan tiket.
+* **Event Management** – Pengelolaan event secara terpusat.
+
+---
+
+## Technology Stack
+* **Frontend** memakai Flutter & Dart
+* **Backend** dibuat dengan Node.js, Express.js & REST API
+* **Database** dibuat dengan MySQL
+
+### Development Tools
+* Docker
+* Docker Compose
+
+---
+
+## Installation & Running Guide
+
+### Prerequisites
+
+Pastikan perangkat telah terpasang:
+
+* Flutter SDK
+* Docker Desktop
+* Git
+
+### 1. Clone Repository
+
 ```bash
-git clone https://github.com/username/eventra.git
+git clone [https://github.com/selineee-ce/Eventra.git]
 cd eventra
-
 ```
 
-2. Setup Backend + Database:
-Jalankan backend Node.js dan MySQL sekaligus dengan Docker Compose.
+### 2. Setup Backend & Database
+
+Jalankan backend dan database menggunakan Docker Compose:
 ```bash
 docker compose up --build
 ```
 
-API akan tersedia di `http://localhost:3000`, sedangkan MySQL berjalan di `localhost:3306`.
+Service yang akan berjalan:
 
-Jika kamu ingin mematikan stack-nya:
+| Service        | Port |
+| -------------- | ---- |
+| Backend API    | 3000 |
+| MySQL Database | 3306 |
+
+Untuk menghentikan service:
 ```bash
 docker compose down
 ```
 
-3. Setup Frontend:
-Kembali ke folder utama, ambil dependensi Flutter, lalu jalankan aplikasi.
+### 3. Setup Frontend
+
+Install dependency Flutter:
 ```bash
 flutter pub get
+```
+
+Jalankan aplikasi:
+```bash
 flutter run
 ```
 
+---
+
+## Database Setup
+
+Database MySQL akan dibuat otomatis melalui Docker Compose.
+Jika diperlukan import database manual:
+
+```bash
+mysql -u root -p
+CREATE DATABASE eventra;
+```
+
+Kemudian jalankan file SQL yang tersedia pada project.
+
+---
+
+## Documentation
+
+Dokumentasi lengkap mengenai:
+
+* Installation Guide
+* Database Setup
+* User Manual
+* Promoter Manual
+* Application Usage Guide
+
+dapat dilihat pada file:
+
+```text
+Eventra_Guide.pdf
+```
+
+---
+
 ## Design Reference
-Kamu bisa melihat prototipe desain kami di Figma melalui tautan berikut: 
-[Eventra Figma Design](https://www.figma.com/design/LqRe0kuisKf15E9dTJnWEK/Eventra-New?node-id=0-1&t=BvLJRFvscRP9Zjp6-1)
+Kamu bisa melihat prototipe desain kami di Figma melalui tautan berikut: [Eventra Figma Design](https://www.figma.com/design/LqRe0kuisKf15E9dTJnWEK/Eventra-New?node-id=0-1&t=BvLJRFvscRP9Zjp6-1)
+
+---
+
+## 📄 License
+
+This project was developed for academic and educational purposes.
