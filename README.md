@@ -65,14 +65,13 @@ Pastikan perangkat telah terpasang:
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/username/eventra.git
+git clone [https://github.com/selineee-ce/Eventra.git]
 cd eventra
 ```
 
 ### 2. Setup Backend & Database
 
 Jalankan backend dan database menggunakan Docker Compose:
-
 ```bash
 docker compose up --build
 ```
@@ -85,7 +84,6 @@ Service yang akan berjalan:
 | MySQL Database | 3306 |
 
 Untuk menghentikan service:
-
 ```bash
 docker compose down
 ```
@@ -93,20 +91,18 @@ docker compose down
 ### 3. Setup Frontend
 
 Install dependency Flutter:
-
 ```bash
 flutter pub get
 ```
 
 Jalankan aplikasi:
-
 ```bash
 flutter run
 ```
 
 ---
 
-## 🗄️ Database Setup
+## Database Setup
 
 Database MySQL akan dibuat otomatis melalui Docker Compose.
 Jika diperlukan import database manual:
@@ -120,7 +116,7 @@ Kemudian jalankan file SQL yang tersedia pada project.
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 Dokumentasi lengkap mengenai:
 
