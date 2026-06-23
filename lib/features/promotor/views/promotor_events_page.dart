@@ -10,6 +10,8 @@ import 'package:eventra/data/eventra_session.dart';
 import 'package:eventra/features/promotor/views/promotor_event_detail_page.dart';
 import 'package:eventra/features/promotor/views/promotor_analytics_page.dart';
 import 'package:eventra/features/promotor/views/promotor_search_page.dart';
+import 'package:eventra/features/home/views/notification_page.dart';
+import 'package:eventra/core/widgets/subpage_shell.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PromotorEventsPage extends StatefulWidget {
@@ -202,7 +204,20 @@ class _PromotorEventsPageState extends State<PromotorEventsPage> {
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 2)),
-                    const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EventraSubpageShell(
+                              currentIndex: 0,
+                              child: NotificationPage(),
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                    ),
                   ],
                 ),
               ),
