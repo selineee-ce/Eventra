@@ -55,24 +55,20 @@ Project ini dikembangkan menggunakan metodologi **Agile Scrum** untuk mendukung 
 ## Installation & Running Guide
 
 ### Prerequisites
-
-Pastikan perangkat telah terpasang:
-
-* Flutter SDK
-* Docker Desktop
+* Instal [Flutter SDK](https://docs.flutter.dev/get-started/install) versi terbaru.
+* Instal [Docker Desktop](https://www.docker.com/products/docker-desktop/) untuk menjalankan backend dan MySQL lewat Compose.
 * Git
 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/username/eventra.git
+git clone https://github.com/selineee-ce/Eventra
 cd eventra
 ```
 
 ### 2. Setup Backend & Database
 
 Jalankan backend dan database menggunakan Docker Compose:
-
 ```bash
 docker compose up --build
 ```
@@ -85,7 +81,6 @@ Service yang akan berjalan:
 | MySQL Database | 3306 |
 
 Untuk menghentikan service:
-
 ```bash
 docker compose down
 ```
@@ -106,11 +101,10 @@ flutter run
 
 ---
 
-## 🗄️ Database Setup
+## Database Setup
 
 Database MySQL akan dibuat otomatis melalui Docker Compose.
 Jika diperlukan import database manual:
-
 ```bash
 mysql -u root -p
 CREATE DATABASE eventra;
@@ -120,7 +114,7 @@ Kemudian jalankan file SQL yang tersedia pada project.
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 Dokumentasi lengkap mengenai:
 
