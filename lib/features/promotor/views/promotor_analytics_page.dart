@@ -5,7 +5,6 @@ import 'package:eventra/data/promotor_api.dart';
 import 'package:eventra/features/promotor/views/promotor_dashboard.dart';
 import 'package:eventra/features/promotor/views/promotor_events_page.dart';
 import 'package:eventra/features/promotor/views/promotor_profile_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class PromotorAnalyticsPage extends StatefulWidget {
   const PromotorAnalyticsPage({super.key});
@@ -146,108 +145,131 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
         height: double.infinity,
         decoration: const BoxDecoration(gradient: AppColors.mainAppBackground),
         child: SafeArea(
-          child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFD0BCFF)))
-            : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Analytics',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Performance insights across your events',
-                    style: GoogleFonts.poppins(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (_events.isEmpty)
-                    _buildEmptyState()
-                  else ...[
-                    Row(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Icon(Icons.search, color: Colors.white, size: 24),
+                    Text('EVENTRA',
+                        style: TextStyle(
+                            color: const Color(0xFFD0BCFF),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2)),
+                    const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFFD0BCFF)))
+                  : SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _buildTopEventCard()),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildAttentionEventCard()),
+                        Text(
+                          'Analytics',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Performance insights across your events',
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                        ),
+                        const SizedBox(height: 24),
+
+                        if (_events.isEmpty)
+                          _buildEmptyState()
+                        else ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _buildTopEventCard()),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildAttentionEventCard()),
+                            ],
+                          ),
+                          const SizedBox(height: 28),
+
+                          Text(
+                            'Revenue per Event',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          ...(_showAllRevenue ? _sortedByRevenue : _sortedByRevenue.take(3))
+                              .map((e) => _buildRevenueBar(e)),
+                          if (_sortedByRevenue.length > 3)
+                            _buildViewAllButton(
+                              isExpanded: _showAllRevenue,
+                              onTap: () => setState(() => _showAllRevenue = !_showAllRevenue),
+                            ),
+                          const SizedBox(height: 28),
+
+                          Text(
+                            'Sell-Through Rate',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          ...(_showAllSellThrough ? _sortedBySellThrough : _sortedBySellThrough.take(3))
+                              .map((e) => _buildSellThroughRow(e)),
+                          if (_sortedBySellThrough.length > 3)
+                            _buildViewAllButton(
+                              isExpanded: _showAllSellThrough,
+                              onTap: () => setState(() => _showAllSellThrough = !_showAllSellThrough),
+                            ),
+                          const SizedBox(height: 28),
+                        ],
+
+                        Text(
+                          'Fan Geography',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$_totalFans total fans following your artist profile',
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const SizedBox(height: 14),
+                        if (_fansByLocation.isEmpty)
+                          _buildFanEmptyState()
+                        else ...[
+                          ...(_showAllFans ? _sortedByFans : _sortedByFans.take(3))
+                              .map((f) => _buildFanLocationBar(f)),
+                          if (_sortedByFans.length > 3)
+                            _buildViewAllButton(
+                              isExpanded: _showAllFans,
+                              onTap: () => setState(() => _showAllFans = !_showAllFans),
+                            ),
+                        ],
+
+                        const SizedBox(height: 40),
                       ],
                     ),
-                    const SizedBox(height: 28),
-
-                    Text(
-                      'Revenue per Event',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    ...(_showAllRevenue ? _sortedByRevenue : _sortedByRevenue.take(3))
-                        .map((e) => _buildRevenueBar(e)),
-                    if (_sortedByRevenue.length > 3)
-                      _buildViewAllButton(
-                        isExpanded: _showAllRevenue,
-                        onTap: () => setState(() => _showAllRevenue = !_showAllRevenue),
-                      ),
-                    const SizedBox(height: 28),
-
-                    Text(
-                      'Sell-Through Rate',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    ...(_showAllSellThrough ? _sortedBySellThrough : _sortedBySellThrough.take(3))
-                        .map((e) => _buildSellThroughRow(e)),
-                    if (_sortedBySellThrough.length > 3)
-                      _buildViewAllButton(
-                        isExpanded: _showAllSellThrough,
-                        onTap: () => setState(() => _showAllSellThrough = !_showAllSellThrough),
-                      ),
-                    const SizedBox(height: 28),
-                  ],
-
-                  Text(
-                    'Fan Geography',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$_totalFans total fans following your artist profile',
-                    style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
-                  ),
-                  const SizedBox(height: 14),
-                  if (_fansByLocation.isEmpty)
-                    _buildFanEmptyState()
-                  else ...[
-                    ...(_showAllFans ? _sortedByFans : _sortedByFans.take(3))
-                        .map((f) => _buildFanLocationBar(f)),
-                    if (_sortedByFans.length > 3)
-                      _buildViewAllButton(
-                        isExpanded: _showAllFans,
-                        onTap: () => setState(() => _showAllFans = !_showAllFans),
-                      ),
-                  ],
-
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -268,7 +290,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
           const SizedBox(height: 12),
           Text(
             'No analytics yet',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -277,7 +299,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
           const SizedBox(height: 6),
           Text(
             'Publish an event to start seeing performance data.',
-            style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13),
+            style: TextStyle(color: Colors.white38, fontSize: 13),
           ),
         ],
       ),
@@ -296,7 +318,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
       child: Text(
         'No fans have followed your artist profile yet.',
         textAlign: TextAlign.center,
-        style: GoogleFonts.poppins(color: Colors.white38, fontSize: 13),
+        style: TextStyle(color: Colors.white38, fontSize: 13),
       ),
     );
   }
@@ -317,16 +339,13 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             children: [
               const Text('🏆', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  'TOP EVENT',
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFFD0BCFF),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+              Text(
+                'TOP EVENT',
+                style: TextStyle(
+                  color: const Color(0xFFD0BCFF),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -336,7 +355,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             event?['title']?.toString() ?? '-',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -345,7 +364,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
           const SizedBox(height: 6),
           Text(
             event != null ? _formatRupiah(_toInt(event['revenue'])) : 'Rp0',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -372,15 +391,13 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             children: [
               const Text('📉', style: TextStyle(fontSize: 16)),
               const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  'NEEDS ATTENTION',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFFFFB347),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+              Text(
+                'NEEDS ATTENTION',
+                style: TextStyle(
+                  color: const Color(0xFFFFB347),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -390,7 +407,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             event?['title']?.toString() ?? 'All caught up',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               color: Colors.white,
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -401,7 +418,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
             event != null
                 ? '${(_sellThroughRate(event) * 100).toStringAsFixed(0)}% sold'
                 : 'No live events',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               color: Colors.white70,
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -430,7 +447,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                   event['title']?.toString() ?? 'Untitled',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -440,7 +457,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
               const SizedBox(width: 8),
               Text(
                 _formatRupiah(revenue),
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   color: isTop ? const Color(0xFFD0BCFF) : Colors.white70,
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -504,7 +521,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                   event['title']?.toString() ?? 'Untitled',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -521,7 +538,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 ),
                 child: Text(
                   badge,
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     color: badgeColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -547,7 +564,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
               const SizedBox(width: 10),
               Text(
                 '$percent%',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -579,7 +596,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                   const SizedBox(width: 4),
                   Text(
                     location,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                       color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -589,7 +606,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
               ),
               Text(
                 '$count ${count == 1 ? 'fan' : 'fans'}',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -622,7 +639,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
           children: [
             Text(
               isExpanded ? 'SHOW LESS' : 'VIEW ALL',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 color: const Color(0xFFD0BCFF),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -668,7 +685,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 const Icon(Icons.home_outlined, color: Color(0xFFB3B3B3), size: 24),
                 const SizedBox(height: 4),
                 Text('HOME',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                         color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -699,7 +716,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 ),
                 const SizedBox(height: 4),
                 Text('EVENTS',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                         color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -712,12 +729,12 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 Stack(
                   alignment: Alignment.center,
                   children: [
-                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFD0BCFF), size: 24),
+                    const Icon(Icons.bar_chart_rounded, color: Color(0xFFB3B3B3), size: 24),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text('ANALYTICS',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                         color: const Color(0xFFD0BCFF), fontSize: 10, fontWeight: FontWeight.w600)),
               ],
             ),
@@ -739,7 +756,7 @@ class _PromotorAnalyticsPageState extends State<PromotorAnalyticsPage> {
                 const Icon(Icons.person_outline, color: Color(0xFFB3B3B3), size: 24),
                 const SizedBox(height: 4),
                 Text('PROFILE',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(
                         color: const Color(0xFFB3B3B3), fontSize: 10, fontWeight: FontWeight.w600)),
               ],
             ),
