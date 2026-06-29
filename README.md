@@ -141,65 +141,62 @@ Kamu bisa melihat prototipe desain kami di Figma melalui tautan berikut: [Eventr
 
 ## Page Documentations
 
-### Home Page
-Tampilan utama aplikasi yang menampilkan daftar event, banner unggulan, serta fitur pencarian dan rekomendasi.
+### User Pages
 
-![Home Page](screenshots/homePage.png)
+#### Authentication
+- **Login Page** - Halaman masuk pengguna untuk mengakses akun Eventra.
 
-### Home Page (Additional View)
-Tampilan lain dari halaman beranda yang menampilkan konten event dan kategori tambahan.
+  ![Login Page](screenshots/loginPage.png)
 
-![Home Page Additional View](screenshots/homePage1.png)
+- **Register Page** - Halaman pendaftaran akun baru bagi pengguna.
 
-### Login Page
-Halaman masuk pengguna untuk mengakses akun Eventra.
+  ![Register Page](screenshots/registerPage.png)
 
-![Login Page](screenshots/loginPage.png)
+#### Home & Exploration
+- **Home Page** - Tampilan utama aplikasi yang menampilkan daftar event, banner unggulan, serta fitur pencarian dan rekomendasi.
 
-### Register Page
-Halaman pendaftaran akun baru bagi pengguna.
+  ![Home Page](screenshots/homePage.png)
 
-![Register Page](screenshots/registerPage.png)
+- **Home Page (Additional View)** - Tampilan lain dari halaman beranda yang menampilkan konten event dan kategori tambahan.
 
-### Trending Page
-Halaman yang menampilkan event-event populer atau sedang tren.
+  ![Home Page Additional View](screenshots/homePage1.png)
 
-![Trending Page](screenshots/trendingPage.png)
+- **Trending Page** - Halaman yang menampilkan event-event populer atau sedang tren.
 
-### Artist Profile Page
-Halaman profil artis yang menampilkan informasi artis dan event terkait.
+  ![Trending Page](screenshots/trendingPage.png)
 
-![Artist Profile Page](screenshots/artistProfile.png)
+#### Event & Artist Details
+- **Artist Profile Page** - Halaman profil artis yang menampilkan informasi artis dan event terkait.
 
-### Ticket Page
-Halaman detail tiket yang berisi informasi pembelian dan akses tiket.
+  ![Artist Profile Page](screenshots/artistProfile.png)
 
-![Ticket Page](screenshots/ticketPage.png)
+- **Ticket Page** - Halaman detail tiket yang berisi informasi pembelian dan akses tiket.
 
-### Checkout Page
-Halaman checkout untuk memproses pemesanan tiket.
+  ![Ticket Page](screenshots/ticketPage.png)
 
-![Checkout Page](screenshots/checkoutPage.png)
+#### Purchase & Payment
+- **Checkout Page** - Halaman checkout untuk memproses pemesanan tiket.
 
-### Payment Page
-Halaman pembayaran sebelum tiket dikonfirmasi.
+  ![Checkout Page](screenshots/checkoutPage.png)
 
-![Payment Page](screenshots/paymentPage.png)
+- **Payment Page** - Halaman pembayaran sebelum tiket dikonfirmasi.
 
-### Payment Status Page
-Halaman status pembayaran setelah transaksi diproses.
+  ![Payment Page](screenshots/paymentPage.png)
 
-![Payment Status Page](screenshots/paymentStatus.png)
+- **Payment Status Page** - Halaman status pembayaran setelah transaksi diproses.
 
-### Profile Page
-Halaman profil pengguna yang menampilkan informasi akun dan pengaturan.
+  ![Payment Status Page](screenshots/paymentStatus.png)
 
-![Profile Page](screenshots/profilePage.png)
+#### User Profile
+- **Profile Page** - Halaman profil pengguna yang menampilkan informasi akun dan pengaturan.
 
-### Promotor Login Page
-Halaman login khusus untuk promotor.
+  ![Profile Page](screenshots/profilePage.png)
 
-![Promotor Login Page](screenshots/promotorLogin.png)
+### Promotor Pages
+
+- **Promotor Login Page** - Halaman login khusus untuk promotor mengakses dashboard dan fitur manajemen event.
+
+  ![Promotor Login Page](screenshots/promotorLogin.png)
 
 ## 📄 License
 
