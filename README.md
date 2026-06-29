@@ -139,6 +139,68 @@ Kamu bisa melihat prototipe desain kami di Figma melalui tautan berikut: [Eventr
 
 ---
 
+## Page Documentations
+
+### Home Page
+Tampilan utama aplikasi yang menampilkan daftar event, banner unggulan, serta fitur pencarian dan rekomendasi.
+
+![Home Page](screenshots/homePage.png)
+
+### Home Page (Additional View)
+Tampilan lain dari halaman beranda yang menampilkan konten event dan kategori tambahan.
+
+![Home Page Additional View](screenshots/homePage1.png)
+
+### Login Page
+Halaman masuk pengguna untuk mengakses akun Eventra.
+
+![Login Page](screenshots/loginPage.png)
+
+### Register Page
+Halaman pendaftaran akun baru bagi pengguna.
+
+![Register Page](screenshots/registerPage.png)
+
+### Trending Page
+Halaman yang menampilkan event-event populer atau sedang tren.
+
+![Trending Page](screenshots/trendingPage.png)
+
+### Artist Profile Page
+Halaman profil artis yang menampilkan informasi artis dan event terkait.
+
+![Artist Profile Page](screenshots/artistProfile.png)
+
+### Ticket Page
+Halaman detail tiket yang berisi informasi pembelian dan akses tiket.
+
+![Ticket Page](screenshots/ticketPage.png)
+
+### Checkout Page
+Halaman checkout untuk memproses pemesanan tiket.
+
+![Checkout Page](screenshots/checkoutPage.png)
+
+### Payment Page
+Halaman pembayaran sebelum tiket dikonfirmasi.
+
+![Payment Page](screenshots/paymentPage.png)
+
+### Payment Status Page
+Halaman status pembayaran setelah transaksi diproses.
+
+![Payment Status Page](screenshots/paymentStatus.png)
+
+### Profile Page
+Halaman profil pengguna yang menampilkan informasi akun dan pengaturan.
+
+![Profile Page](screenshots/profilePage.png)
+
+### Promotor Login Page
+Halaman login khusus untuk promotor.
+
+![Promotor Login Page](screenshots/promotorLogin.png)
+
 ## 📄 License
 
 This project was developed for academic and educational purposes.
