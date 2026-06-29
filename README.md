@@ -165,10 +165,22 @@ Kamu bisa melihat prototipe desain kami di Figma melalui tautan berikut: [Eventr
 
   ![Trending Page](screenshots/trendingPage.png)
 
+- **Search Page** - Halaman pencarian event dengan filter dan fitur pencarian lanjutan.
+
+  ![Search Page](screenshots/searchPage.png)
+
+- **Notification Page** - Halaman notifikasi yang menampilkan update event dan reminder tiket.
+
+  ![Notification Page](screenshots/notificationPage.png)
+
 #### Event & Artist Details
 - **Artist Profile Page** - Halaman profil artis yang menampilkan informasi artis dan event terkait.
 
   ![Artist Profile Page](screenshots/artistProfile.png)
+
+- **Event Detail Page** - Halaman detail event yang menampilkan informasi lengkap konser dan jadwal.
+
+  ![Event Detail Page](screenshots/eventDetail.png)
 
 - **Ticket Page** - Halaman detail tiket yang berisi informasi pembelian dan akses tiket.
 
@@ -197,6 +209,26 @@ Kamu bisa melihat prototipe desain kami di Figma melalui tautan berikut: [Eventr
 - **Promotor Login Page** - Halaman login khusus untuk promotor mengakses dashboard dan fitur manajemen event.
 
   ![Promotor Login Page](screenshots/promotorLogin.png)
+
+- **Promotor Home Page** - Dashboard utama promotor yang menampilkan ringkasan event dan performa penjualan tiket.
+
+  ![Promotor Home Page](screenshots/promotorHomePage.png)
+
+- **Promotor Event Page** - Halaman manajemen event untuk promotor mengelola acara dan tiket.
+
+  ![Promotor Event Page](screenshots/promotorEventPage.png)
+
+- **Create Event Page** - Halaman pembuatan event baru dengan form detail event dan konfigurasi tiket.
+
+  ![Create Event Page](screenshots/createEventPage.png)
+
+- **Promotor Profile Page** - Halaman profil promotor dengan informasi perusahaan dan pengaturan akun.
+
+  ![Promotor Profile Page](screenshots/promotorProfile.png)
+
+- **Analytics Page** - Halaman analytics yang menampilkan data demand, trend event, dan insights pengguna untuk pengambilan keputusan promotor.
+
+  ![Analytics Page](screenshots/analyticsPage.png)
 
 ## 📄 License
 
