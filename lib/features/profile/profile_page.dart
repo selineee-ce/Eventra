@@ -13,6 +13,7 @@ import 'package:eventra/features/promotor/views/promotor_register_page.dart';
 import 'package:eventra/core/constants/colors.dart';
 import 'package:eventra/features/home/views/main_screen.dart';
 import 'package:eventra/features/promotor/views/promotor_events_page.dart';
+import 'package:eventra/features/profile/edit_profile_page.dart';
 
 class EventraProfilePage extends StatefulWidget {
   const EventraProfilePage({super.key, this.isPromotorView = false});
@@ -115,7 +116,15 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
                       SizedBox(
                         width: 160,
                         child: ElevatedButton.icon(
-                          onPressed: () => _showEditProfileModal(context),
+                          onPressed: () async {
+                            final updated = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EditProfilePage(profile: profile),
+                              ),
+                            );
+                            if (updated == true) _loadProfile();
+                          },
                           icon: const Icon(Icons.edit, size: 18, color: Color(0xFF4D2B6C)),
                           label: Text(
                             AppConfig.instance.text('profile.edit', 'EDIT PROFILE'),
@@ -285,97 +294,6 @@ class _EventraProfilePageState extends State<EventraProfilePage> {
     );
   }
 
-  Future<void> _showEditProfileModal(BuildContext context) async {
-    final nameController = TextEditingController(text: profile['name']?.toString() ?? '');
-    final aboutController = TextEditingController(text: profile['description']?.toString() ?? '');
-    final avatarController = TextEditingController(text: profile['avatar_url']?.toString() ?? '');
-
-    final bool? saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B1526),
-        title: Text('Edit Profile',
-            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTextField(controller: nameController, label: 'Name', hint: 'Enter your name'),
-              const SizedBox(height: 16),
-              _buildTextField(controller: aboutController, label: 'About', hint: 'Enter your about info', maxLines: 3),
-              const SizedBox(height: 16),
-              _buildTextField(controller: avatarController, label: 'Avatar URL', hint: 'Enter image URL'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('SAVE',
-                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-
-    if (saved == true) {
-      try {
-        await EventraDatabase.instance.updateProfile({
-          'name': nameController.text.trim(),
-          'description': aboutController.text.trim(),
-          'avatar_url': avatarController.text.trim(),
-        });
-        await _loadProfile();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated successfully')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update profile: $e')),
-          );
-        }
-      }
-    }
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white38),
-            filled: true,
-            fillColor: const Color(0xFF231A34),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ],
-    );
-  }
 
   Future<void> _showLocationDialog(BuildContext context) async {
     final locationController = TextEditingController(

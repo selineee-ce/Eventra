@@ -12,6 +12,7 @@ import 'package:eventra/features/promotor/views/promotor_analytics_page.dart';
 import 'package:eventra/data/promotor_api.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:eventra/features/profile/edit_profile_page.dart';
 
 class PromotorProfilePage extends StatefulWidget {
   const PromotorProfilePage({super.key});
@@ -115,7 +116,15 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
                       SizedBox(
                         width: 160,
                         child: ElevatedButton.icon(
-                          onPressed: () => _showEditProfileModal(context),
+                          onPressed: () async {
+                            final updated = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EditProfilePage(profile: _profile),
+                              ),
+                            );
+                            if (updated == true) _loadData();
+                          },
                           icon: const Icon(Icons.edit, size: 18, color: Color(0xFF4D2B6C)),
                           label: Text(
                             'EDIT PROFILE',
@@ -404,66 +413,6 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
     );
   }
 
-  Future<void> _showEditProfileModal(BuildContext context) async {
-    final nameCtrl = TextEditingController(text: _profile['name']?.toString() ?? '');
-    final aboutCtrl = TextEditingController(text: _profile['description']?.toString() ?? '');
-    final avatarCtrl = TextEditingController(text: _profile['avatar_url']?.toString() ?? '');
-
-    final bool? saved = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1B1526),
-        title: Text('Edit Profile',
-            style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w700)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTextField(controller: nameCtrl, label: 'Name', hint: 'Enter your name'),
-              const SizedBox(height: 16),
-              _buildTextField(controller: aboutCtrl, label: 'About', hint: 'Enter your bio', maxLines: 3),
-              const SizedBox(height: 16),
-              _buildTextField(controller: avatarCtrl, label: 'Avatar URL', hint: 'Enter image URL'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('CANCEL', style: GoogleFonts.poppins(color: Colors.white38)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('SAVE',
-                style: GoogleFonts.poppins(color: const Color(0xFFD0BCFF), fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-
-    if (saved == true) {
-      try {
-        await EventraDatabase.instance.updateProfile({
-          'name': nameCtrl.text.trim(),
-          'description': aboutCtrl.text.trim(),
-          'avatar_url': avatarCtrl.text.trim(),
-        });
-        await _loadData();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated successfully')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to update profile: $e')),
-          );
-        }
-      }
-    }
-  }
-
   Future<void> _showCompanyDialog(BuildContext context) async {
     final companyCtrl = TextEditingController(text: _profile['company']?.toString() ?? '');
 
@@ -514,38 +463,6 @@ class _PromotorProfilePageState extends State<PromotorProfilePage> {
         }
       }
     }
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required String hint,
-    int maxLines = 1,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white38),
-            filled: true,
-            fillColor: const Color(0xFF231A34),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildBottomNavBar() {
